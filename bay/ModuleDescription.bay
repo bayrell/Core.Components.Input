@@ -32,7 +32,7 @@ class ModuleDescription implements ModuleDescriptionInterface
 	 * Returns module name
 	 * @return string
 	 */
-	public static string getName()
+	public static string getModuleName()
 	{
 		return "Core.Components.Input";
 	}
