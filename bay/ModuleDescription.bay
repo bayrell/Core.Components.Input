@@ -1,0 +1,101 @@
+/*!
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2018-2019 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+namespace Runtime.Web.CRUD;
+
+use Runtime.Annotations.Entity;
+use Runtime.Annotations.Provider;
+use Runtime.Interfaces.AssetsInterface;
+use Runtime.Interfaces.ContextInterface;
+use Runtime.Interfaces.ModuleDescriptionInterface;
+use Runtime.Api.Api;
+
+
+class ModuleDescription implements ModuleDescriptionInterface, AssetsInterface
+{
+	
+	
+	/**
+	 * Returns module name
+	 * @return string
+	 */
+	lambda string getModuleName() => "Runtime.Web.CRUD";
+	
+	
+	
+	/**
+	 * Returns module name
+	 * @return string
+	 */
+	lambda string getModuleVersion() => "0.0.1";
+	
+	
+	
+	/**
+	 * Returns required modules
+	 * @return Map<string>
+	 */
+	lambda Map<string> requiredModules() => 
+	{
+		"Runtime.ORM": "*",
+		"Runtime.Web.UI": "*",
+	};
+	
+	
+	
+	/**
+	 * Returns module files load order
+	 * @return Collection<string>
+	 */
+	lambda Collection<string> assets() => 
+	[
+		'Runtime.Web.CRUD/Annotations/Crud',
+		'Runtime.Web.CRUD/Annotations/FormValue',
+		'Runtime.Web.CRUD/Annotations/LazyModel',
+		'Runtime.Web.CRUD/Annotations/TableValue',
+		'Runtime.Web.CRUD/CrudInterface',
+		'Runtime.Web.CRUD/CrudModel',
+		'Runtime.Web.CRUD/DeletePage',
+		'Runtime.Web.CRUD/DeletePageModel',
+		'Runtime.Web.CRUD/ItemModel',
+		'Runtime.Web.CRUD/ModuleDescription',
+		'Runtime.Web.CRUD/SavePage',
+		'Runtime.Web.CRUD/SavePageModel',
+		'Runtime.Web.CRUD/SearchPage',
+		'Runtime.Web.CRUD/SearchPageModel',
+	];
+	
+	
+	
+	/**
+	 * Returns enities
+	 */
+	lambda Collection<Dict> entities() => 
+	[
+	];
+	
+	
+	
+	/**
+	 * Returns sync loaded files
+	 */		
+	public static Collection<string> resources() => null;	
+	
+	
+	
+}

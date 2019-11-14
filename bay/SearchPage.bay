@@ -1,0 +1,119 @@
+/*!
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2018-2019 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+namespace Runtime.Web.CRUD;
+
+use Runtime.RuntimeUtils;
+use Runtime.Web.CRUD.ItemModel;
+use Runtime.Web.UI.Component;
+use Runtime.Web.UI.LayoutModel;
+use Runtime.Web.UI.Events.Mouse.MouseClickEvent;
+use Runtime.Web.UI.Events.Mouse.MouseContextMenuEvent;
+use Test.TestModel;
+
+
+class SearchPage extends Component
+{
+	
+	/**
+	 * Component css
+	 */
+	lambda string css(Dict<string> vars) =>
+		@css{
+			%crud{
+			}
+			%crud th, %crud td{
+				padding: 5px;
+			}
+			%crud_btn_link{
+				padding: 0px 6px;
+			}
+		}
+	;
+	
+	
+	
+	/**
+	 * Component render
+	 */
+	lambda html render(LayoutModel layout, TestModel model, Dict params, html content, var control)
+	{
+		return 
+			<table @class='crud'>
+				{ static::renderHeader(layout, model, control) }
+				{ static::renderRows(layout, model, control) }
+			</table>
+		;
+	}
+	
+	
+	
+	/**
+	 * Render header
+	 */
+	lambda html renderHeader(LayoutModel layout, TestModel model, var control)
+	{
+		Collection fields = model.crud.item::getTableFields();
+		return 
+			<tr>
+				{ fields.map( 
+					html (string field_name) use (model, control) =>
+						<th>{ model.crud.item::getLabelName(field_name) }</th>
+				) }
+			</tr>
+		;
+	}
+	
+	
+	
+	/**
+	 * Render rows
+	 */
+	lambda html renderRows(LayoutModel layout, TestModel model, var control)
+	{
+		return 
+			model.crud.items.map
+			(
+				html (ItemModel item, int index) use (layout, model, control)
+				{
+					model <= crud <= index <= index;
+					model <= crud <= item <= item;
+					return <tr>{ static::renderRow(layout, model, control) }</tr>;
+				}
+			)
+		;
+	}
+	
+	
+	
+	/**
+	 * Render row
+	 */
+	lambda html renderRow(LayoutModel layout, TestModel model, var control)
+	{
+		Collection fields = model.crud.item::getTableFields();
+		return 
+			fields.map( 
+				html (string field_name) use (layout, model, control)
+				{
+					return <td>{ model.crud.item::getHtmlValue(layout, model.crud, field_name, control) }</td>
+				}
+			)
+		;
+	}
+}
