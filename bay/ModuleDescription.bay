@@ -64,12 +64,11 @@ class ModuleDescription implements ModuleDescriptionInterface, AssetsInterface
 	 */
 	lambda Collection<string> assets() => 
 	[
-		'Runtime.Web.CRUD/Annotations/Crud',
 		'Runtime.Web.CRUD/Annotations/FormValue',
 		'Runtime.Web.CRUD/Annotations/LazyModel',
 		'Runtime.Web.CRUD/Annotations/TableValue',
+		'Runtime.Web.CRUD/CrudController',
 		'Runtime.Web.CRUD/CrudInterface',
-		'Runtime.Web.CRUD/CrudModel',
 		'Runtime.Web.CRUD/DeletePage',
 		'Runtime.Web.CRUD/DeletePageModel',
 		'Runtime.Web.CRUD/ItemModel',

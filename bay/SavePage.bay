@@ -67,7 +67,17 @@ class SavePage extends Component
 			}
 			%crud_save_buttons %(Button)button{
 				cursor: pointer;
-			}			
+			}
+			%crud_save_result{
+				text-align: center;
+				padding-top: 5px;
+			}
+			%crud_save_result--success{
+				color: green;
+			}
+			%crud_save_result--error{
+				color: red;
+			}
 		}
 	;
 	
@@ -83,6 +93,7 @@ class SavePage extends Component
 				{ static::renderTitle(layout, model, control) }
 				{ static::renderContent(layout, model, control) }
 				{ static::renderButtons(layout, model, control) }
+				{ static::renderResult(layout, model, control) }
 			</div>
 		;
 	}
@@ -94,7 +105,11 @@ class SavePage extends Component
 	 */
 	lambda html renderTitle(LayoutModel layout, SavePageModel model, var control)
 	{
-		return <div @class='crud_save_title'>{ model.crud.action == "add" ? "Add" : "Edit" } Object</div>
+		return
+			<div @class='crud_save_title'>
+				{ model.crud.action == "add" ? _("Add", "CRUD") : _("Edit", "CRUD") } Object
+			</div>
+		;
 	}
 	
 	
@@ -104,7 +119,7 @@ class SavePage extends Component
 	 */
 	lambda html renderContent(LayoutModel layout, SavePageModel model, var control)
 	{
-		Collection fields = model.crud.item::getFormFields();
+		Collection fields = model.crud->getFormFields();
 		return 
 			fields.map
 			(
@@ -122,7 +137,7 @@ class SavePage extends Component
 	lambda html renderRow(LayoutModel layout, SavePageModel model, string field_name, var control)
 	{
 		string class_name = model.crud->getFormClassName(field_name);
-		var value = model.crud.item::getItemValue(model.crud, field_name);
+		var value = model.crud->getItemValue(field_name);
 		if (class_name == "") return "";
 		return
 			<div @class="crud_save_row" data-field-name={ field_name }>
@@ -142,12 +157,44 @@ class SavePage extends Component
 		return
 			<div @class='crud_save_row crud_save_buttons'>
 				<Button @eventAsync:MouseClickEvent="onClick">
-					{ model.crud.action == "add" ? "Add" : "Save" }
+					{ model.crud.action == "add" ? _("Add", "CRUD") : _("Save", "CRUD") }
 				</Button>
 			</div>
 		;
 	}
 	
+	
+	
+	/**
+	 * Render result
+	 */
+	lambda html renderResult(LayoutModel layout, SavePageModel model, var control)
+	{
+		if (model.crud.error_code == 0)
+		{
+			if (model.crud.error_str == "") return "";
+			return
+				<div @class="crud_save_result">
+					{ model.crud.error_str }
+				</div>
+			;
+		}
+		if (model.crud.error_code > 0)
+		{
+			if (model.crud.error_str == "")
+				return 
+					<div @class="crud_save_result crud_save_result--success">
+						{ _("OK", "CRUD") }
+					</div>
+				;
+		}
+		
+		return 
+			<div @class="crud_save_result crud_save_result--error">
+				{ model.crud.error_str }
+			</div>
+		;
+	}
 	
 	
 	#ifdef FRONTEND then
@@ -168,30 +215,74 @@ class SavePage extends Component
 	}
 	
 	
+	
 	/**
 	 * On click event
 	 */
 	async void onClick(ChangeEvent e)
 	{
+		MessageRPC<Dict> api_res = null;
 		
-		/* Send save message */
-		MessageRPC<Dict> api_res = await @->sendMessage
-		(
-			new MessageRPC
-			{
-				"api_name": this.model.crud.api_name,
-				"space_name": "Runtime.Web.CRUD.CrudInterface",
-				"method_name": "save",
-				"data":
+		/* Update model */
+		SavePageModel model = this.model;
+		model <= crud <= error_code <= 0;
+		model <= crud <= error_str <= _("Wait please", "CRUD");
+		this.setModel(model);
+		
+		if (this.model.crud.action == "add")
+		{
+			/* Send add message */
+			api_res = await @->sendMessage
+			(
+				new MessageRPC
 				{
-					"pk": this.model.crud.pk,
-					"item": this.model.crud.item.takeDict(),
+					"api_name": this.model.crud.api_name,
+					"space_name": "Runtime.Web.CRUD.CrudInterface",
+					"method_name": "add",
+					"data":
+					{
+						"item": this.model.crud.item.takeDict(),
+					}
+					"session": null,
 				}
-				"session": null,
-			}
-		);
+			);
+		}
 		
-		log(api_res);
+		else if (this.model.crud.action == "edit")
+		{
+			/* Send save message */
+			api_res = await @->sendMessage
+			(
+				new MessageRPC
+				{
+					"api_name": this.model.crud.api_name,
+					"space_name": "Runtime.Web.CRUD.CrudInterface",
+					"method_name": "save",
+					"data":
+					{
+						"item": this.model.crud.item.takeDict(),
+					}
+					"session": null,
+				}
+			);
+		}
+		
+		/* Message result */
+		if (api_res and api_res.have_result)
+		{
+			/* Update model */
+			SavePageModel model = this.model;
+			model <= crud <= error_code <= api_res.code;
+			model <= crud <= error_str <= api_res.error;
+			this.setModel(model);
+		}
+		else
+		{
+			SavePageModel model = this.model;
+			model <= crud <= error_code <= -1;
+			model <= crud <= error_str <= "No result";
+			this.setModel(model);
+		}
 	}
 	
 	
