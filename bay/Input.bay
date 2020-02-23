@@ -1,7 +1,7 @@
 /*!
  *  Bayrell Runtime Library
  *
- *  (c) Copyright 2018-2019 "Ildar Bikmamatov" <support@bayrell.org>
+ *  (c) Copyright 2016-2020 "Ildar Bikmamatov" <support@bayrell.org>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@
 namespace Runtime.Web.Input;
 
 use Runtime.CoreStruct;
-use Runtime.Web.UI.Component;
-use Runtime.Web.UI.LayoutModel;
-use Runtime.Web.UI.Events.User.ChangeEvent;
+use Runtime.Web.Component;
+use Runtime.Web.LayoutModel;
+use Runtime.Web.Events.User.ChangeEvent;
 
 
 class Input extends Component
@@ -55,10 +55,7 @@ class Input extends Component
 	/**
 	 * Component render
 	 */
-	lambda html render
-	(
-		LayoutModel layout, CoreStruct model, Dict params, html content, var control
-	)
+	lambda html render(LayoutModel layout, CoreStruct model, Dict params, html content)
 	{
 		string value = (params != null) ? params.get("value", "") : "";
 		string name = (params != null) ? params.get("name", "") : "";
