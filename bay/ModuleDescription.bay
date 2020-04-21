@@ -52,7 +52,7 @@ class ModuleDescription implements ModuleDescriptionInterface, AssetsInterface
 	 * Returns required modules
 	 * @return Map<string>
 	 */
-	lambda Map<string> requiredModules() => 
+	pure Map<string> requiredModules() => 
 	{
 		"Runtime.Web": ">=0.3",
 	};
@@ -63,7 +63,7 @@ class ModuleDescription implements ModuleDescriptionInterface, AssetsInterface
 	 * Returns module files load order
 	 * @return Collection<string>
 	 */
-	lambda Collection<string> assets() => 
+	pure Collection<string> assets() => 
 	[
 		"Runtime.Web.Input/Input",
 		"Runtime.Web.Input/ModuleDescription",
@@ -74,14 +74,14 @@ class ModuleDescription implements ModuleDescriptionInterface, AssetsInterface
 	/**
 	 * Returns enities
 	 */
-	lambda Collection<Dict> entities() => null;
+	pure Collection<Dict> entities() => null;
 	
 	
 	
 	/**
 	 * Returns sync loaded files
 	 */		
-	lambda Collection<string> resources() => null;
+	pure Collection<string> resources() => null;
 	
 	
 }
