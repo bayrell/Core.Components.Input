@@ -1,7 +1,7 @@
 /*!
  *  Bayrell Runtime Library
  *
- *  (c) Copyright 2018-2019 "Ildar Bikmamatov" <support@bayrell.org>
+ *  (c) Copyright 2016-2020 "Ildar Bikmamatov" <support@bayrell.org>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ use Runtime.Annotations.Provider;
 use Runtime.Interfaces.AssetsInterface;
 use Runtime.Interfaces.ContextInterface;
 use Runtime.Interfaces.ModuleDescriptionInterface;
-use Runtime.Api.Api;
 
 
 class ModuleDescription implements ModuleDescriptionInterface, AssetsInterface
@@ -34,7 +33,7 @@ class ModuleDescription implements ModuleDescriptionInterface, AssetsInterface
 	 * Returns module name
 	 * @return string
 	 */
-	lambda string getModuleName() => "Runtime.Web.CRUD";
+	pure string getModuleName() => "Runtime.Web.CRUD";
 	
 	
 	
@@ -42,7 +41,7 @@ class ModuleDescription implements ModuleDescriptionInterface, AssetsInterface
 	 * Returns module name
 	 * @return string
 	 */
-	lambda string getModuleVersion() => "0.0.1";
+	pure string getModuleVersion() => "0.0.1";
 	
 	
 	
@@ -50,10 +49,9 @@ class ModuleDescription implements ModuleDescriptionInterface, AssetsInterface
 	 * Returns required modules
 	 * @return Map<string>
 	 */
-	lambda Map<string> requiredModules() => 
+	pure Map<string> requiredModules() => 
 	{
-		"Runtime.ORM": "*",
-		"Runtime.Web.UI": "*",
+		"Runtime.Web": "*",
 	};
 	
 	
@@ -62,21 +60,21 @@ class ModuleDescription implements ModuleDescriptionInterface, AssetsInterface
 	 * Returns module files load order
 	 * @return Collection<string>
 	 */
-	lambda Collection<string> assets() => 
+	pure Collection<string> assets() => 
 	[
-		'Runtime.Web.CRUD/Annotations/FormValue',
-		'Runtime.Web.CRUD/Annotations/LazyModel',
-		'Runtime.Web.CRUD/Annotations/TableValue',
-		'Runtime.Web.CRUD/CrudController',
+		'Runtime.Web.CRUD/Form/Input',
+		'Runtime.Web.CRUD/Form/Select',
+		'Runtime.Web.CRUD/Form/TextArea',
+		'Runtime.Web.CRUD/CrudEvent',
 		'Runtime.Web.CRUD/CrudInterface',
-		'Runtime.Web.CRUD/DeletePage',
-		'Runtime.Web.CRUD/DeletePageModel',
-		'Runtime.Web.CRUD/ItemModel',
+		'Runtime.Web.CRUD/CrudModel',
+		'Runtime.Web.CRUD/FieldInfo',
+		'Runtime.Web.CRUD/Filter',
+		'Runtime.Web.CRUD/Form',
+		'Runtime.Web.CRUD/FormModel',
+		'Runtime.Web.CRUD/ListItems',
+		'Runtime.Web.CRUD/ListPage',
 		'Runtime.Web.CRUD/ModuleDescription',
-		'Runtime.Web.CRUD/SavePage',
-		'Runtime.Web.CRUD/SavePageModel',
-		'Runtime.Web.CRUD/SearchPage',
-		'Runtime.Web.CRUD/SearchPageModel',
 	];
 	
 	
@@ -84,7 +82,7 @@ class ModuleDescription implements ModuleDescriptionInterface, AssetsInterface
 	/**
 	 * Returns enities
 	 */
-	lambda Collection<Dict> entities() => 
+	pure Collection<Dict> entities() => 
 	[
 	];
 	

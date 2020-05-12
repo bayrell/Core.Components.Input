@@ -1,7 +1,7 @@
 /*!
  *  Bayrell Runtime Library
  *
- *  (c) Copyright 2018-2019 "Ildar Bikmamatov" <support@bayrell.org>
+ *  (c) Copyright 2016-2020 "Ildar Bikmamatov" <support@bayrell.org>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,10 +19,30 @@
 namespace Runtime.Web.CRUD;
 
 use Runtime.CoreStruct;
-use Runtime.Web.CRUD.CrudModel;
 
 
-struct SearchPageModel extends CoreStruct
+struct FieldInfo extends CoreStruct
 {
-	CrudModel crud = null;
+	string api_name = "";
+	string comment = "";
+	string label = "";
+	string web_table = "";
+	string web_form = "";
+	string group = "default";
+	
+	/* For select */
+	Collection<Dict<string, string>> select = null;
+	string select_field_name = "";
+	
+	/* Additional options */
+	Dict<string, var> options = {};
+	
+	
+	#ifdef BACKEND then
+	
+	/* Db type */
+	string db_type = "";
+	bool nullable = false;
+	
+	#endif
 }

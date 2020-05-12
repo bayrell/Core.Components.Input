@@ -1,0 +1,269 @@
+/*!
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2016-2020 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+namespace Runtime.Web.CRUD;
+
+use Runtime.lib;
+use Runtime.MessageRPC;
+use Runtime.Web.Annotations.Route;
+use Runtime.Web.Annotations.RouteList;
+use Runtime.Web.Events.ChangeEvent;
+use Runtime.Web.Events.MouseClickEvent;
+use Runtime.Web.Component;
+use Runtime.Web.LayoutModel;
+use Runtime.Web.RenderContainer;
+use Runtime.Web.RenderHelper;
+use Runtime.Web.Response;
+use Runtime.Web.Button.Button;
+use Runtime.Web.CRUD.CrudEvent;
+use Runtime.Web.CRUD.CrudModel;
+use Runtime.Web.CRUD.Form;
+use Runtime.Web.CRUD.FormModel;
+use Runtime.Web.Dialog.Dialog;
+use Runtime.Web.Dialog.DialogEvent;
+use Runtime.Web.Dialog.DialogModel;
+
+
+class ListPage extends Component
+{	
+	
+	Form form_add = null;
+	Form form_edit = null;
+	Dialog dialog_add = null;
+	Dialog dialog_delete = null;
+	
+	
+	/**
+	 * Returns module name
+	 */
+	pure string moduleName() => "App";
+	
+	
+	
+	/**
+	 * Returns form class name
+	 */
+	pure string getFormClassName() => classof Form;
+	
+	
+	
+	/**
+	 * Returns required components
+	 */
+	pure Collection<string> components() => 
+	[
+		classof Button,
+		classof Dialog,
+		classof Form,
+	];
+	
+	
+	
+	/**
+	 * Component css
+	 */
+	pure string css(Dict<string> vars) => 
+		@css{
+			%items, %info{
+				display: inline-block;
+				vertical-align: top;
+			}
+			%items{
+				width: 350px;
+				position: relative;
+			}
+			%item{
+				position: relative;
+				padding: 10px;
+				cursor: pointer;
+				border-bottom: 1px #ccc solid;
+			}
+			%item.active{
+				background-color: #337ab7;
+				border-color: #337ab7;
+				color: white;
+			}
+			%item_row{
+				padding-bottom: 5px;
+			}
+			%item_row:last-child{
+				padding-bottom: 0px;
+			}
+			%item_label, %item_text{
+				display: inline-block;
+				vertical-align: top;
+			}
+			%item_label{
+				display: none;
+				width: 0px;
+				text-align: right;
+				padding-right: 5px;
+			}
+			%item_text{
+				width: calc(100% - 0px);
+				text-align: left;
+				padding-left: 5px;
+				overflow-wrap: anywhere;
+			}
+			%item_disabled{
+				position: absolute;
+				right: 0;
+				top: 0;
+				background-color: #880000;
+				color: white;
+				font-size: 12px;
+			}
+			%info{
+				width: calc(100% - 350px);
+				padding-left: 10px;
+			}
+		}
+	;
+	
+	
+	
+	/**
+	 * Component render
+	 */
+	pure html render(LayoutModel layout, CrudModel model, Dict params, html content)
+	{
+		string form_class_name = static::getFormClassName();
+		
+		return <div @class="list" @key="list">
+			<div @class="buttons_top">
+				<Button @eventAsync:MouseClickEvent="onShowAddClick">Add</Button>
+			</div>
+			<div @class="items" @key="items">
+			{
+				model.items.map
+				(
+					html (Dict item, int index) use (layout, model, params) =>
+						<div @class="item" data-index={ index } @key={ index }
+							class={ model.active == index ? "active": "" }
+							@event:MouseClickEvent="onItemClick"
+						>
+							{ static::renderItem(layout, model, item, params) }
+						</div>					
+				)
+			}
+			</div>
+			<div @class="info" @key="info">
+				<{ form_class_name } @bind="form_edit" @ref="form_edit" @key="form_edit"
+					action="edit" @eventAsync:CrudEvent="onCrudEvent"
+				/>
+			</div>
+			<Dialog @bind="dialog_add" @ref="dialog_add" @key="dialog_add"
+				style={ DialogModel::STYLE_CONTENT } show_buttons={ false }
+			>
+				<{ form_class_name } @bind="form_add" @ref="form_add" @key="form_add"
+					action="add" @eventAsync:CrudEvent="onCrudEvent"
+				/>
+			</Dialog>
+			<Dialog @bind="dialog_delete" @ref="dialog_delete" @key="dialog_delete"
+				style={ DialogModel::STYLE_CONFIRM } auto_hide={ false }
+				@eventAsync:DialogEvent="onDialogEvent"
+			/>
+		</div>;
+	}
+	
+	
+	
+	/**
+	 * Render item
+	 */
+	pure html renderItem(LayoutModel layout, CrudModel model, Dict item, Dict params) => "";
+	
+	
+	
+	#ifdef FRONTEND then
+	
+	
+	/**
+	 * Add click
+	 */
+	async void onShowAddClick(MouseClickEvent e)
+	{
+		e.cancel();
+		this.updateModelValue(["form_add"], new FormModel{ "item": new Dict() });
+		this.dialog_add.show();
+	}
+	
+	
+	
+	/**
+	 * Form add Event
+	 */
+	async void onCrudEvent(CrudEvent e)
+	{
+		if (e.event == CrudEvent::ACTION_CANCEL)
+		{
+			if (e.instance.params["@key"] == "form_add")
+			{
+				this.dialog_add.hide();
+				this.updateModelValue(["form_add"], null);
+			}
+			else if (e.instance.params["@key"] == "form_delete")
+			{
+				this.dialog_delete.hide();
+			}
+		}
+		else if (e.event == CrudEvent::ACTION_CREATE)
+		{
+			this.dialog_add.hide();
+			this.updateModel
+			{
+				"active": 0,
+				"items": this.model().items.unshiftIm(e.item),
+				"form_add": null,
+				"form_edit": new FormModel{ "item": e.item },
+			};
+		}
+		else if (e.event == CrudEvent::ACTION_DELETE)
+		{
+			this.updateModel
+			{
+				"active": -1,
+				"items": this.model.items.removeIm(this.model.active),
+				"form_edit": null,
+			};
+		}
+	}
+	
+	
+	
+	/**
+	 * Click item
+	 */
+	void onItemClick(MouseClickEvent e)
+	{
+		CrudModel model = this.model();
+		int index = e.target.params.get("data-index");
+		Dict item = model -> method getItem(index);
+		
+		/* Update model values */
+		this.updateModel
+		{
+			"active": index,
+			"form_edit": new FormModel{ "item": item },
+		};
+	}
+	
+	
+	#endif
+	
+}

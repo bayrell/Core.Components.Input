@@ -1,7 +1,7 @@
 /*!
  *  Bayrell Runtime Library
  *
- *  (c) Copyright 2018-2019 "Ildar Bikmamatov" <support@bayrell.org>
+ *  (c) Copyright 2016-2020 "Ildar Bikmamatov" <support@bayrell.org>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,12 +16,20 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Web.CRUD.Annotations;
+namespace Runtime.Web.CRUD;
 
 use Runtime.CoreStruct;
+use Runtime.Web.Events.UIEvent;
 
 
-struct LazyModel extends CoreStruct
+struct CrudEvent extends UIEvent
 {
-	string model = "";
+	static const string ACTION_SELECT = "select";
+	static const string ACTION_SEARCH = "search";
+	static const string ACTION_CREATE = "create";
+	static const string ACTION_UPDATE = "update";
+	static const string ACTION_DELETE = "delete";
+	static const string ACTION_CANCEL = "cancel";
+	string event = "";
+	Dict item = null;
 }
