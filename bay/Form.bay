@@ -28,6 +28,7 @@ use Runtime.Web.Response;
 use Runtime.Web.Button.Button;
 use Runtime.Web.CRUD.CrudEvent;
 use Runtime.Web.CRUD.CrudInterface;
+use Runtime.Web.CRUD.FieldInfo;
 use Runtime.Web.CRUD.FormModel;
 use Runtime.Web.Dialog.Dialog;
 use Runtime.Web.Dialog.DialogEvent;
@@ -130,25 +131,35 @@ class Form extends Component
 	/**
 	 * Render form content
 	 */
-	pure html renderContent(LayoutModel layout, FormModel model, Dict params, html content) => "";
+	pure html renderContent(LayoutModel layout, FormModel model, Dict params, html content) =>
+		params["fields"].map
+		(
+			html (string field_name) use (layout, model, params) =>
+				static::renderRow(layout, model, params, field_name)
+		)
+	;
 	
 	
 	
 	/**
 	 * Render form row
 	 */
-	pure html renderRow(LayoutModel layout, FormModel model, Dict params, html content) =>
-		<div @class='form_row'>
-			<div @class='form_label'>{ _("App", "Name") }:</div>
+	pure html renderRow(LayoutModel layout, FormModel model, Dict params, string field_name)
+	{
+		FieldInfo field = params["struct"][field_name];
+		if (field == null) return "";
+		
+		string class_name = field.form;
+		
+		return <div @class='form_row'>
+			<div @class='form_label'>{ field.label }:</div>
 			<div @class='form_value'>
-				<select data-name="enable" @event:ChangeEvent="onItemChange"
-					value={ rtl::attr(model.item, ["enable"]) } >
-						<option value='0'>Нет</option>
-						<option value='1'>Да</option>
-				</select>
+				<{class_name} data-name="enable" @event:ChangeEvent="onItemChange"
+					field={ field } value={ model["item"]["enable"] }
+				/>
 			</div>
-		</div>
-	;
+		</div>;
+	}
 	
 	
 	
@@ -222,6 +233,27 @@ class Form extends Component
 			}
 		);
 	}
+	
+	
+	
+	/**
+	 * Change item
+	 */
+	async void onItemChange(ChangeEvent e)
+	{
+		string name = e.instance.params["data-name"];
+		this.signal
+		(
+			new CrudEvent
+			{
+				"event": CrudEvent::ACTION_CHANGE,
+				"item": this.model()["item"],
+				"field_name": name,
+				"value": e.value,
+			}
+		);
+	}
+	
 	
 	#endif
 	

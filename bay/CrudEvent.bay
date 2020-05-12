@@ -30,6 +30,9 @@ struct CrudEvent extends UIEvent
 	static const string ACTION_UPDATE = "update";
 	static const string ACTION_DELETE = "delete";
 	static const string ACTION_CANCEL = "cancel";
+	static const string ACTION_CHANGE = "change";
 	string event = "";
 	Dict item = null;
+	string field_name = "";
+	var value = null;
 }

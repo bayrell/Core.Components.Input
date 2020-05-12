@@ -26,13 +26,14 @@ struct FieldInfo extends CoreStruct
 	string api_name = "";
 	string comment = "";
 	string label = "";
-	string web_table = "";
-	string web_form = "";
+	string table = "";
+	string form = "";
 	string group = "default";
 	
 	/* For select */
 	Collection<Dict<string, string>> select = null;
-	string select_field_name = "";
+	string select_field_name = "value";
+	bool select_empty = true;
 	
 	/* Additional options */
 	Dict<string, var> options = {};

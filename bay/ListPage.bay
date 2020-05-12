@@ -165,6 +165,7 @@ class ListPage extends Component
 			<div @class="info" @key="info">
 				<{ form_class_name } @bind="form_edit" @ref="form_edit" @key="form_edit"
 					action="edit" @eventAsync:CrudEvent="onCrudEvent"
+					fields={ model.form_fields } struct={ model.fields }
 				/>
 			</div>
 			<Dialog @bind="dialog_add" @ref="dialog_add" @key="dialog_add"
@@ -172,6 +173,7 @@ class ListPage extends Component
 			>
 				<{ form_class_name } @bind="form_add" @ref="form_add" @key="form_add"
 					action="add" @eventAsync:CrudEvent="onCrudEvent"
+					fields={ model.form_fields } struct={ model.fields }
 				/>
 			</Dialog>
 			<Dialog @bind="dialog_delete" @ref="dialog_delete" @key="dialog_delete"

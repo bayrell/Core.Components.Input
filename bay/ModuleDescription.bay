@@ -62,9 +62,9 @@ class ModuleDescription implements ModuleDescriptionInterface, AssetsInterface
 	 */
 	pure Collection<string> assets() => 
 	[
-		'Runtime.Web.CRUD/Form/Input',
-		'Runtime.Web.CRUD/Form/Select',
-		'Runtime.Web.CRUD/Form/TextArea',
+		'Runtime.Web.CRUD/Fields/Input',
+		'Runtime.Web.CRUD/Fields/Select',
+		'Runtime.Web.CRUD/Fields/TextArea',
 		'Runtime.Web.CRUD/CrudEvent',
 		'Runtime.Web.CRUD/CrudInterface',
 		'Runtime.Web.CRUD/CrudModel',
