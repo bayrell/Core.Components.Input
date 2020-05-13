@@ -73,7 +73,7 @@ struct CrudModel extends CoreStruct
 	 * Create model
 	 */
 	pure CrudModel create() =>
-		new CrudModel
+		static::newInstance
 		{
 			"fields": static::buildFields(),
 			"table_fields": static::getDefaultTableFields(),

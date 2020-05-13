@@ -31,6 +31,7 @@ use Runtime.Web.RenderHelper;
 use Runtime.Web.Response;
 use Runtime.Web.Button.Button;
 use Runtime.Web.CRUD.CrudEvent;
+use Runtime.Web.CRUD.CrudInterface;
 use Runtime.Web.CRUD.CrudModel;
 use Runtime.Web.CRUD.Form;
 use Runtime.Web.CRUD.FormModel;
@@ -40,12 +41,12 @@ use Runtime.Web.Dialog.DialogModel;
 
 
 class ListPage extends Component
-{	
-	
+{
 	Form form_add = null;
 	Form form_edit = null;
 	Dialog dialog_add = null;
 	Dialog dialog_delete = null;
+	
 	
 	
 	/**
@@ -79,13 +80,19 @@ class ListPage extends Component
 	 */
 	pure string css(Dict<string> vars) => 
 		@css{
-			%items, %info{
-				display: inline-block;
-				vertical-align: top;
+			%list{
+				position: relative;
+				height: 100%;
+			}
+			%content{
+				height: calc(100% - 30px);
+				display: flex;
+				align-items: stretch;
 			}
 			%items{
 				width: 350px;
 				position: relative;
+				overflow-y: auto;
 			}
 			%item{
 				position: relative;
@@ -131,6 +138,8 @@ class ListPage extends Component
 			%info{
 				width: calc(100% - 350px);
 				padding-left: 10px;
+				padding-right: 10px;
+				overflow-y: auto;
 			}
 		}
 	;
@@ -140,45 +149,62 @@ class ListPage extends Component
 	/**
 	 * Component render
 	 */
-	pure html render(LayoutModel layout, CrudModel model, Dict params, html content)
+	pure html render(LayoutModel layout, CrudModel model, Dict params, html content) =>
+		<div @class="list" @key="list">
+			{ static::renderTopButtons(layout, model, params) }
+			<div @class="content" @key="content">
+				{ static::renderItems(layout, model, params) }
+				{ static::renderInfo(layout, model, params) }
+			</div>
+			{ static::renderDialogs(layout, model, params) }
+		</div>
+	;
+	
+	
+	
+	/**
+	 * Render Top Buttons
+	 */
+	pure html renderTopButtons(LayoutModel layout, CrudModel model, Dict params) =>
+		<div @class="buttons_top" @key="top">
+			<Button @eventAsync:MouseClickEvent="onShowAddClick">Add</Button>
+		</div>
+	;
+	
+	
+	
+	/**
+	 * Render Items
+	 */
+	pure html renderItems(LayoutModel layout, CrudModel model, Dict params) =>
+		<div @class="items" @key="items">
+		{
+			model.items.map
+			(
+				html (Dict item, int index) use (layout, model, params) =>
+					<div @class="item" data-index={ index } @key={ index }
+						class={ model.active == index ? "active": "" }
+						@event:MouseClickEvent="onItemClick"
+					>
+						{ static::renderItem(layout, model, params, item) }
+					</div>
+			)
+		}
+		</div>
+	;
+	
+	
+	
+	/**
+	 * Render info
+	 */
+	pure html renderInfo(LayoutModel layout, CrudModel model, Dict params)
 	{
 		string form_class_name = static::getFormClassName();
-		
-		return <div @class="list" @key="list">
-			<div @class="buttons_top">
-				<Button @eventAsync:MouseClickEvent="onShowAddClick">Add</Button>
-			</div>
-			<div @class="items" @key="items">
-			{
-				model.items.map
-				(
-					html (Dict item, int index) use (layout, model, params) =>
-						<div @class="item" data-index={ index } @key={ index }
-							class={ model.active == index ? "active": "" }
-							@event:MouseClickEvent="onItemClick"
-						>
-							{ static::renderItem(layout, model, item, params) }
-						</div>					
-				)
-			}
-			</div>
-			<div @class="info" @key="info">
-				<{ form_class_name } @bind="form_edit" @ref="form_edit" @key="form_edit"
-					action="edit" @eventAsync:CrudEvent="onCrudEvent"
-					fields={ model.form_fields } struct={ model.fields }
-				/>
-			</div>
-			<Dialog @bind="dialog_add" @ref="dialog_add" @key="dialog_add"
-				style={ DialogModel::STYLE_CONTENT } show_buttons={ false }
-			>
-				<{ form_class_name } @bind="form_add" @ref="form_add" @key="form_add"
-					action="add" @eventAsync:CrudEvent="onCrudEvent"
-					fields={ model.form_fields } struct={ model.fields }
-				/>
-			</Dialog>
-			<Dialog @bind="dialog_delete" @ref="dialog_delete" @key="dialog_delete"
-				style={ DialogModel::STYLE_CONFIRM } auto_hide={ false }
-				@eventAsync:DialogEvent="onDialogEvent"
+		return <div @class="info" @key="info">
+			<{ form_class_name } @bind="form_edit" @ref="form_edit" @key="form_edit"
+				action="edit" @eventAsync:CrudEvent="onCrudEvent"
+				fields={ model.form_fields } struct={ model.fields }
 			/>
 		</div>;
 	}
@@ -186,9 +212,31 @@ class ListPage extends Component
 	
 	
 	/**
+	 * Render dialogs
+	 */
+	pure html renderDialogs(LayoutModel layout, CrudModel model, Dict params)
+	{
+		string form_class_name = static::getFormClassName();
+		return <Dialog @bind="dialog_add" @ref="dialog_add" @key="dialog_add"
+			style={ DialogModel::STYLE_CONTENT } show_buttons={ false }
+		>
+			<{ form_class_name } @bind="form_add" @ref="form_add" @key="form_add"
+				action="add" @eventAsync:CrudEvent="onCrudEvent"
+				fields={ model.form_fields } struct={ model.fields }
+			/>
+		</Dialog>
+		<Dialog @bind="dialog_delete" @ref="dialog_delete" @key="dialog_delete"
+			style={ DialogModel::STYLE_CONFIRM } auto_hide={ false }
+			@eventAsync:DialogEvent="onDialogEvent"
+		/>;
+	}
+	
+	
+	
+	/**
 	 * Render item
 	 */
-	pure html renderItem(LayoutModel layout, CrudModel model, Dict item, Dict params) => "";
+	pure html renderItem(LayoutModel layout, CrudModel model, Dict params, Dict item) => "";
 	
 	
 	
@@ -212,6 +260,8 @@ class ListPage extends Component
 	 */
 	async void onCrudEvent(CrudEvent e)
 	{
+		CrudModel model = this.model();
+		
 		if (e.event == CrudEvent::ACTION_CANCEL)
 		{
 			if (e.instance.params["@key"] == "form_add")
@@ -226,23 +276,15 @@ class ListPage extends Component
 		}
 		else if (e.event == CrudEvent::ACTION_CREATE)
 		{
-			this.dialog_add.hide();
-			this.updateModel
-			{
-				"active": 0,
-				"items": this.model().items.unshiftIm(e.item),
-				"form_add": null,
-				"form_edit": new FormModel{ "item": e.item },
-			};
+			await this.onAddItem(e.item);
+		}
+		else if (e.event == CrudEvent::ACTION_UPDATE)
+		{
+			await this.onEditItem(this.model().active, e.item);
 		}
 		else if (e.event == CrudEvent::ACTION_DELETE)
 		{
-			this.updateModel
-			{
-				"active": -1,
-				"items": this.model.items.removeIm(this.model.active),
-				"form_edit": null,
-			};
+			await this.onDeleteItem(this.model().active);
 		}
 	}
 	
@@ -265,6 +307,87 @@ class ListPage extends Component
 		};
 	}
 	
+	
+	
+	/**
+	 * Add item
+	 */
+	async void onAddItem(Dict item)
+	{
+		CrudModel model = this.model();
+		string api_name = model::crudApiName();
+		
+		/* Set message */
+		this.updateModelValue(["form_add", "message"], _("App", "Please wait ..."));
+		this.updateModelValue(["form_add", "error"], "");
+		this.updateModelValue(["form_add", "success"], "");
+		
+		/* Call api */
+		MessageRPC msg = @ -> await method sendMessage
+		(
+			new MessageRPC
+			{
+				"api_name": api_name,
+				"space_name": classof CrudInterface,
+				"method_name": "create",
+				"data":
+				{
+					"item": item,
+				},
+			}
+		) -> monad MessageRPC::end;
+		
+		/* Set result */
+		bool is_success = msg -> method isSuccess;
+		if (is_success)
+		{
+			this.dialog_add.hide();
+			this.updateModel
+			{
+				"active": 0,
+				"items": this.model().items.unshiftIm(item),
+				"form_add": null,
+				"form_edit": new FormModel{ "item": item },
+			};
+		}
+		else
+		{
+			/* Set message */
+			this.updateModelValue(["form_add", "message"], "");
+			this.updateModelValue(["form_add", "error"], msg -> attr "error");
+			this.updateModelValue(["form_add", "success"], "");
+		}
+	}
+	
+	
+	
+	/**
+	 * Edit item
+	 */
+	async void onEditItem(int index, Dict item)
+	{
+		CrudModel model = this.model();
+		this.updateModel
+		{
+			"items": model.items.setIm(index, item),
+		};
+	}
+	
+	
+	
+	/**
+	 * Delete item
+	 */
+	async void onDeleteItem(int index)
+	{
+		CrudModel model = this.model();
+		this.updateModel
+		{
+			"active": -1,
+			"items": model.items.removeIm(index),
+			"form_edit": null,
+		};
+	}
 	
 	#endif
 	

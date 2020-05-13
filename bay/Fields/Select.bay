@@ -43,14 +43,32 @@ class Select extends Component
 	
 	
 	/**
+	 * Returns value
+	 */
+	pure string getValue(Dict params)
+	{
+		var default_value = params["field"]["default_value"];
+		default_value = default_value === null ? "" : rtl::toString(default_value);
+		
+		var value = params["value"];
+		value = value === null ? default_value : rtl::toString(value);
+		
+		return value;
+	}
+	
+	
+	
+	/**
 	 * Component render
 	 */
-	pure html render(LayoutModel layout, CoreStruct model, Dict params, html content)
+	pure html render(LayoutModel layout, var model, Dict params, html content)
 	{
+		string value = static::getValue(params);
 		return
 			<select @class='select' @tag={ params["@tag"] } @event:ChangeEvent="onChange"
-				value={ params["value"] } >
-					{ static::renderOptions(layout, model, params) }
+				value={ value }
+			>
+				{ static::renderOptions(layout, value, params) }
 			</select>
 		;
 	}
@@ -60,7 +78,7 @@ class Select extends Component
 	/**
 	 * Component render
 	 */
-	pure html renderOptions(LayoutModel layout, CoreStruct model, Dict params)
+	pure html renderOptions(LayoutModel layout, var value, Dict params)
 	{
 		Collection<Dict<string, string>> options = params["field"]["select"];
 		string option_name = params["field"]["select_field_name"];
@@ -69,10 +87,15 @@ class Select extends Component
 		
 		return options.map
 		(
-			html (Dict<string, string> option) use (option_name) =>
-				<option value={ option["id"] }>
-					{ option[option_name] }
-				</option>
+			html (Dict<string, string> option, int index) use (option_name, value) =>
+				( value == rtl::toString(option["id"]) ) ?
+					<option value={ option["id"] } selected="selected" @key={ index }>
+						{ option[option_name] }
+					</option>
+				:
+					<option value={ option["id"] } @key={ index }>
+						{ option[option_name] }
+					</option>
 		);
 	}
 	

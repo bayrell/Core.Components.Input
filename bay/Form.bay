@@ -91,6 +91,7 @@ class Form extends Component
 				margin-right: 10px;
 			}
 			%form_result{
+				padding-top: 10px;
 				text-align: center;
 			}
 			%form_result.success{
@@ -109,7 +110,7 @@ class Form extends Component
 	 */
 	pure html render(LayoutModel layout, FormModel model, Dict params, html content) =>
 		(model != null) ?
-			<div @class='form'>
+			<div @class="form" @key="form">
 				{ model != null ? static::renderHeader(layout, model, params, content) : "" }
 				{ model != null ? static::renderContent(layout, model, params, content) : "" }
 				{ model != null ? static::renderButtons(layout, model, params, content) : "" }
@@ -151,11 +152,11 @@ class Form extends Component
 		
 		string class_name = field.form;
 		
-		return <div @class='form_row'>
+		return <div @class='form_row' @key={ field_name }>
 			<div @class='form_label'>{ field.label }:</div>
 			<div @class='form_value'>
-				<{class_name} data-name="enable" @event:ChangeEvent="onItemChange"
-					field={ field } value={ model["item"]["enable"] }
+				<{class_name} data-name={ field_name } @bind=["item", field_name] field={ field }
+					@eventAsync:ChangeEvent="onItemChange"
 				/>
 			</div>
 		</div>;
@@ -167,7 +168,7 @@ class Form extends Component
 	 * Render form buttons
 	 */
 	pure html renderButtons(LayoutModel layout, FormModel model, Dict params, html content) =>
-		<div @class='form_buttons'>
+		<div @class="form_buttons" @key="buttons">
 		{
 			params['action'] == "add" ?
 				<Button @eventAsync:MouseClickEvent="onButtonClick" data-action="create">Add</Button>
@@ -185,7 +186,7 @@ class Form extends Component
 	 * Render form result
 	 */
 	pure html renderResult(LayoutModel layout, FormModel model, Dict params, html content) =>
-		<div @class='form_row form_result' class={ static::getResultClass(model) }>
+		<div @class='form_row form_result' class={ static::getResultClass(model) } @key="result">
 			{ model.message }
 			{ model.success }
 			{ model.error }

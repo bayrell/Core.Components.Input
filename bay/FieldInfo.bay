@@ -29,6 +29,7 @@ struct FieldInfo extends CoreStruct
 	string table = "";
 	string form = "";
 	string group = "default";
+	var default_value = null;
 	
 	/* For select */
 	Collection<Dict<string, string>> select = null;

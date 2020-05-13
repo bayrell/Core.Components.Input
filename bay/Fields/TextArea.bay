@@ -48,10 +48,11 @@ class TextArea extends Component
 	/**
 	 * Component render
 	 */
-	pure html render(LayoutModel layout, CoreStruct model, Dict params, html content)
+	pure html render(LayoutModel layout, var model, Dict params, html content)
 	{
 		return
-			<textarea @class='textarea' @tag={ params["@tag"] } @event:ChangeEvent="onChange">{ params["value"] }</textarea>
+			<textarea @class='textarea' @tag={ params["@tag"] } @event:ChangeEvent="onChange"
+				value={ params["value"] } />
 		;
 	}
 	
