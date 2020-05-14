@@ -57,6 +57,13 @@ class ListPage extends Component
 	
 	
 	/**
+	 * Returns api name
+	 */
+	pure string crudApiName() => "App.Nginx";
+	
+	
+	
+	/**
 	 * Returns form class name
 	 */
 	pure string getFormClassName() => classof Form;
@@ -139,6 +146,7 @@ class ListPage extends Component
 				width: calc(100% - 350px);
 				padding-left: 10px;
 				padding-right: 10px;
+				padding-bottom: 10px;
 				overflow-y: auto;
 			}
 		}
@@ -219,6 +227,7 @@ class ListPage extends Component
 		string form_class_name = static::getFormClassName();
 		return <Dialog @bind="dialog_add" @ref="dialog_add" @key="dialog_add"
 			style={ DialogModel::STYLE_CONTENT } show_buttons={ false }
+			@eventAsync:DialogEvent="onDialogEvent"
 		>
 			<{ form_class_name } @bind="form_add" @ref="form_add" @key="form_add"
 				action="add" @eventAsync:CrudEvent="onCrudEvent"
@@ -256,6 +265,27 @@ class ListPage extends Component
 	
 	
 	/**
+	 * Dialog event
+	 */
+	async void onDialogEvent(DialogEvent e)
+	{
+		if (e.instance.params["@key"] == "dialog_delete")
+		{
+			if (e.button_result == "cancel")
+			{
+				this.dialog_delete.hide();
+			}
+			else
+			{
+				Dict item = e["tag"]["item"];
+				await this.onDeleteItem( item["id"] );
+			}
+		}
+	}
+	
+	
+	
+	/**
 	 * Form add Event
 	 */
 	async void onCrudEvent(CrudEvent e)
@@ -280,11 +310,21 @@ class ListPage extends Component
 		}
 		else if (e.event == CrudEvent::ACTION_UPDATE)
 		{
-			await this.onEditItem(this.model().active, e.item);
+			await this.onEditItem(e.item);
 		}
 		else if (e.event == CrudEvent::ACTION_DELETE)
 		{
-			await this.onDeleteItem(this.model().active);
+			int index = model.active;
+			Dict item = model -> method getItem(index);
+			this.dialog_delete.show
+			{
+				"title": _("Runtime.Web.CRUD", "Delete %name% ?", {"name": model::getItemName(item)}),
+				"tag": 
+				{
+					"action": "delete",
+					"item": item
+				},
+			};
 		}
 	}
 	
@@ -315,32 +355,28 @@ class ListPage extends Component
 	async void onAddItem(Dict item)
 	{
 		CrudModel model = this.model();
-		string api_name = model::crudApiName();
+		string api_name = static::crudApiName();
 		
-		/* Set message */
-		this.updateModelValue(["form_add", "message"], _("App", "Please wait ..."));
-		this.updateModelValue(["form_add", "error"], "");
-		this.updateModelValue(["form_add", "success"], "");
+		/* Set wait message */
+		this.form_add.setApiWaitResponse();
 		
-		/* Call api */
+		/* Call create api */
 		MessageRPC msg = @ -> await method sendMessage
-		(
-			new MessageRPC
+		{
+			"api_name": api_name,
+			"space_name": classof CrudInterface,
+			"method_name": "create",
+			"data":
 			{
-				"api_name": api_name,
-				"space_name": classof CrudInterface,
-				"method_name": "create",
-				"data":
-				{
-					"item": item,
-				},
-			}
-		) -> monad MessageRPC::end;
+				"item": item,
+			},
+		};
 		
 		/* Set result */
 		bool is_success = msg -> method isSuccess;
 		if (is_success)
 		{
+			item = msg["response"]["item"];
 			this.dialog_add.hide();
 			this.updateModel
 			{
@@ -352,10 +388,8 @@ class ListPage extends Component
 		}
 		else
 		{
-			/* Set message */
-			this.updateModelValue(["form_add", "message"], "");
-			this.updateModelValue(["form_add", "error"], msg -> attr "error");
-			this.updateModelValue(["form_add", "success"], "");
+			/* Set error message */
+			this.form_add.setApiResponse(msg);
 		}
 	}
 	
@@ -364,13 +398,52 @@ class ListPage extends Component
 	/**
 	 * Edit item
 	 */
-	async void onEditItem(int index, Dict item)
+	async void onEditItem(Dict item)
 	{
 		CrudModel model = this.model();
-		this.updateModel
+		string api_name = static::crudApiName();
+		
+		/* Find index */
+		int index = model.items.find( bool (Dict elem) use (item) => item["id"] == elem["id"] );
+		
+		/* Set wait message */
+		this.form_edit.setApiWaitResponse();
+		
+		/* Call create api */
+		MessageRPC msg = @ -> await method sendMessage
 		{
-			"items": model.items.setIm(index, item),
+			"api_name": api_name,
+			"space_name": classof CrudInterface,
+			"method_name": "update",
+			"data":
+			{
+				"item": item,
+			},
 		};
+		
+		/* Set result */
+		bool is_success = msg -> method isSuccess;
+		if (is_success)
+		{
+			item = msg["response"]["item"];
+			
+			/* Find index */
+			int index = model.items.find( bool (Dict elem) use (item) => item["id"] == elem["id"] );
+			this.updateModel
+			{
+				"items": model.items.setIm(index, item),
+			};
+			this.form_edit.updateModel
+			{
+				"item": item,
+			}
+			this.form_edit.setApiResponse(msg);
+		}
+		else
+		{
+			/* Set error message */
+			this.form_edit.setApiResponse(msg);
+		}
 	}
 	
 	
@@ -378,15 +451,71 @@ class ListPage extends Component
 	/**
 	 * Delete item
 	 */
-	async void onDeleteItem(int index)
+	async void onDeleteItem(int item_id)
 	{
 		CrudModel model = this.model();
-		this.updateModel
+		string api_name = static::crudApiName();
+		
+		/* Set wait message */
+		this.dialog_delete.updateModel
 		{
-			"active": -1,
-			"items": model.items.removeIm(index),
-			"form_edit": null,
+			"message": _("Runtime.Web.CRUD", "Please wait ..."),
+			"success": "",
+			"error": "",
 		};
+		
+		/* Call create api */
+		MessageRPC msg = @ -> await method sendMessage
+		{
+			"api_name": api_name,
+			"space_name": classof CrudInterface,
+			"method_name": "delete",
+			"data":
+			{
+				"id": item_id,
+			},
+		};
+		
+		/* Set result */
+		bool is_success = msg -> method isSuccess;
+		if (is_success)
+		{
+			CrudModel model = this.model();
+			
+			/* Find index */
+			int index = model.items.find( bool (Dict elem) use (item_id) => item_id == elem["id"] );
+			if (index != -1)
+			{
+				this.updateModel
+				{
+					"items": model.items.removeIm(index),
+				};
+			}
+			
+			/* Hide form edit */
+			if (index == model.active)
+			{
+				this.updateModel
+				{
+					"active": -1,
+					"form_edit": null,
+				};
+			}
+			
+			/* Hide dialog */
+			this.dialog_delete.hide();
+		}
+		else
+		{
+			/* Set error message */
+			this.dialog_delete.updateModel
+			{
+				"message": "",
+				"success": "",
+				"error": msg -> attr "error",
+			};
+		}
+		
 	}
 	
 	#endif

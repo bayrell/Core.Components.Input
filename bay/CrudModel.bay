@@ -32,8 +32,13 @@ use Runtime.Web.Dialog.DialogModel;
 
 struct CrudModel extends CoreStruct
 {
+	static const string ACTION_SEARCH = "search";
+	static const string ACTION_CREATE = "create";
+	static const string ACTION_UPDATE = "update";
+	static const string ACTION_DELETE = "delete";
+	
 	string action = "";
-	Dict<string, FieldInfo> fields = null;
+	Dict<FieldInfo> fields = null;
 	
 	/* Search */
 	Collection<var> items = null;
@@ -42,7 +47,7 @@ struct CrudModel extends CoreStruct
 	int total = 0;
 	int limit = 0;
 	int max_limit = 0;
-	int active = 0;
+	int active = -1;
 	
 	/* Fields */
 	Collection<string> table_fields = null;
@@ -81,23 +86,6 @@ struct CrudModel extends CoreStruct
 			"form_fields": static::getDefaultFormFields(),
 		}
 	;
-	
-	
-	
-	/**
-	 * Returns api name
-	 */
-	pure string crudApiName() => "";
-	
-	
-	
-	/**
-	 * Returns required components
-	 * @return Map<string>
-	 */
-	pure Map<string> components() => 
-	[
-	];
 	
 	
 	
@@ -147,6 +135,13 @@ struct CrudModel extends CoreStruct
 	 * Returns item value
 	 */
 	pure var getItemValue(CrudModel crud, var item, string field_name) => item[field_name];
+	
+	
+	
+	/**
+	 * Returns item name
+	 */
+	pure string getItemName(Dict item) => item["name"];
 	
 	
 	

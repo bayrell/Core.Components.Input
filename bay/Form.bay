@@ -20,6 +20,7 @@ namespace Runtime.Web.CRUD;
 
 use Runtime.lib;
 use Runtime.MessageRPC;
+use Runtime.RuntimeConstant;
 use Runtime.Web.Component;
 use Runtime.Web.LayoutModel;
 use Runtime.Web.RenderContainer;
@@ -90,6 +91,11 @@ class Form extends Component
 				margin-left: 10px;
 				margin-right: 10px;
 			}
+			%form_error{
+				text-align: center;
+				padding-top: 5px;
+				color: red;
+			}
 			%form_result{
 				padding-top: 10px;
 				text-align: center;
@@ -159,7 +165,25 @@ class Form extends Component
 					@eventAsync:ChangeEvent="onItemChange"
 				/>
 			</div>
+			<div @class='form_error'>
+				{ static::renderFieldError(model, field_name) }
+			</div>
 		</div>;
+	}
+	
+	
+	
+	/**
+	 * Render field error
+	 */
+	pure string renderFieldError(FormModel model, string field_name)
+	{
+		Collection<string> errors = model["validate"][field_name];
+		if (errors == null) return "";
+		return errors.map
+		(
+			html (string s) => <div @class='form_error_line'>{ s }</div>
+		);
 	}
 	
 	
@@ -253,6 +277,49 @@ class Form extends Component
 				"value": e.value,
 			}
 		);
+	}
+	
+	
+	
+	/**
+	 * Set api response
+	 */
+	void setApiWaitResponse(string s = "")
+	{
+		if (s == "") s = _("Runtime.Web.CRUD", "Please wait ...");
+		this.updateModel
+		{
+			"message": s,
+			"error": "",
+			"success": "",
+			"validate": null,
+		};
+	}
+	
+	
+	
+	/**
+	 * Set api response
+	 */
+	void setApiResponse(MessageRPC msg)
+	{
+		bool is_success = msg -> method isSuccess;
+		int code = msg.code;
+		
+		this.updateModel
+		{
+			"message": "",
+			"error": msg -> attr "error",
+			"success": msg -> attr "success_message",
+		};
+		
+		if (code == RuntimeConstant::ERROR_VALIDATION)
+		{
+			this.updateModel
+			{
+				"validate": msg -> attr "response",
+			}
+		}		
 	}
 	
 	

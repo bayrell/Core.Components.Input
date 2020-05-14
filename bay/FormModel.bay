@@ -28,4 +28,5 @@ struct FormModel extends CoreStruct
 	string message = "";
 	string success = "";
 	string error = "";
+	Dict<Collection<string>> validate = null;
 }
