@@ -30,6 +30,7 @@ use Runtime.ORM.Cursor;
 use Runtime.ORM.ORMProviderInterface;
 use Runtime.ORM.QueryBuilder;
 use Runtime.Web.CRUD.CrudInterface;
+use Runtime.Web.CRUD.CrudModel;
 use Runtime.Web.CRUD.FieldInfo;
 
 
@@ -99,7 +100,9 @@ struct CrudApi extends CoreStruct implements CrudInterface
 	pure string validateField(CrudApi api, Dict item, FieldInfo field)
 	{
 		Collection<string> error = [];
-		var value = item[field.api_name];
+		
+		/* Check if required */
+		var value = item -> CrudModel::getItemValue(field);
 		if (field.required and (value === null or value === ""))
 		{
 			error = error.pushIm( _("Runtime.Web.CRUD", "This field must be filled") );
@@ -113,7 +116,7 @@ struct CrudApi extends CoreStruct implements CrudInterface
 	/**
 	 * Validate item
 	 */
-	static fn<Dict, Dict> validate(CrudApi api) =>
+	static fn<Dict, Dict> validateItem(CrudApi api) =>
 		async Dict<string> (Dict item) use (api)
 		{
 			bool success = true;
@@ -146,10 +149,10 @@ struct CrudApi extends CoreStruct implements CrudInterface
 	
 	
 	/**
-	 * Filter item value
+	 * Process item value
 	 */
-	pure fn<bool, Dict> filterItem(CrudApi api, FieldInfo field) =>
-		async bool (Dict item) use (api, field)
+	pure fn<bool, Dict> processItemFlag(CrudApi api, FieldInfo field, Dict old_item = null) =>
+		async bool (Dict item) use (api, field, old_item)
 		{
 			if (field.api_name == "id") return false;
 			return true;
@@ -159,27 +162,39 @@ struct CrudApi extends CoreStruct implements CrudInterface
 	
 	
 	/**
-	 * Filter item value
+	 * Process item value
 	 */
-	pure fn<var, Dict> filterItemValue(CrudApi api, FieldInfo field) =>
-		async var (Dict item) use (api, field)
+	pure fn<var, Dict> processItemValue(CrudApi api, FieldInfo field, Dict old_item = null) =>
+		async var (Dict item) use (api, field, old_item)
 		{
-			var value = item[field.api_name];
+			
+			/* Set default value */
+			var value = item -> CrudModel::getItemValue(field);
 			if (value === null or value === "")
 			{
 				value = field.default_value;
+				return item -> CrudModel::setItemValue(field, value);
 			}
-			return value;
+			
+			return item;
 		}
 	;
 	
 	
 	
 	/**
-	 * Filter item
+	 * Process item
 	 */
-	static Dict filter(CrudApi api) =>
-		async Dict (Dict item) use (api)
+	pure fn<var, Dict> processItem(CrudApi api, Dict old_item = null) =>
+		async var (Dict item) use (api, old_item) => item;
+	
+	
+	
+	/**
+	 * Process form item
+	 */
+	static Dict processForm(CrudApi api, Dict old_item = null) =>
+		async Dict (Dict item) use (api, old_item)
 		{
 			Dict new_item = {};
 			
@@ -190,13 +205,14 @@ struct CrudApi extends CoreStruct implements CrudInterface
 			{
 				FieldInfo field = fields[ keys[i] ];
 				
-				bool flag = item -> static::filterItem(api, field);
+				bool flag = item -> static::processItemFlag(api, field, old_item);
 				if (flag)
 				{
-					var new_value = item -> await static::filterItemValue(api, field);
-					new_item = new_item.setIm(field.api_name, new_value);
+					new_item = item -> await static::processItemValue(api, field, old_item);
 				}
 			}
+			
+			new_item = new_item -> await static::processItem(api, old_item);
 			
 			return new_item;
 		}
@@ -219,8 +235,8 @@ struct CrudApi extends CoreStruct implements CrudInterface
 	pure fn<Dict, Dict> toDatabase(CrudApi api) =>
 		Dict (Dict item) => item
 	;
-		
-		
+	
+	
 	
 	/**
 	 * Build search query
@@ -269,7 +285,15 @@ struct CrudApi extends CoreStruct implements CrudInterface
 		res = await cursor.fetchAll( static::fromDatabase(api) );
 		cursor.close();
 		
-		return msg -> method success{ "items": res };
+		Vector new_res = new Vector();
+		fn processItem = static::processItem(api);
+		for (int i=0; i<res.count(); i++)
+		{
+			var item = await processItem(res.item(i));
+			new_res.push(item);
+		}
+		
+		return msg -> method success{ "items": new_res };
 	}
 	
 	
@@ -304,7 +328,7 @@ struct CrudApi extends CoreStruct implements CrudInterface
 		api = await static::apiInit(api);
 		
 		/* Validate item */
-		Dict<string> validate = item -> await static::validate(api);
+		Dict<string> validate = item -> await static::validateItem(api);
 		if (validate)
 		{
 			throw new ApiException
@@ -317,7 +341,7 @@ struct CrudApi extends CoreStruct implements CrudInterface
 		
 		/* Covert item */
 		Dict new_item = item
-			-> await static::filter(api)
+			-> await static::processForm(api)
 			-> static::toDatabase(api)
 		;
 		
@@ -370,7 +394,7 @@ struct CrudApi extends CoreStruct implements CrudInterface
 		api = await static::apiInit(api);
 		
 		/* Validate item */
-		Dict<string> validate = item -> await static::validate(api);
+		Dict<string> validate = item -> await static::validateItem(api);
 		if (validate)
 		{
 			throw new ApiException
@@ -401,9 +425,12 @@ struct CrudApi extends CoreStruct implements CrudInterface
 			);
 		}
 		
+		/* Convert old row */
+		row = row -> static::fromDatabase(api);
+		
 		/* Covert item */
 		Dict new_item = item
-			-> await static::filter(api)
+			-> await static::processForm(api, row)
 			-> static::toDatabase(api)
 		;
 		

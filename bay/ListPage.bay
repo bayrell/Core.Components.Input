@@ -112,8 +112,14 @@ class ListPage extends Component
 				border-color: #337ab7;
 				color: white;
 			}
+			%item > %(Button)button{
+				float: right;
+				padding: 2px 5px;
+				font-size: 10px;
+			}
 			%item_row{
 				padding-bottom: 5px;
+				padding-right: 40px;
 			}
 			%item_row:last-child{
 				padding-bottom: 0px;
@@ -141,14 +147,6 @@ class ListPage extends Component
 				background-color: #880000;
 				color: white;
 				font-size: 12px;
-			}
-			%item{
-				padding-right: 40px;
-			}
-			%item > %(Button)button{
-				float: right;
-				padding: 2px 5px;
-				font-size: 10px;
 			}
 			%info{
 				width: calc(100% - 350px);

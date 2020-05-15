@@ -65,6 +65,22 @@ struct CrudModel extends CoreStruct
 	
 	
 	/**
+	 * Returns field info
+	 */
+	pure fn<CrudModel, FieldInfo> getField(string field_name) =>
+		FieldInfo (CrudModel crud) use (field_name) => crud["fields"][field_name]
+	;
+	
+	
+	
+	/**
+	 * Returns field info
+	 */
+	pure FieldInfo getFieldInfo(string field_name) => static::buildFields() -> attr field_name;
+	
+	
+	
+	/**
 	 * Returns item by index
 	 */
 	pure fn<Dict, CrudModel> getItemByIndex(int index) =>
@@ -81,6 +97,29 @@ struct CrudModel extends CoreStruct
 		Dict (CrudModel model) use (id) =>
 			model.items.findItem( bool (Dict item) use (id) => item["id"] == id )
 	;
+	
+	
+	
+	/**
+	 * Returns value of item
+	 */
+	pure fn<Dict, var> getItemValue(FieldInfo info) =>
+		var (Dict item) use (info) =>
+			info.model != null ? rtl::attr(item, info.model) : item[info.api_name]
+	;
+	
+	
+	
+	/**
+	 * Set item value
+	 */
+	pure fn<Dict, var> setItemValue(FieldInfo info, var value) =>
+		Dict (Dict item) use (info, value) =>
+			info.model != null ?
+				rtl::setAttr(item, info.model, value) :
+				rtl::setAttr(item, [info.api_name], value)
+	;
+	
 	
 	
 	/**
@@ -141,9 +180,9 @@ struct CrudModel extends CoreStruct
 	
 	
 	/**
-	 * Returns item value
+	 * Returns form value
 	 */
-	pure var getItemValue(CrudModel crud, var item, string field_name) => item[field_name];
+	pure var getFormValue(CrudModel crud, var item, string field_name) => item[field_name];
 	
 	
 	

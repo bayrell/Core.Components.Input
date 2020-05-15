@@ -161,7 +161,7 @@ class Form extends Component
 		return <div @class='form_row' @key={ field_name }>
 			<div @class='form_label'>{ field.label }:</div>
 			<div @class='form_value'>
-				<{class_name} data-name={ field_name } @bind=["item", field_name] field={ field }
+				<{class_name} data-name={ field_name } @bind={ static::getBindPath(field) } field={ field }
 					@eventAsync:ChangeEvent="onItemChange"
 				/>
 			</div>
@@ -235,6 +235,14 @@ class Form extends Component
 		if (model.error != "") return "error";
 		return "";
 	}
+	
+	
+	/**
+	 * Returns bind path
+	 */
+	pure Collection<string> getBindPath(FieldInfo field) =>
+		field.model == null ? ["item", field.api_name] : field.model.prependIm("item")
+	;
 	
 	
 	

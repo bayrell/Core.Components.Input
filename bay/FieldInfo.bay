@@ -31,6 +31,7 @@ struct FieldInfo extends CoreStruct
 	string group = "default";
 	var default_value = null;
 	bool required = false;
+	bool readonly = false;
 	
 	/* For select */
 	Collection<Dict<string, string>> select = null;
@@ -39,6 +40,7 @@ struct FieldInfo extends CoreStruct
 	
 	/* Additional options */
 	Dict<string, var> options = {};
+	Collection<string> model = null;
 	
 	
 	#ifdef BACKEND then
