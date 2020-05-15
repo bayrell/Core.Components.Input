@@ -178,7 +178,7 @@ struct CrudApi extends CoreStruct implements CrudInterface
 	/**
 	 * Filter item
 	 */
-	static async Dict filter(CrudApi api) =>
+	static Dict filter(CrudApi api) =>
 		async Dict (Dict item) use (api)
 		{
 			Dict new_item = {};

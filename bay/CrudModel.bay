@@ -65,13 +65,22 @@ struct CrudModel extends CoreStruct
 	
 	
 	/**
-	 * Returns active item
+	 * Returns item by index
 	 */
-	pure fn<Dict, CrudModel> getItem(int index) =>
+	pure fn<Dict, CrudModel> getItemByIndex(int index) =>
 		Dict (CrudModel model) use (index) =>
 			rtl::attr(model, ["items", index], null)
 	;
 	
+	
+	
+	/**
+	 * Returns active item
+	 */
+	pure fn<Dict, CrudModel> getItemById(int id) =>
+		Dict (CrudModel model) use (id) =>
+			model.items.findItem( bool (Dict item) use (id) => item["id"] == id )
+	;
 	
 	
 	/**

@@ -142,6 +142,14 @@ class ListPage extends Component
 				color: white;
 				font-size: 12px;
 			}
+			%item{
+				padding-right: 40px;
+			}
+			%item > %(Button)button{
+				float: right;
+				padding: 2px 5px;
+				font-size: 10px;
+			}
 			%info{
 				width: calc(100% - 350px);
 				padding-left: 10px;
@@ -245,7 +253,12 @@ class ListPage extends Component
 	/**
 	 * Render item
 	 */
-	pure html renderItem(LayoutModel layout, CrudModel model, Dict params, Dict item) => "";
+	pure html renderItem(LayoutModel layout, CrudModel model, Dict params, Dict item) =>
+		<Button @eventAsync:MouseClickEvent="onDeleteClick" data-action="delete" @tag={ item["id"] }>[ D ]</Button>
+		<div @class="item_row name">
+			{ model::getItemName(item) }
+		</div>
+	;
 	
 	
 	
@@ -260,6 +273,31 @@ class ListPage extends Component
 		e.cancel();
 		this.updateModelValue(["form_add"], new FormModel{ "item": new Dict() });
 		this.dialog_add.show();
+	}
+	
+	
+	
+	/**
+	 * Delete click
+	 */
+	async void onDeleteClick(MouseClickEvent e)
+	{
+		int item_id = e["target"]["params"]["@tag"];
+		e.cancel();
+		
+		CrudModel model = this.model();
+		Dict item = model -> method getItemById(item_id);
+		if (item == null) return;
+		
+		this.dialog_delete.show
+		{
+			"title": _("Runtime.Web.CRUD", "Delete %name% ?", { "name": model::getItemName(item) }),
+			"tag":
+			{
+				"action": "delete",
+				"item": item
+			},
+		};
 	}
 	
 	
@@ -315,7 +353,7 @@ class ListPage extends Component
 		else if (e.event == CrudEvent::ACTION_DELETE)
 		{
 			int index = model.active;
-			Dict item = model -> method getItem(index);
+			Dict item = model -> method getItemByIndex(index);
 			this.dialog_delete.show
 			{
 				"title": _("Runtime.Web.CRUD", "Delete %name% ?", {"name": model::getItemName(item)}),
@@ -337,7 +375,7 @@ class ListPage extends Component
 	{
 		CrudModel model = this.model();
 		int index = e.target.params.get("data-index");
-		Dict item = model -> method getItem(index);
+		Dict item = model -> method getItemByIndex(index);
 		
 		/* Update model values */
 		this.updateModel
