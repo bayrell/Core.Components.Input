@@ -193,7 +193,7 @@ struct CrudApi extends CoreStruct implements CrudInterface
 	/**
 	 * Process form item
 	 */
-	static Dict processForm(CrudApi api, Dict old_item = null) =>
+	static Dict processFormItem(CrudApi api, Dict old_item = null) =>
 		async Dict (Dict item) use (api, old_item)
 		{
 			Dict new_item = {};
@@ -341,7 +341,7 @@ struct CrudApi extends CoreStruct implements CrudInterface
 		
 		/* Covert item */
 		Dict new_item = item
-			-> await static::processForm(api)
+			-> await static::processFormItem(api)
 			-> static::toDatabase(api)
 		;
 		
@@ -430,7 +430,7 @@ struct CrudApi extends CoreStruct implements CrudInterface
 		
 		/* Covert item */
 		Dict new_item = item
-			-> await static::processForm(api, row)
+			-> await static::processFormItem(api, row)
 			-> static::toDatabase(api)
 		;
 		
