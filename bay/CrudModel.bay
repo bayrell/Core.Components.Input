@@ -60,7 +60,7 @@ struct CrudModel extends CoreStruct
 	
 	/* Dialogs */
 	DialogModel dialog_add = new DialogModel();
-	DialogModel dialog_delete = new DialogModel();
+	DialogModel dialog_answer = new DialogModel();
 	
 	
 	

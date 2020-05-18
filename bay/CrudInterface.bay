@@ -25,7 +25,7 @@ interface CrudInterface
 {
 	
 	static MessageRPC search(MessageRPC msg);
-	static MessageRPC getByID(MessageRPC msg);
+	static MessageRPC findItem(MessageRPC msg);
 	static MessageRPC create(MessageRPC msg);
 	static MessageRPC update(MessageRPC msg);
 	static MessageRPC delete(MessageRPC msg);

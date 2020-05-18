@@ -45,7 +45,7 @@ class ListPage extends Component
 	Form form_add = null;
 	Form form_edit = null;
 	Dialog dialog_add = null;
-	Dialog dialog_delete = null;
+	Dialog dialog_answer = null;
 	
 	
 	
@@ -92,7 +92,7 @@ class ListPage extends Component
 				height: 100%;
 			}
 			%content{
-				height: calc(100% - 30px);
+				height: 100%;
 				display: flex;
 				align-items: stretch;
 			}
@@ -240,7 +240,7 @@ class ListPage extends Component
 				fields={ model.form_fields } struct={ model.fields }
 			/>
 		</Dialog>
-		<Dialog @bind="dialog_delete" @ref="dialog_delete" @key="dialog_delete"
+		<Dialog @bind="dialog_answer" @ref="dialog_answer" @key="dialog_answer"
 			style={ DialogModel::STYLE_CONFIRM } auto_hide={ false }
 			@eventAsync:DialogEvent="onDialogEvent"
 		/>;
@@ -287,7 +287,7 @@ class ListPage extends Component
 		Dict item = model -> method getItemById(item_id);
 		if (item == null) return;
 		
-		this.dialog_delete.show
+		this.dialog_answer.show
 		{
 			"title": _("Runtime.Web.CRUD", "Delete %name% ?", { "name": model::getItemName(item) }),
 			"tag":
@@ -305,16 +305,20 @@ class ListPage extends Component
 	 */
 	async void onDialogEvent(DialogEvent e)
 	{
-		if (e.instance.params["@key"] == "dialog_delete")
+		if (e.instance.params["@key"] == "dialog_answer")
 		{
 			if (e.button_result == "cancel")
 			{
-				this.dialog_delete.hide();
+				this.dialog_answer.hide();
 			}
 			else
 			{
+				string action = e["tag"]["action"];
 				Dict item = e["tag"]["item"];
-				await this.onDeleteItem( item["id"] );
+				if (action == "delete")
+				{
+					await this.onDeleteItem( item["id"] );
+				}
 			}
 		}
 	}
@@ -337,7 +341,7 @@ class ListPage extends Component
 			}
 			else if (e.instance.params["@key"] == "form_delete")
 			{
-				this.dialog_delete.hide();
+				this.dialog_answer.hide();
 			}
 		}
 		else if (e.event == CrudEvent::ACTION_CREATE)
@@ -352,7 +356,7 @@ class ListPage extends Component
 		{
 			int index = model.active;
 			Dict item = model -> method getItemByIndex(index);
-			this.dialog_delete.show
+			this.dialog_answer.show
 			{
 				"title": _("Runtime.Web.CRUD", "Delete %name% ?", {"name": model::getItemName(item)}),
 				"tag": 
@@ -461,7 +465,8 @@ class ListPage extends Component
 		bool is_success = msg -> method isSuccess;
 		if (is_success)
 		{
-			item = msg["response"]["item"];
+			CrudModel model = this.model();
+			Dict item = msg["response"]["item"];
 			
 			/* Find index */
 			int index = model.items.find( bool (Dict elem) use (item) => item["id"] == elem["id"] );
@@ -493,7 +498,7 @@ class ListPage extends Component
 		string api_name = static::crudApiName();
 		
 		/* Set wait message */
-		this.dialog_delete.updateModel
+		this.dialog_answer.updateModel
 		{
 			"message": _("Runtime.Web.CRUD", "Please wait ..."),
 			"success": "",
@@ -539,12 +544,12 @@ class ListPage extends Component
 			}
 			
 			/* Hide dialog */
-			this.dialog_delete.hide();
+			this.dialog_answer.hide();
 		}
 		else
 		{
 			/* Set error message */
-			this.dialog_delete.updateModel
+			this.dialog_answer.updateModel
 			{
 				"message": "",
 				"success": "",

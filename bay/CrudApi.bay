@@ -41,6 +41,7 @@ struct CrudApi extends CoreStruct implements CrudInterface
 	MessageRPC msg = null;
 	QueryBuilder q = null;
 	Dict item = null;
+	int id = null;
 	
 	
 	#ifdef BACKEND then
@@ -143,6 +144,29 @@ struct CrudApi extends CoreStruct implements CrudInterface
 			}
 			
 			return null;
+		}
+	;
+	
+	
+	
+	/**
+	 * Validate
+	 */
+	static async fn<Dict, Dict> validate(CrudApi api) =>
+		async Dict (Dict item) use (api)
+		{
+			Dict<string> validate = item -> await static::validateItem(api);
+			if (validate)
+			{
+				throw new ApiException
+				(
+					_("Runtime.Web.CRUD", "Validation fields error"),
+					RuntimeConstant::ERROR_VALIDATION,
+					validate
+				);
+			}
+			
+			return item;
 		}
 	;
 	
@@ -299,12 +323,146 @@ struct CrudApi extends CoreStruct implements CrudInterface
 	
 	
 	/**
-	 * Get by ID
+	 * Find items
 	 */
-	static async MessageRPC getByID(MessageRPC msg)
+	static async MessageRPC findItem(MessageRPC msg)
 	{
 		return msg;
 	}
+	
+	
+	
+	/**
+	 * Create query
+	 */
+	static fn<Dict, int> createQuery(CrudApi api) =>
+		async int (Dict new_item)
+		{
+			string table_name = static::crudTableName();
+			ORMProviderInterface p = @ -> method getProvider(classof ORMProviderInterface);
+			
+			/* Create query */
+			int id = p
+				-> await method insert
+				(
+					table_name,
+					new_item
+				)
+				-> await method end
+			;
+			
+			return id;
+		}
+	;
+	
+	
+	
+	/**
+	 * Update query
+	 */
+	static fn<Dict, int> updateQuery(CrudApi api, int item_id) =>
+		async void (Dict new_item) use (api, item_id)
+		{
+			string table_name = static::crudTableName();
+			ORMProviderInterface p = @ -> method getProvider(classof ORMProviderInterface);
+			
+			/* Update query */
+			p
+				-> await method update
+				(
+					table_name,
+					{
+						"id": item_id,
+					}
+					new_item
+				)
+				-> await method end
+			;
+		}
+	;
+	
+	
+	
+	/**
+	 * Delete query
+	 */
+	static fn<Dict, void> deleteQuery(CrudApi api) =>
+		async void (Dict row) use (api)
+		{
+			int item_id = row["id"];
+			
+			string table_name = static::crudTableName();
+			ORMProviderInterface p = @ -> method getProvider(classof ORMProviderInterface);
+			
+			/* Delete query */
+			p
+				-> await method query
+				(
+					"delete from " ~ p.prefix ~ table_name ~ " where id=:id limit 1",
+					{
+						"id": item_id,
+					}
+				)
+				-> await method end
+			;
+		}
+	;
+	
+	
+	
+	/**
+	 * Check item is null
+	 */
+	static fn<Dict, Dict> checkItemIsNull(CrudApi api) =>
+		async Dict (Dict new_item)
+		{
+			if (new_item == null)
+			{
+				throw new ApiException
+				(
+					_("Runtime.Web.CRUD", "Converted to database item is null"),
+					RuntimeConstant::ERROR_FATAL
+				);
+			}
+		}
+	;
+	
+	
+	
+	/**
+	 * Get by id
+	 */
+	static fn<int, Dict> getById(CrudApi api) =>
+		async Dict (int item_id) use (api)
+		{
+			string table_name = static::crudTableName();
+			ORMProviderInterface p = @ -> method getProvider(classof ORMProviderInterface);
+			
+			/* Find item */
+			Dict row = p
+				-> await method query
+				(
+					"select * from " ~ p.prefix ~ table_name ~ " where id=:id limit 1",
+					{
+						"id": item_id,
+					}
+				)
+				-> await method getOne
+			;
+			if (row == null)
+			{
+				throw new ApiException
+				(
+					_("Runtime.Web.CRUD", "Item not found"),
+					RuntimeConstant::ERROR_ITEM_NOT_FOUND
+				);
+			}
+			
+			/* Convert old row */
+			row = row -> static::fromDatabase(api);
+			return row;
+		}
+	;
 	
 	
 	
@@ -313,8 +471,6 @@ struct CrudApi extends CoreStruct implements CrudInterface
 	 */
 	static async MessageRPC create(MessageRPC msg)
 	{
-		string table_name = static::crudTableName();
-		ORMProviderInterface p = @ -> method getProvider(classof ORMProviderInterface);
 		Dict item = msg["data"]["item"];
 		
 		CrudApi api = static::newInstance
@@ -327,43 +483,16 @@ struct CrudApi extends CoreStruct implements CrudInterface
 		/* Init api */
 		api = await static::apiInit(api);
 		
-		/* Validate item */
-		Dict<string> validate = item -> await static::validateItem(api);
-		if (validate)
-		{
-			throw new ApiException
-			(
-				_("Runtime.Web.CRUD", "Validation fields error"),
-				RuntimeConstant::ERROR_VALIDATION,
-				validate
-			);
-		}
-		
-		/* Covert item */
+		/* Convert item */
 		Dict new_item = item
+			-> await static::validate(api)
 			-> await static::processFormItem(api)
 			-> static::toDatabase(api)
+			-> static::checkItemIsNull(api)
 		;
-		
-		if (new_item == null)
-		{
-			throw new ApiException
-			(
-				_("Runtime.Web.CRUD", "Converted to database item is null"),
-				RuntimeConstant::ERROR_FATAL
-			);
-		}
 		
 		/* Create query */
-		int id = p
-			-> await method insert
-			(
-				table_name,
-				new_item
-			)
-			-> await method end
-		;
-		
+		int id = new_item -> await static::createQuery(api);
 		item <= id <= id;
 		
 		return msg -> method success({ "id": id, "item": item }, _("Runtime.WEB.CRUD", "Success created"));
@@ -393,71 +522,23 @@ struct CrudApi extends CoreStruct implements CrudInterface
 		/* Init api */
 		api = await static::apiInit(api);
 		
-		/* Validate item */
-		Dict<string> validate = item -> await static::validateItem(api);
-		if (validate)
-		{
-			throw new ApiException
-			(
-				_("Runtime.Web.CRUD", "Validation fields error"),
-				RuntimeConstant::ERROR_VALIDATION,
-				validate
-			);
-		}
+		/* Convert item */
+		Dict item = item
+			-> await static::validate(api)
+		;
 		
 		/* Find item */
-		Dict row = p
-			-> await method query
-			(
-				"select * from " ~ p.prefix ~ table_name ~ " where id=:id limit 1",
-				{
-					"id": item_id,
-				}
-			)
-			-> await method getOne
-		;
-		if (row == null)
-		{
-			throw new ApiException
-			(
-				_("Runtime.Web.CRUD", "Item not found"),
-				RuntimeConstant::ERROR_ITEM_NOT_FOUND
-			);
-		}
-		
-		/* Convert old row */
-		row = row -> static::fromDatabase(api);
+		Dict row = item_id -> await static::getById(api);
 		
 		/* Covert item */
 		Dict new_item = item
 			-> await static::processFormItem(api, row)
 			-> static::toDatabase(api)
+			-> static::checkItemIsNull(api)
 		;
-		
-		if (new_item == null)
-		{
-			throw new ApiException
-			(
-				_("Runtime.Web.CRUD", "Converted to database item is null"),
-				RuntimeConstant::ERROR_FATAL
-			);
-		}
 		
 		/* Update query */
-		string table_name = static::crudTableName();
-		ORMProviderInterface p = @ -> method getProvider(classof ORMProviderInterface);
-		p
-			-> await method update
-			(
-				table_name,
-				{
-					"id": item_id,
-				}
-				new_item
-			)
-			-> await method end
-		;
-		
+		new_item -> await static::updateQuery(api, item_id);
 		item <= id <= item_id;
 		
 		return msg -> method success({ "id": item_id, "item": item }, _("Runtime.WEB.CRUD", "Success updated"));
@@ -474,37 +555,18 @@ struct CrudApi extends CoreStruct implements CrudInterface
 		ORMProviderInterface p = @ -> method getProvider(classof ORMProviderInterface);
 		string item_id = msg["data"]["id"];
 		
-		/* Find item */
-		Dict row = p
-			-> await method query
-			(
-				"select * from " ~ p.prefix ~ table_name ~ " where id=:id limit 1",
-				{
-					"id": item_id,
-				}
-			)
-			-> await method getOne
-		;
-		if (row == null)
+		CrudApi api = static::newInstance
 		{
-			throw new ApiException
-			(
-				_("Runtime.Web.CRUD", "Item not found"),
-				RuntimeConstant::ERROR_ITEM_NOT_FOUND
-			);
-		}
+			"action": "delete",
+			"msg": msg,
+			"id": item_id,
+		};
+		
+		/* Find item */
+		Dict row = item_id -> await static::getById(api);
 		
 		/* Delete query */
-		p
-			-> await method query
-			(
-				"delete from " ~ p.prefix ~ table_name ~ " where id=:id limit 1",
-				{
-					"id": item_id,
-				}
-			)
-			-> await method end
-		;
+		row -> await static::deleteQuery(api);
 		
 		return msg -> method success({ "id": item_id }, _("Runtime.WEB.CRUD", "Success deleted"));
 	}
