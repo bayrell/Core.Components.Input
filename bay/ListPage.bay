@@ -359,7 +359,7 @@ class ListPage extends Component
 			this.dialog_answer.show
 			{
 				"title": _("Runtime.Web.CRUD", "Delete %name% ?", {"name": model::getItemName(item)}),
-				"tag": 
+				"tag":
 				{
 					"action": "delete",
 					"item": item

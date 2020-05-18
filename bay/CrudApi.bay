@@ -424,6 +424,8 @@ struct CrudApi extends CoreStruct implements CrudInterface
 					RuntimeConstant::ERROR_FATAL
 				);
 			}
+			
+			return new_item;
 		}
 	;
 	
@@ -493,9 +495,11 @@ struct CrudApi extends CoreStruct implements CrudInterface
 		
 		/* Create query */
 		int id = new_item -> await static::createQuery(api);
-		item <= id <= id;
 		
-		return msg -> method success({ "id": id, "item": item }, _("Runtime.WEB.CRUD", "Success created"));
+		/* Find item */
+		Dict item = id -> await static::getById(api);
+		
+		return msg -> method success({ "item": item }, _("Runtime.WEB.CRUD", "Success created"));
 	}
 	
 	
@@ -539,9 +543,11 @@ struct CrudApi extends CoreStruct implements CrudInterface
 		
 		/* Update query */
 		new_item -> await static::updateQuery(api, item_id);
-		item <= id <= item_id;
 		
-		return msg -> method success({ "id": item_id, "item": item }, _("Runtime.WEB.CRUD", "Success updated"));
+		/* Find item */
+		Dict item = item_id -> await static::getById(api);
+		
+		return msg -> method success({ "item": item }, _("Runtime.WEB.CRUD", "Success updated"));
 	}
 	
 	
