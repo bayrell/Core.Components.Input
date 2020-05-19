@@ -98,7 +98,7 @@ struct CrudApi extends CoreStruct implements CrudInterface
 	/**
 	 * Validate field
 	 */
-	pure string validateField(CrudApi api, Dict item, FieldInfo field)
+	pure string validateField(CrudApi api, FieldInfo field, Dict item)
 	{
 		Collection<string> error = [];
 		
@@ -117,35 +117,11 @@ struct CrudApi extends CoreStruct implements CrudInterface
 	/**
 	 * Validate item
 	 */
-	static fn<Dict, Dict> validateItem(CrudApi api) =>
-		async Dict<string> (Dict item) use (api)
-		{
-			bool success = true;
-			Dict<Collection<string>> response = {};
-			
-			/* Validate fields */
-			Dict<FieldInfo> fields = static::buildFields();
-			fields.each
-			(
-				void (FieldInfo field, string key) use (api, item, success, response)
-				{
-					Collection<string> error = static::validateField(api, item, field);
-					if (error.count() > 0)
-					{
-						success = false;
-						response = response.setIm(field.api_name, error);
-					}
-				}
-			);
-			
-			if (not success)
-			{
-				return response.toDict();
-			}
-			
-			return null;
-		}
-	;
+	static async Dict<Collection<string>> validateItem
+		(CrudApi api, Dict<FieldInfo> fields, Dict item, Dict<Collection<string>> validate)
+	{
+		return validate;
+	}
 	
 	
 	
@@ -155,8 +131,26 @@ struct CrudApi extends CoreStruct implements CrudInterface
 	static async fn<Dict, Dict> validate(CrudApi api) =>
 		async Dict (Dict item) use (api)
 		{
-			Dict<string> validate = item -> await static::validateItem(api);
-			if (validate)
+			Dict<Collection<string>> validate = {};
+			
+			/* Validate fields */
+			Dict<FieldInfo> fields = static::buildFields();
+			fields.each
+			(
+				void (FieldInfo field, string key) use (api, item, validate)
+				{
+					Collection<string> error = await static::validateField(api, field, item);
+					if (error.count() > 0)
+					{
+						validate = validate.setIm(field.api_name, error);
+					}
+				}
+			);
+			
+			validate = await static::validateItem(api, fields, item, validate);
+			
+			bool success = validate.keys().count() == 0;
+			if (not success)
 			{
 				throw new ApiException
 				(
@@ -175,52 +169,51 @@ struct CrudApi extends CoreStruct implements CrudInterface
 	/**
 	 * Process item value
 	 */
-	pure fn<bool, Dict> processItemFlag(CrudApi api, FieldInfo field, Dict old_item = null) =>
-		async bool (Dict item) use (api, field, old_item)
-		{
-			if (field.api_name == "id") return false;
-			return true;
-		}
-	;
+	pure fn<bool, Dict> processItemFlag
+		(CrudApi api, FieldInfo field, Dict filter_item, Dict new_item, Dict old_item = null)
+	{
+		if (field.api_name == "id") return false;
+		if (field.virtual == true) return false;
+		return true;
+	}
 	
 	
 	
 	/**
 	 * Process item value
 	 */
-	pure fn<var, Dict> processItemValue(CrudApi api, FieldInfo field, Dict old_item = null) =>
-		async var (Dict item) use (api, field, old_item)
+	pure fn<var, Dict> processItemValue
+		(CrudApi api, FieldInfo field, Dict filter_item, Dict new_item, Dict old_item = null)
+	{
+		
+		/* Set default value */
+		var value = new_item -> CrudModel::getItemValue(field);
+		if (value === null or value === "")
 		{
-			
-			/* Set default value */
-			var value = item -> CrudModel::getItemValue(field);
-			if (value === null or value === "")
-			{
-				value = field.default_value;
-				return item -> CrudModel::setItemValue(field, value);
-			}
-			
-			return item;
+			value = field.default_value;
 		}
-	;
+		
+		return filter_item -> CrudModel::setItemValue(field, value);
+	}
 	
 	
 	
 	/**
 	 * Process item
 	 */
-	pure fn<var, Dict> processItem(CrudApi api, Dict old_item = null) =>
-		async var (Dict item) use (api, old_item) => item;
+	pure fn<var, Dict> processItem
+		(CrudApi api, Dict filter_item, Dict new_item, Dict old_item = null) => filter_item
+	;
 	
 	
 	
 	/**
 	 * Process form item
 	 */
-	static Dict processFormItem(CrudApi api, Dict old_item = null) =>
-		async Dict (Dict item) use (api, old_item)
+	static fn<Dict, Dict> processFormItem(CrudApi api, Dict old_item = null) =>
+		Dict (Dict new_item) use (api, old_item)
 		{
-			Dict new_item = {};
+			Dict filter_item = {};
 			
 			Dict<FieldInfo> fields = static::buildFields();
 			Collection<string> keys = fields.keys();
@@ -229,16 +222,16 @@ struct CrudApi extends CoreStruct implements CrudInterface
 			{
 				FieldInfo field = fields[ keys[i] ];
 				
-				bool flag = item -> static::processItemFlag(api, field, old_item);
+				bool flag = static::processItemFlag(api, field, filter_item, new_item, old_item);
 				if (flag)
 				{
-					new_item = item -> await static::processItemValue(api, field, old_item);
+					filter_item = await static::processItemValue(api, field, filter_item, new_item, old_item);
 				}
 			}
 			
-			new_item = new_item -> await static::processItem(api, old_item);
+			filter_item = await static::processItem(api, filter_item, new_item, old_item);
 			
-			return new_item;
+			return filter_item;
 		}
 	;
 	
@@ -310,11 +303,11 @@ struct CrudApi extends CoreStruct implements CrudInterface
 		cursor.close();
 		
 		Vector new_res = new Vector();
-		fn processItem = static::processItem(api);
 		for (int i=0; i<res.count(); i++)
 		{
-			var item = await processItem(res.item(i));
-			new_res.push(item);
+			Dict new_item = res.item(i);
+			new_item = await static::processItem(api, new_item, new_item);
+			new_res.push(new_item);
 		}
 		
 		return msg -> method success{ "items": new_res };

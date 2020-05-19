@@ -32,6 +32,7 @@ struct FieldInfo extends CoreStruct
 	var default_value = null;
 	bool required = false;
 	bool readonly = false;
+	bool virtual = false;
 	
 	/* For select */
 	Collection<Dict<string, string>> select = null;
