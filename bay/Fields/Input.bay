@@ -19,8 +19,8 @@
 namespace Runtime.Web.CRUD.Fields;
 
 use Runtime.CoreStruct;
-use Runtime.Web.Component;
-use Runtime.Web.LayoutModel;
+use Runtime.Web.Frontend.Component;
+use Runtime.Web.Frontend.LayoutModel;
 use Runtime.Web.Events.ChangeEvent;
 
 

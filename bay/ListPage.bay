@@ -24,8 +24,8 @@ use Runtime.Web.Annotations.Route;
 use Runtime.Web.Annotations.RouteList;
 use Runtime.Web.Events.ChangeEvent;
 use Runtime.Web.Events.MouseClickEvent;
-use Runtime.Web.Component;
-use Runtime.Web.LayoutModel;
+use Runtime.Web.Frontend.Component;
+use Runtime.Web.Frontend.LayoutModel;
 use Runtime.Web.RenderContainer;
 use Runtime.Web.RenderHelper;
 use Runtime.Web.Response;
@@ -401,7 +401,7 @@ class ListPage extends Component
 		this.form_add.setApiWaitResponse();
 		
 		/* Call create api */
-		MessageRPC msg = @ -> await method sendMessage
+		MessageRPC msg = await this.sendMessage
 		{
 			"api_name": api_name,
 			"space_name": classof CrudInterface,
@@ -450,7 +450,7 @@ class ListPage extends Component
 		this.form_edit.setApiWaitResponse();
 		
 		/* Call create api */
-		MessageRPC msg = @ -> await method sendMessage
+		MessageRPC msg = await this.sendMessage
 		{
 			"api_name": api_name,
 			"space_name": classof CrudInterface,
@@ -506,7 +506,7 @@ class ListPage extends Component
 		};
 		
 		/* Call create api */
-		MessageRPC msg = @ -> await method sendMessage
+		MessageRPC msg = await this.sendMessage
 		{
 			"api_name": api_name,
 			"space_name": classof CrudInterface,
