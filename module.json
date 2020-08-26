@@ -1,3 +1,8 @@
 {
-	"name": "Core.UI.Input",
+	"name": "Runtime.Web.Input",
+	"files":
+	[
+		"Input",
+		"ModuleDescription"
+	]
 }
