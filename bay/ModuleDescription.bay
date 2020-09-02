@@ -18,11 +18,8 @@
 
 namespace Runtime.Web.Input;
 
-use Runtime.Interfaces.AssetsInterface;
-use Runtime.Interfaces.ModuleDescriptionInterface;
 
-
-class ModuleDescription implements ModuleDescriptionInterface, AssetsInterface
+static class ModuleDescription
 {
 
 	
@@ -60,28 +57,8 @@ class ModuleDescription implements ModuleDescriptionInterface, AssetsInterface
 	
 	
 	/**
-	 * Returns module files load order
-	 * @return Collection<string>
-	 */
-	pure Collection<string> assets() => 
-	[
-		"Runtime.Web.Input/Input",
-		"Runtime.Web.Input/ModuleDescription",
-	];
-	
-	
-	
-	/**
 	 * Returns enities
 	 */
 	pure Collection<Dict> entities() => null;
-	
-	
-	
-	/**
-	 * Returns sync loaded files
-	 */		
-	pure Collection<string> resources() => null;
-	
 	
 }
