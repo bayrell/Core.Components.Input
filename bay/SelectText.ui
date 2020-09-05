@@ -17,45 +17,36 @@
 -->
 
 <class version="1.0"
-	name="Runtime.Web.Input.Input" extends="Runtime.Web.Component" 
+	name="Runtime.Web.Input.SelectText" extends="Runtime.Web.Component" 
 	module="Runtime.Web.Input"
 >
 
 
+<use name="Runtime.lib" />
 <use name="Runtime.Core.Message" />
-<use name="Runtime.Web.Events.ChangeEvent" />
+<use name="Runtime.Web.Events.User.ChangeEvent" />
 
 
 <style>
-%input{
-	width: 100%;
-	padding: 6px 12px;
-}
 </style>
 
 
 
 <template name="render">
-	%var string value = (params != null) ? params.get("value", "") : "";
-	%var string name = (params != null) ? params.get("name", "") : "";
-	%var string kind = (params != null) ? params.get("type", "input") : "";
-	%var primitive tag = (params != null) ? params.get("@tag", "") : "";
-	<input class='input' @tag={ tag } @event:ChangeEvent="onChange"
-		name={ name } type={ kind } value={ model }
-	>{ content }</input>
+	%var Collection options = params["options"];
+	%if (rtl::exists(options))
+	{
+		%var Dict item = options.findItem( lib::equalAttr("id", model) );
+		%if (rtl::exists(item))
+		{
+			{ item["value"] }
+		}
+	}
 </template>
 
 
 
 <script type="frontend">
-
-/**
- * On change
- */
-public void onChange(Message<ChangeEvent> msg)
-{
-	this.signal(msg.data);
-}
 
 </script>
 

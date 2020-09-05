@@ -3,6 +3,9 @@
 	"assets":
 	[
 		"Input",
+		"Label",
+		"Select",
+		"SelectText",
 		"ModuleDescription"
 	]
 }

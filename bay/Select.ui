@@ -17,7 +17,7 @@
 -->
 
 <class version="1.0"
-	name="Runtime.Web.Input.Input" extends="Runtime.Web.Component" 
+	name="Runtime.Web.Input.Select" extends="Runtime.Web.Component" 
 	module="Runtime.Web.Input"
 >
 
@@ -27,7 +27,7 @@
 
 
 <style>
-%input{
+%select{
 	width: 100%;
 	padding: 6px 12px;
 }
@@ -36,13 +36,30 @@
 
 
 <template name="render">
-	%var string value = (params != null) ? params.get("value", "") : "";
+	
 	%var string name = (params != null) ? params.get("name", "") : "";
-	%var string kind = (params != null) ? params.get("type", "input") : "";
-	%var primitive tag = (params != null) ? params.get("@tag", "") : "";
-	<input class='input' @tag={ tag } @event:ChangeEvent="onChange"
-		name={ name } type={ kind } value={ model }
-	>{ content }</input>
+	
+	<select class='select' @event:ChangeEvent="onChange" name={ name } value={ model }>
+	%var Collection options = params["options"];
+	%if (rtl::exists(options))
+	{
+		%if (params["select_value"] == true)
+		{
+			<option value="">{ _("Runtime.Web.Input", "Select value") }</option>
+		}
+		%for (int i=0; i<options.count(); i++)
+		{
+			%var Dict item = options[i];
+			%var Dict selected = {};
+			%if (item["id"] == model)
+			{
+				%var selected = { "selected": "selected" };
+			}
+			<option value={ item["id"] } ...selected>{ item["value"] }</option>
+		}
+	}
+	</select>
+	
 </template>
 
 
