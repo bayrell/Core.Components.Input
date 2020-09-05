@@ -18,16 +18,9 @@
 
 namespace Runtime.Web.CRUD;
 
-use Runtime.Annotations.Entity;
-use Runtime.Annotations.Provider;
-use Runtime.Interfaces.AssetsInterface;
-use Runtime.Interfaces.ContextInterface;
-use Runtime.Interfaces.ModuleDescriptionInterface;
 
-
-class ModuleDescription implements ModuleDescriptionInterface, AssetsInterface
+class ModuleDescription
 {
-	
 	
 	/**
 	 * Returns module name
@@ -51,48 +44,7 @@ class ModuleDescription implements ModuleDescriptionInterface, AssetsInterface
 	 */
 	pure Map<string> requiredModules() => 
 	{
-		"Runtime.Web": "*",
+		"Runtime.ORM": "*",
 	};
-	
-	
-	
-	/**
-	 * Returns module files load order
-	 * @return Collection<string>
-	 */
-	pure Collection<string> assets() => 
-	[
-		'Runtime.Web.CRUD/Fields/Input',
-		'Runtime.Web.CRUD/Fields/Select',
-		'Runtime.Web.CRUD/Fields/TextArea',
-		'Runtime.Web.CRUD/CrudEvent',
-		'Runtime.Web.CRUD/CrudInterface',
-		'Runtime.Web.CRUD/CrudModel',
-		'Runtime.Web.CRUD/FieldInfo',
-		'Runtime.Web.CRUD/Filter',
-		'Runtime.Web.CRUD/Form',
-		'Runtime.Web.CRUD/FormModel',
-		'Runtime.Web.CRUD/ListItems',
-		'Runtime.Web.CRUD/ListPage',
-		'Runtime.Web.CRUD/ModuleDescription',
-	];
-	
-	
-	
-	/**
-	 * Returns enities
-	 */
-	pure Collection<Dict> entities() => 
-	[
-	];
-	
-	
-	
-	/**
-	 * Returns sync loaded files
-	 */		
-	public static Collection<string> resources() => null;	
-	
-	
 	
 }

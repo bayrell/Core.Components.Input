@@ -1,0 +1,341 @@
+<class version="1.0"
+	name="Runtime.Web.CRUD.CrudPage" extends="Runtime.Web.Component" 
+	module="Runtime.Web.CRUD." model="Runtime.Web.CRUD.CrudPageModel"
+>
+
+<use name="Runtime.Core.Message" />
+<use name="Runtime.Core.RemoteCallAnswer" />
+<use name="Runtime.Web.LayoutModel" />
+<use name="Runtime.Web.RenderDriver" />
+<use name="Runtime.Web.Events.MouseClickEvent" />
+<use name="Runtime.Web.Button.Button" component="true" />
+<use name="Runtime.Web.CRUD.CrudPageModel" />
+<use name="Runtime.Web.Dialog.Dialog" component="true" />
+<use name="Runtime.Web.Dialog.DialogEvent" />
+<use name="Runtime.Web.Dialog.DialogModel" />
+<use name="Runtime.Web.Form.Form" component="true" />
+<use name="Runtime.Web.Form.FormEvent" />
+<use name="Runtime.Web.Form.FormModel" />
+<use name="Runtime.Web.Input.Input" component="true" />
+<use name="Runtime.Web.Input.Label" component="true" />
+<use name="Runtime.Web.Input.Select" component="true" />
+<use name="Runtime.Web.Input.SelectText" component="true" />
+<use name="Runtime.Web.Table.Table" component="true" />
+<use name="Runtime.Web.Table.TableModel" />
+
+<style>
+</style>
+
+
+<template name="render">
+	
+	%var Dict crud_settings = params["crud_settings"];
+	%var Collection<string> form_fields = params["form_fields"];
+	%var Collection<string> table_fields = params["table_fields"];
+	
+	<!-- Extend settings -->
+	%var crud_settings = crud_settings
+		.setIm(
+			"number",
+			{
+				"api_name": "number",
+				"label": "",
+				"class_name": classof Label,
+				"class_settings":
+				{
+					"render": html (LayoutModel layout, var model, Dict params, var content)
+					{
+						TableModel model = params["table-model"];
+						int index = params["row-index"];
+						if (model)
+						{
+							return index + 1;
+						}
+						return "";
+					},
+				},
+			}
+		)
+		.setIm(
+			"edit",
+			{
+				"api_name": "edit",
+				"label": "",
+				"class_name": classof Label,
+				"class_settings":
+				{
+					"render": html (LayoutModel layout, var model, Dict params, var content)
+					{
+						TableModel model = params["table-model"];
+						Dict item = params["row-data"];
+						int index = params["row-index"];
+						return
+							<Button type='small' data-index={ index } data-id={ item["id"] }
+								@event:MouseClickEvent="onRowEditClick">
+								Edit
+							</Button>
+							<span class='lpad5' />
+							<Button type='small' data-index={ index } data-id={ item["id"] }
+								@event:MouseClickEvent="onRowDeleteClick">
+								Delete
+							</Button>
+						;
+					},
+				},
+			}
+		)
+	;
+	
+	<div class='crud'>
+		
+		<div class='buttons'>
+			<Button @event:MouseClickEvent="onShowAddClick">Add user</Button>
+		</div>
+		
+		<div class='table'>
+			<Table @name="table" struct={ crud_settings } fields={ table_fields } />
+		</div>
+		
+		<div class='dialogs'>
+			<Dialog @name="dialog_add" style={ DialogModel::STYLE_CONTENT } show_buttons={ false }>
+				<Form @name="form_add" action="add" struct={ crud_settings } fields={ form_fields }
+					@event:FormEvent="onFormEvent"
+				/>
+			</Dialog>
+			<Dialog @name="dialog_edit" style={ DialogModel::STYLE_CONTENT } show_buttons={ false }>
+				<Form @name="form_edit" action="edit" struct={ crud_settings } fields={ form_fields }
+					@event:FormEvent="onFormEvent"
+				/>
+			</Dialog>
+			<Dialog @name="dialog_delete" style={ DialogModel::STYLE_CONFIRM } auto_hide={ false }
+				@event:DialogEvent="onDialogEvent"
+			/>
+		</div>
+	</div>
+	
+</template>
+
+
+<script type="frontend">
+
+
+/**
+ * Returns object name
+ */
+string getCrudObjectName() => this.params.get("object_name", "");
+
+
+
+/**
+ * On show add dialog
+ */
+async void onShowAddClick(Message<MouseClickEvent> msg)
+{
+	this.dialog_add.update("show");
+	this.form_add.update("clear");
+}
+
+
+
+/**
+ * On row edit
+ */
+async void onRowEditClick(Message<MouseClickEvent> msg)
+{
+	int id = msg.sender.params["data-id"];
+	Dict item = this.table.call("getItemById", id);
+	this.dialog_edit.update("show");
+	this.form_edit.update("clear");
+	this.form_edit.update("setItem", item);
+}
+
+
+
+/**
+ * On row delete
+ */
+async void onRowDeleteClick(Message<MouseClickEvent> msg)
+{
+	int id = msg.sender.params["data-id"];
+	Dict item = this.table.call("getItemById", id);
+	
+	this.dialog_delete.update
+	(
+		"show",
+		{
+			"text": _("Runtime.Web.CRUD", "Do you realy want to delete '%name%' ?", { "name": item["name"] } ),
+			"tag":
+			{
+				"item": item,
+			},
+		}
+	);
+	
+}
+
+
+
+/**
+ * On dialog event
+ */
+async void onDialogEvent(Message<DialogEvent> msg)
+{
+	DialogEvent e = msg.data;
+	if (msg.sender == this.dialog_delete)
+	{
+		if (e.button_result == "cancel")
+		{
+			this.dialog_delete.update("hide");
+		}
+		else
+		{
+			await this.onItemDelete(e.tag["item"]);
+		}
+	}
+}
+
+
+
+/**
+ * On form event
+ */
+async void onFormEvent(Message<FormEvent> msg)
+{
+	FormEvent e = msg.data;
+	if (msg.sender == this.form_add)
+	{
+		if (e.event == FormEvent::ACTION_CANCEL)
+		{
+			this.dialog_add.update("hide");
+		}
+		else if (e.event == FormEvent::ACTION_CREATE)
+		{
+			await this.onItemAdd();
+		}
+	}
+	
+	if (msg.sender == this.form_edit)
+	{
+		if (e.event == FormEvent::ACTION_CANCEL)
+		{
+			this.dialog_edit.update("hide");
+		}
+		else if (e.event == FormEvent::ACTION_UPDATE)
+		{
+			await this.onItemUpdate();
+		}
+	}
+}
+
+
+
+/**
+ * Add item
+ */
+async void onItemAdd()
+{
+	Dict item = this.form_add.model("item");
+	this.form_add.update("setWaitMessage");
+	
+	/* Send api */
+	RemoteCallAnswer answer = await RenderDriver::remoteBusCall
+	{
+		"object_name": this.getCrudObjectName(),
+		"interface_name": "core.crud",
+		"method_name": "add",
+		"data":
+		{
+			"item": item,
+		},
+	};
+	
+	if (answer.isSuccess())
+	{
+		this.table.update("prependItem", answer.response["item"]);
+		this.dialog_add.update("hide");
+	}
+	else
+	{
+		this.form_add.update("setAnswer", answer);
+	}
+	
+}
+
+
+
+/**
+ * Update item
+ */
+async void onItemUpdate()
+{
+	Dict item = this.form_edit.model("item");
+	this.form_edit.update("setWaitMessage");
+	
+	/* Send api */
+	RemoteCallAnswer answer = await RenderDriver::remoteBusCall
+	{
+		"object_name": this.getCrudObjectName(),
+		"interface_name": "core.crud",
+		"method_name": "update",
+		"data":
+		{
+			"pk":
+			{
+				"id": item["id"],
+			},
+			"item": item,
+		},
+	};
+	
+	if (answer.isSuccess())
+	{
+		this.table.update("setItem", item["id"], answer.response["item"]);
+		this.dialog_edit.update("hide");
+	}
+	else
+	{
+		this.form_edit.update("setAnswer", answer);
+	}
+	
+}
+
+
+
+/**
+ * Delete item
+ */
+async void onItemDelete(Dict item)
+{
+	this.dialog_delete.update("setWaitMessage");
+	
+	/* Send api */
+	RemoteCallAnswer answer = await RenderDriver::remoteBusCall
+	{
+		"object_name": this.getCrudObjectName(),
+		"interface_name": "core.crud",
+		"method_name": "delete",
+		"data":
+		{
+			"pk":
+			{
+				"id": item["id"],
+			},
+		},
+	};
+	
+	if (answer.isSuccess())
+	{
+		this.table.update("removeItemById", item["id"]);
+		this.dialog_delete.update("hide");
+	}
+	else
+	{
+		this.dialog_delete.update("setAnswer", answer);
+	}
+}
+
+
+
+</script>
+
+</class>

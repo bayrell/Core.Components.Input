@@ -18,98 +18,98 @@
 
 namespace Runtime.Web.CRUD;
 
-use Runtime.lib;
-use Runtime.CoreStruct;
-use Runtime.MessageRPC;
-use Runtime.Monad;
-use Runtime.RuntimeConstant;
-use Runtime.RuntimeUtils;
-use Runtime.Exceptions.ApiException;
-use Runtime.Exceptions.RuntimeException;
-use Runtime.ORM.Cursor;
-use Runtime.ORM.ORMProviderInterface;
+use Runtime.rtl;
+use Runtime.BaseObject;
+use Runtime.Core.ApiException;
+use Runtime.Core.RemoteCallAnswer;
+use Runtime.Core.RemoteCallRequest;
+use Runtime.ORM.CursorInterface as Cursor;
+use Runtime.ORM.DriverInterface as ORMDriver;
 use Runtime.ORM.QueryBuilder;
-use Runtime.Web.CRUD.CrudInterface;
-use Runtime.Web.CRUD.CrudModel;
-use Runtime.Web.CRUD.FieldInfo;
+use Runtime.Web.Backend.ApiList;
+use Runtime.Web.Backend.ApiMethod;
+use Runtime.Web.CRUD.CrudApi;
 
 
-struct CrudApi extends CoreStruct implements CrudInterface
+class CrudApi extends BaseObject
 {
-	
 	string action = "";
-	MessageRPC msg = null;
-	QueryBuilder q = null;
-	Dict item = null;
-	int id = null;
-	
-	
-	#ifdef BACKEND then
-	
-	
-	/**
-	 * Returns crud model name
-	 */
-	pure string crudModelName() => "";
-	
+	RemoteCallRequest request = null;
 	
 	
 	/**
 	 * Returns crud table name
 	 */
-	pure string crudTableName() => "";
+	string getTableName() => "";
 	
 	
 	
 	/**
-	 * Api init
+	 * Init request
 	 */
-	pure async fn<QueryBuilder, QueryBuilder> apiInit(CrudApi api) => api;
-	
-	
-	
-	/**
-	 * Build fields
-	 */
-	pure memorize Dict<FieldInfo> buildFields()
+	async void init()
 	{
-		string crud_model = static::crudModelName();
-		fn buildFields = rtl::method(crud_model, "buildFields");
-		return buildFields();
 	}
 	
 	
 	
 	/**
-	 * Add validate error
+	 * Process item from database
 	 */
-	pure fn<Dict, Dict> addValidateError(string field_name, string error) =>
-		Dict<Collection<string>> (Dict<Collection<string>> response) use (field_name, error)
-		{
-			Collection<string> items = response[field_name];
-			if (items == null) items = [];
-			items = items.pushIm(error);
-			return response.setIm(field_name, items);
-		}
-	;
+	async Dict fromDatabase(Dict item)
+	{
+		return item;
+	}
 	
 	
 	
 	/**
-	 * Validate field
+	 * Process item to database
 	 */
-	pure string validateField(CrudApi api, FieldInfo field, Dict item)
+	async Dict toDatabase(Dict item)
 	{
-		Collection<string> error = [];
-		
-		/* Check if required */
-		var value = item -> CrudModel::getItemValue(field);
-		if (field.required and (value === null or value === ""))
-		{
-			error = error.pushIm( _("Runtime.Web.CRUD", "This field must be filled") );
-		}
-		
-		return error;
+		return item;
+	}
+	
+	
+	
+	/**
+	 * Process item to output
+	 */
+	async Dict processItem(Dict item)
+	{
+		return item;
+	}
+	
+	
+	
+	/**
+	 * Process items to output
+	 */
+	async Collection<Dict> processItems(Collection<Dict> items)
+	{
+		return items;
+	}
+	
+	
+	
+	/**
+	 * Convert primare key before query
+	 */
+	async Dict convertPrimaryKey(Dict pk)
+	{
+		return pk;
+	}
+	
+	
+	
+	/**
+	 * Convert item before query
+	 */
+	async Dict convertItem(Dict item)
+	{
+		item = item.removeIm("id");
+		return item;
 	}
 	
 	
@@ -117,210 +117,101 @@ struct CrudApi extends CoreStruct implements CrudInterface
 	/**
 	 * Validate item
 	 */
-	static async Dict<Collection<string>> validateItem
-		(CrudApi api, Dict<FieldInfo> fields, Dict item, Dict<Collection<string>> validate)
+	async list<bool, RemoteCallAnswer> validateItem(Dict item, RemoteCallAnswer answer)
 	{
-		return validate;
+		return [true, item, answer];
 	}
 	
 	
 	
 	/**
-	 * Validate
+	 * Validate primary key
 	 */
-	static async fn<Dict, Dict> validate(CrudApi api) =>
-		async Dict (Dict item) use (api)
-		{
-			Dict<Collection<string>> validate = {};
-			
-			/* Validate fields */
-			Dict<FieldInfo> fields = static::buildFields();
-			fields.each
-			(
-				void (FieldInfo field, string key) use (api, item, validate)
-				{
-					Collection<string> error = await static::validateField(api, field, item);
-					if (error.count() > 0)
-					{
-						validate = validate.setIm(field.api_name, error);
-					}
-				}
-			);
-			
-			validate = await static::validateItem(api, fields, item, validate);
-			
-			bool success = validate.keys().count() == 0;
-			if (not success)
-			{
-				throw new ApiException
-				(
-					_("Runtime.Web.CRUD", "Validation fields error"),
-					RuntimeConstant::ERROR_VALIDATION,
-					validate
-				);
-			}
-			
-			return item;
-		}
-	;
-	
-	
-	
-	/**
-	 * Process item value
-	 */
-	pure fn<bool, Dict> processItemFlag
-		(CrudApi api, FieldInfo field, Dict filter_item, Dict new_item, Dict old_item = null)
+	async list<bool, RemoteCallAnswer> validatePrimaryKey(Dict pk, RemoteCallAnswer answer)
 	{
-		if (field.api_name == "id") return false;
-		if (field.virtual == true) return false;
-		return true;
+		return [true, pk, answer];
 	}
 	
 	
 	
 	/**
-	 * Process item value
+	 * Can create item
 	 */
-	pure fn<var, Dict> processItemValue
-		(CrudApi api, FieldInfo field, Dict filter_item, Dict new_item, Dict old_item = null)
+	async list<bool, RemoteCallAnswer> canCreateItem(Dict new_item, RemoteCallAnswer answer)
 	{
-		
-		/* Set default value */
-		var value = new_item -> CrudModel::getItemValue(field);
-		if (value === null or value === "")
-		{
-			value = field.default_value;
-		}
-		
-		return filter_item -> CrudModel::setItemValue(field, value);
+		return [true, new_item, answer];
 	}
 	
 	
 	
 	/**
-	 * Process item
+	 * Can update item
 	 */
-	pure fn<var, Dict> processItem
-		(CrudApi api, Dict filter_item, Dict new_item, Dict old_item = null) => filter_item
-	;
-	
-	
-	
-	/**
-	 * Process form item
-	 */
-	static fn<Dict, Dict> processFormItem(CrudApi api, Dict old_item = null) =>
-		Dict (Dict new_item) use (api, old_item)
-		{
-			Dict filter_item = {};
-			
-			Dict<FieldInfo> fields = static::buildFields();
-			Collection<string> keys = fields.keys();
-			
-			for (int i=0; i<keys.count(); i++)
-			{
-				FieldInfo field = fields[ keys[i] ];
-				
-				bool flag = static::processItemFlag(api, field, filter_item, new_item, old_item);
-				if (flag)
-				{
-					filter_item = await static::processItemValue(api, field, filter_item, new_item, old_item);
-				}
-			}
-			
-			filter_item = await static::processItem(api, filter_item, new_item, old_item);
-			
-			return filter_item;
-		}
-	;
-	
-	
-	
-	/**
-	 * Convert item from database
-	 */
-	pure fn<Dict, Dict> fromDatabase(CrudApi api) =>
-		Dict (Dict item) => item
-	;
-	
-	
-	
-	/**
-	 * Convert item to database
-	 */
-	pure fn<Dict, Dict> toDatabase(CrudApi api) =>
-		Dict (Dict item) => item
-	;
-	
-	
-	
-	/**
-	 * Build search query
-	 */
-	pure QueryBuilder buildSearchQuery(CrudApi api)
+	async list<bool, RemoteCallAnswer> canUpdateItem(Dict pk, Dict old_item, Dict new_item, RemoteCallAnswer answer)
 	{
-		ORMProviderInterface p = @ -> method getProvider(classof ORMProviderInterface);
-		string table_name = static::crudTableName();
-		string crud_model = static::crudModelName();
-		
-		fn default_order = rtl::method(crud_model, "getDefaultTableOrder");
-		
+		return [true, new_item, answer];
+	}
+	
+	
+	
+	/**
+	 * Can delete item
+	 */
+	async list<bool, RemoteCallAnswer> canDeleteItem(Dict pk, Dict old_item, RemoteCallAnswer answer)
+	{
+		return [true, null, answer];
+	}
+	
+	
+	
+	/**
+	 * Build query
+	 */
+	QueryBuilder buildSearchQuery()
+	{
+		string table_name = this.getTableName();
 		QueryBuilder q = new QueryBuilder()
-			-> method select(table_name, p.prefix)
-			-> method offset(0, 100)
-			-> method order( default_order() )
+			.select(table_name)
+			.offset(0, 100)
+			.order( this.getDefaultSearchOrder() )
 		;
-		
 		return q;
 	}
 	
 	
 	
 	/**
-	 * Search
+	 * Search query
 	 */
-	static async MessageRPC search(MessageRPC msg)
+	async list<QueryBuilder, Collection> searchQuery()
 	{
-		ORMProviderInterface p = @ -> method getProvider(classof ORMProviderInterface);
-		Collection<Dict> res = null;
-		
-		CrudApi api = static::newInstance
-		{
-			"action": "search",
-			"msg": msg,
-		};
+		/* Get ORM driver */
+		ORMDriver orm = @.getDriver(classof ORMDriver);
 		
 		/* Build query */
-		api <= q <= static::buildSearchQuery(api);
-		
-		/* Init api */
-		api = await static::apiInit(api);
+		QueryBuilder q = this.buildSearchQuery();
 		
 		/* Execute query */
-		Cursor cursor = p -> await method execute(api.q);
-		res = await cursor.fetchAll( static::fromDatabase(api) );
-		cursor.close();
+		Cursor cursor = orm.execute(q);
 		
-		Vector new_res = new Vector();
-		for (int i=0; i<res.count(); i++)
+		/* Get result */
+		Vector items = new Vector();
+		while (true)
 		{
-			Dict new_item = res.item(i);
-			new_item = await static::processItem(api, new_item, new_item);
-			new_res.push(new_item);
+			Dict row = await cursor.fetch();
+			if (row == null)
+			{
+				break;
+			}
+			row = await this.fromDatabase(row);
+			row = await this.processItem(row);
+			items.push(row);
 		}
 		
-		return msg -> method success{ "items": new_res };
-	}
-	
-	
-	
-	/**
-	 * Find items
-	 */
-	static async MessageRPC findItem(MessageRPC msg)
-	{
-		return msg;
+		await cursor.close();
+		Collection items = await this.processItems( items.toCollection() );
+		
+		return [q, items];
 	}
 	
 	
@@ -328,249 +219,312 @@ struct CrudApi extends CoreStruct implements CrudInterface
 	/**
 	 * Create query
 	 */
-	static fn<Dict, int> createQuery(CrudApi api) =>
-		async int (Dict new_item)
-		{
-			string table_name = static::crudTableName();
-			ORMProviderInterface p = @ -> method getProvider(classof ORMProviderInterface);
-			
-			/* Create query */
-			int id = p
-				-> await method insert
-				(
-					table_name,
-					new_item
-				)
-				-> await method end
-			;
-			
-			return id;
-		}
-	;
+	async var createQuery(Dict item)
+	{
+		string table_name = this.getTableName();
+		
+		/* To database */
+		item = await this.convertItem(item);
+		item = this.toDatabase(item);
+		
+		/* Get ORM driver */
+		ORMDriver orm = @.getDriver(classof ORMDriver);
+		
+		/* Create query */
+		Cursor cursor = await orm.insert(table_name, item);
+		int id = await cursor.lastInsertId();
+		await cursor.close();
+		
+		return id;
+	}
 	
 	
 	
 	/**
 	 * Update query
 	 */
-	static fn<Dict, int> updateQuery(CrudApi api, int item_id) =>
-		async void (Dict new_item) use (api, item_id)
-		{
-			string table_name = static::crudTableName();
-			ORMProviderInterface p = @ -> method getProvider(classof ORMProviderInterface);
-			
-			/* Update query */
-			p
-				-> await method update
-				(
-					table_name,
-					{
-						"id": item_id,
-					}
-					new_item
-				)
-				-> await method end
-			;
-		}
-	;
+	async void updateQuery(Dict pk, Dict item)
+	{
+		string table_name = this.getTableName();
+		
+		/* Process item */
+		item = await this.convertItem(item);
+		item = this.toDatabase(item);
+		
+		/* Process primary key */
+		pk = await this.convertPrimaryKey(pk);
+		pk = this.toDatabase(pk);
+		
+		/* Get ORM driver */
+		ORMDriver orm = @.getDriver(classof ORMDriver);
+		
+		/* Create query */
+		Cursor cursor = await orm.update(table_name, pk, item);
+		await cursor.close();
+	}
 	
 	
 	
 	/**
 	 * Delete query
 	 */
-	static fn<Dict, void> deleteQuery(CrudApi api) =>
-		async void (Dict row) use (api)
-		{
-			int item_id = row["id"];
-			
-			string table_name = static::crudTableName();
-			ORMProviderInterface p = @ -> method getProvider(classof ORMProviderInterface);
-			
-			/* Delete query */
-			p
-				-> await method query
-				(
-					"delete from " ~ p.prefix ~ table_name ~ " where id=:id limit 1",
-					{
-						"id": item_id,
-					}
-				)
-				-> await method end
-			;
-		}
-	;
-	
-	
-	
-	/**
-	 * Check item is null
-	 */
-	static fn<Dict, Dict> checkItemIsNull(CrudApi api) =>
-		async Dict (Dict new_item)
-		{
-			if (new_item == null)
-			{
-				throw new ApiException
-				(
-					_("Runtime.Web.CRUD", "Converted to database item is null"),
-					RuntimeConstant::ERROR_FATAL
-				);
-			}
-			
-			return new_item;
-		}
-	;
-	
-	
-	
-	/**
-	 * Get by id
-	 */
-	static fn<int, Dict> getById(CrudApi api) =>
-		async Dict (int item_id) use (api)
-		{
-			string table_name = static::crudTableName();
-			ORMProviderInterface p = @ -> method getProvider(classof ORMProviderInterface);
-			
-			/* Find item */
-			Dict row = p
-				-> await method query
-				(
-					"select * from " ~ p.prefix ~ table_name ~ " where id=:id limit 1",
-					{
-						"id": item_id,
-					}
-				)
-				-> await method getOne
-			;
-			if (row == null)
-			{
-				throw new ApiException
-				(
-					_("Runtime.Web.CRUD", "Item not found"),
-					RuntimeConstant::ERROR_ITEM_NOT_FOUND
-				);
-			}
-			
-			/* Convert old row */
-			row = row -> static::fromDatabase(api);
-			return row;
-		}
-	;
-	
-	
-	
-	/**
-	 * Create
-	 */
-	static async MessageRPC create(MessageRPC msg)
+	async void deleteQuery(Dict pk)
 	{
-		Dict item = msg["data"]["item"];
+		string table_name = this.getTableName();
 		
-		CrudApi api = static::newInstance
-		{
-			"action": "create",
-			"msg": msg,
-			"item": item,
-		};
+		/* Process primary key */
+		pk = await this.convertPrimaryKey(pk);
+		pk = this.toDatabase(pk);
 		
-		/* Init api */
-		api = await static::apiInit(api);
-		
-		/* Convert item */
-		Dict new_item = item
-			-> await static::validate(api)
-			-> await static::processFormItem(api)
-			-> static::toDatabase(api)
-			-> static::checkItemIsNull(api)
-		;
+		/* Get ORM driver */
+		ORMDriver orm = @.getDriver(classof ORMDriver);
 		
 		/* Create query */
-		int id = new_item -> await static::createQuery(api);
-		
-		/* Find item */
-		Dict item = id -> await static::getById(api);
-		
-		return msg -> method success({ "item": item }, _("Runtime.WEB.CRUD", "Success created"));
+		Cursor cursor = await orm.delete(table_name, pk);
+		await cursor.close();
 	}
 	
 	
 	
 	/**
-	 * Update
+	 * Returns item by pk
 	 */
-	static async MessageRPC update(MessageRPC msg)
+	async Dict getByPrimaryKey(Dict pk)
 	{
-		string table_name = static::crudTableName();
-		ORMProviderInterface p = @ -> method getProvider(classof ORMProviderInterface);
-		Dict item = msg["data"]["item"];
+		string table_name = this.getTableName();
 		
-		CrudApi api = static::newInstance
-		{
-			"action": "update",
-			"msg": msg,
-			"item": item,
-		};
+		/* Process primary key */
+		pk = await this.convertPrimaryKey(pk);
+		pk = this.toDatabase(pk);
 		
-		/* Get id */
-		string item_id = item["id"];
+		/* Get ORM driver */
+		ORMDriver orm = @.getDriver(classof ORMDriver);
+		
+		/* Create query */
+		Cursor cursor = await orm.select(table_name, pk, 0, 1);
+		Dict item = cursor.fetchOne();
+		await cursor.close();
+		
+		return item;
+	}
+	
+	
+	
+	/**
+	 * Search api action
+	 */
+	static async list searchAction(RemoteCallRequest request, RemoteCallAnswer answer)
+	{
+		CrudApi api = rtl::newInstance(static::getCurrentClassName());
+		api.action = "search";
+		api.request = request;
 		
 		/* Init api */
-		api = await static::apiInit(api);
+		await api.init();
 		
-		/* Convert item */
-		Dict item = item
-			-> await static::validate(api)
-		;
+		/* Search query */
+		list res = await api.searchQuery();
+		QueryBuilder q = res[0];
+		Collection items = res[1];
 		
-		/* Find item */
-		Dict row = item_id -> await static::getById(api);
+		/* Create response */
+		Dict response =
+		{
+			"order": q._order,
+			"items": items,
+		};
+		answer = answer::success(answer, response);
 		
-		/* Covert item */
-		Dict new_item = item
-			-> await static::processFormItem(api, row)
-			-> static::toDatabase(api)
-			-> static::checkItemIsNull(api)
-		;
-		
-		/* Update query */
-		new_item -> await static::updateQuery(api, item_id);
-		
-		/* Find item */
-		Dict item = item_id -> await static::getById(api);
-		
-		return msg -> method success({ "item": item }, _("Runtime.WEB.CRUD", "Success updated"));
+		return [request, answer];
 	}
 	
 	
 	
 	/**
-	 * Delete
+	 * Add api action
 	 */
-	static async MessageRPC delete(MessageRPC msg)
+	static async list addAction(RemoteCallRequest request, RemoteCallAnswer answer)
 	{
-		string table_name = static::crudTableName();
-		ORMProviderInterface p = @ -> method getProvider(classof ORMProviderInterface);
-		string item_id = msg["data"]["id"];
+		CrudApi api = rtl::newInstance(static::getCurrentClassName());
+		api.action = "add";
+		api.request = request;
 		
-		CrudApi api = static::newInstance
+		/* Init api */
+		await api.init();
+		
+		/* Get item */
+		Dict item = request.data["item"];
+		
+		/* Validate */
+		list res = await api.validateItem(item, answer);
+		if (not res[0])
 		{
-			"action": "delete",
-			"msg": msg,
-			"id": item_id,
+			answer = res[2];
+			return [request, answer];
+		}
+		
+		/* Get item */
+		item = res[1];
+		
+		/* Can create */
+		list res = await api.canCreateItem(item, answer);
+		if (not res[0])
+		{
+			answer = res[2];
+			return [request, answer];
+		}
+		
+		/* Get item */
+		item = res[1];
+		
+		/* Create query */
+		var id = await api.createQuery(item);
+		
+		/* Create response */
+		item <= id <= id;
+		item = await api.processItem(item);
+		Dict response =
+		{
+			"pk":
+			{
+				"id": id,
+			},
+			"item": item,
 		};
+		answer = answer::success(answer, response);
 		
-		/* Find item */
-		Dict row = item_id -> await static::getById(api);
-		
-		/* Delete query */
-		row -> await static::deleteQuery(api);
-		
-		return msg -> method success({ "id": item_id }, _("Runtime.WEB.CRUD", "Success deleted"));
+		return [request, answer];
 	}
 	
-	#endif
 	
+	
+	/**
+	 * Update api action
+	 */
+	static async list updateAction(RemoteCallRequest request, RemoteCallAnswer answer)
+	{
+		CrudApi api = rtl::newInstance(static::getCurrentClassName());
+		api.action = "update";
+		api.request = request;
+		
+		/* Init api */
+		await api.init();
+		
+		/* Get item */
+		Dict pk = request.data["pk"];
+		Dict new_item = request.data["item"];
+		
+		/* Validate pk */
+		list res = await api.validatePrimaryKey(pk, answer);
+		if (not res[0])
+		{
+			answer = res[2];
+			return [request, answer];
+		}
+		
+		/* Get item */
+		pk = res[1];
+		
+		/* Validate */
+		list res = await api.validateItem(new_item, answer);
+		if (not res[0])
+		{
+			answer = res[2];
+			return [request, answer];
+		}
+		
+		/* Get item */
+		new_item = res[1];
+		
+		/* Find item */
+		Dict old_item = await api.getByPrimaryKey(pk);
+		if (old_item == null)
+		{
+			throw new ApiException("Item not found", rtl::ERROR_ITEM_NOT_FOUND);
+		}
+		
+		/* Can update */
+		list res = await api.canUpdateItem(pk, old_item, new_item, answer);
+		if (not res[0])
+		{
+			answer = res[2];
+			return [request, answer];
+		}
+		
+		/* Get item */
+		new_item = res[1];
+		
+		/* Update query */
+		await api.updateQuery(pk, new_item);
+		
+		/* Create response */
+		new_item = await api.processItem(new_item);
+		Dict response =
+		{
+			"pk": pk,
+			"item": new_item,
+		};
+		answer = answer::success(answer, response);
+		
+		return [request, answer];
+	}
+	
+	
+	
+	/**
+	 * Delete api action
+	 */
+	static async list deleteAction(RemoteCallRequest request, RemoteCallAnswer answer)
+	{
+		CrudApi api = rtl::newInstance(static::getCurrentClassName());
+		api.action = "delete";
+		api.request = request;
+		
+		/* Init api */
+		await api.init();
+		
+		/* Get item */
+		Dict pk = request.data["pk"];
+		
+		/* Validate pk */
+		list res = api.validatePrimaryKey(pk, answer);
+		if (not res[0])
+		{
+			answer = res[2];
+			return [request, answer];
+		}
+		
+		/* Get item */
+		pk = res[1];
+		
+		/* Find item */
+		Dict old_item = await api.getByPrimaryKey(pk);
+		if (old_item == null)
+		{
+			throw new ApiException("Item not found", rtl::ERROR_ITEM_NOT_FOUND);
+		}
+		
+		/* Can update */
+		list res = await api.canDeleteItem(pk, old_item, answer);
+		if (not res[0])
+		{
+			answer = res[2];
+			return [request, answer];
+		}
+		
+		/* Update query */
+		await api.deleteQuery(pk);
+		
+		/* Create response */
+		old_item = await api.processItem(old_item);
+		Dict response =
+		{
+			"pk": pk,
+			"item": old_item,
+		};
+		answer = answer::success(answer, response);
+		
+		return [request, answer];
+	}
 	
 }

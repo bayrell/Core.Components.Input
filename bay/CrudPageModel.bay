@@ -1,5 +1,5 @@
 /*!
- *  Bayrell Runtime Library
+ *  Bayrell Runtime Library 
  *
  *  (c) Copyright 2016-2020 "Ildar Bikmamatov" <support@bayrell.org>
  *
@@ -18,37 +18,18 @@
 
 namespace Runtime.Web.CRUD;
 
-use Runtime.CoreStruct;
+use Runtime.BaseStruct;
+use Runtime.Web.Table.TableModel;
+use Runtime.Web.Dialog.DialogModel;
+use Runtime.Web.Form.FormModel;
 
 
-struct FieldInfo extends CoreStruct
+struct CrudPageModel extends BaseStruct
 {
-	string api_name = "";
-	string comment = "";
-	string label = "";
-	string table = "";
-	string form = "";
-	string group = "default";
-	var default_value = null;
-	bool required = false;
-	bool readonly = false;
-	bool virtual = false;
-	
-	/* For select */
-	Collection<Dict<string, string>> select = null;
-	string select_field_name = "value";
-	bool select_empty = true;
-	
-	/* Additional options */
-	Dict<string, var> options = {};
-	Collection<string> model = null;
-	
-	
-	#ifdef BACKEND then
-	
-	/* Db type */
-	string db_type = "";
-	bool nullable = false;
-	
-	#endif
+	FormModel form_add = new FormModel();
+	FormModel form_edit = new FormModel();
+	TableModel table = new TableModel();
+	DialogModel dialog_add = new DialogModel();
+	DialogModel dialog_edit = new DialogModel();
+	DialogModel dialog_delete = new DialogModel();
 }
