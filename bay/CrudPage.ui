@@ -24,7 +24,7 @@
 <use name="Runtime.Web.Table.TableModel" />
 
 <style>
-%crud table{
+%crud %(Table)table{
 	border-collapse: collapse;
 	border: 1px #ccc solid;
 	margin-top: 10px;

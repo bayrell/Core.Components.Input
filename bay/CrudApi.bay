@@ -45,7 +45,7 @@ class CrudApi extends BaseObject
 	Collection<Dict> items = null;
 	
 	/* Save */
-	Map<Vector<string>> field_errors = new Map();
+	Map<Vector<string>> fields_errors = new Map();
 	Dict pk = null;
 	Dict item = null;
 	Dict new_item = null;
@@ -169,11 +169,11 @@ class CrudApi extends BaseObject
 	 */
 	async bool addFieldError(string field_name, string error)
 	{
-		if (not this.field_errors.has(field_name))
+		if (not this.fields_errors.has(field_name))
 		{
-			this.field_errors.set(field_name, new Vector());
+			this.fields_errors.set(field_name, new Vector());
 		}
-		Vector<string> errors = this.field_errors[field_name];
+		Vector<string> errors = this.fields_errors[field_name];
 		errors.push(error);
 	}
 	
@@ -224,7 +224,7 @@ class CrudApi extends BaseObject
 					_("Runtime.Web.CRUD", "Validation fields error"),
 					rtl::ERROR_VALIDATION,
 					{
-						"field_errors": this.field_errors
+						"fields_errors": this.fields_errors
 					}
 				);
 			}
