@@ -38,10 +38,10 @@
 <template name="render">
 	%var string value = (params != null) ? params.get("value", "") : "";
 	%var string name = (params != null) ? params.get("name", "") : "";
-	%var string kind = (params != null) ? params.get("type", "input") : "";
+	%var string type = (params != null) ? params.get("type", "input") : "";
 	%var primitive tag = (params != null) ? params.get("@tag", "") : "";
 	<input class='input' @tag={ tag } @event:ChangeEvent="onChange"
-		name={ name } type={ kind } value={ model }
+		name={ name } type={ type } value={ model }
 	>{ content }</input>
 </template>
 
