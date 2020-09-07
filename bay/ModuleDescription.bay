@@ -44,7 +44,9 @@ class ModuleDescription
 	 */
 	pure Map<string> requiredModules() => 
 	{
+		#ifdef BACKEND then
 		"Runtime.ORM": "*",
+		#endif
 	};
 	
 }

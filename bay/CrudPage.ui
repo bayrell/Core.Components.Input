@@ -24,72 +24,40 @@
 <use name="Runtime.Web.Table.TableModel" />
 
 <style>
+%crud table{
+	border-collapse: collapse;
+	border: 1px #ccc solid;
+	margin-top: 10px;
+}
+%crud %(Table)td, %crud %(Table)th{
+	border: 1px #ccc solid;
+	padding: 5px;
+}
+%crud %(Table)row:hover td{
+	background: #eee;
+}
+%crud %(Table)td-edit-buttons{
+	margin-left: -2px;
+	margin-right: -2px;
+}
+%crud %(Table)td-edit-buttons .button{
+	margin-left: 2px;
+	margin-right: 2px;
+}
 </style>
 
 
 <template name="render">
 	
+	%var Dict messages = params["messages"];
 	%var Dict crud_settings = params["crud_settings"];
 	%var Collection<string> form_fields = params["form_fields"];
 	%var Collection<string> table_fields = params["table_fields"];
 	
-	<!-- Extend settings -->
-	%var crud_settings = crud_settings
-		.setIm(
-			"number",
-			{
-				"api_name": "number",
-				"label": "",
-				"class_name": classof Label,
-				"class_settings":
-				{
-					"render": html (LayoutModel layout, var model, Dict params, var content)
-					{
-						TableModel model = params["table-model"];
-						int index = params["row-index"];
-						if (model)
-						{
-							return index + 1;
-						}
-						return "";
-					},
-				},
-			}
-		)
-		.setIm(
-			"edit",
-			{
-				"api_name": "edit",
-				"label": "",
-				"class_name": classof Label,
-				"class_settings":
-				{
-					"render": html (LayoutModel layout, var model, Dict params, var content)
-					{
-						TableModel model = params["table-model"];
-						Dict item = params["row-data"];
-						int index = params["row-index"];
-						return
-							<Button type='small' data-index={ index } data-id={ item["id"] }
-								@event:MouseClickEvent="onRowEditClick">
-								Edit
-							</Button>
-							<span class='lpad5' />
-							<Button type='small' data-index={ index } data-id={ item["id"] }
-								@event:MouseClickEvent="onRowDeleteClick">
-								Delete
-							</Button>
-						;
-					},
-				},
-			}
-		)
-	;
-	
 	<div class='crud'>
 		
 		<div class='buttons'>
-			<Button @event:MouseClickEvent="onShowAddClick">Add user</Button>
+			<Button @event:MouseClickEvent="onShowAddClick">{ messages["add"] }</Button>
 		</div>
 		
 		<div class='table'>
@@ -113,6 +81,30 @@
 		</div>
 	</div>
 	
+</template>
+
+
+<template name="buttonEdit">
+	%var TableModel table_model = params["table-model"];
+	%var Dict item = params["row-data"];
+	%var int index = params["row-index"];
+	<Button type='small' data-index={ index } data-id={ item["id"] }
+		@event:MouseClickEvent="onRowEditClick" @key="edit"
+	>
+		{ _("Runtime.Web.CRUD", "Edit") }
+	</Button>
+</template>
+
+
+<template name="buttonDelete">
+	%var TableModel table_model = params["table-model"];
+	%var Dict item = params["row-data"];
+	%var int index = params["row-index"];
+	<Button type='small' data-index={ index } data-id={ item["id"] }
+		@event:MouseClickEvent="onRowDeleteClick" @key="delete"
+	>
+		{ _("Runtime.Web.CRUD", "Delete") }
+	</Button>
 </template>
 
 
@@ -251,7 +243,7 @@ async void onItemAdd()
 	
 	if (answer.isSuccess())
 	{
-		this.table.update("prependItem", answer.response["item"]);
+		this.table.update("prependItem", answer.response["new_item"]);
 		this.dialog_add.update("hide");
 	}
 	else
@@ -289,7 +281,7 @@ async void onItemUpdate()
 	
 	if (answer.isSuccess())
 	{
-		this.table.update("setItem", item["id"], answer.response["item"]);
+		this.table.update("setItem", item["id"], answer.response["new_item"]);
 		this.dialog_edit.update("hide");
 	}
 	else

@@ -34,13 +34,28 @@ use Runtime.Web.CRUD.CrudApi;
 class CrudApi extends BaseObject
 {
 	string action = "";
+	RemoteCallAnswer answer = null;
 	RemoteCallRequest request = null;
+	
+	/* Search */
+	QueryBuilder q = null;
+	int page = 0;
+	int pages = 0;
+	int limit = 100;
+	Collection<Dict> items = null;
+	
+	/* Save */
+	Map<Vector<string>> field_errors = new Map();
+	Dict pk = null;
+	Dict item = null;
+	Dict new_item = null;
+	Dict old_item = null;
 	
 	
 	/**
 	 * Returns crud table name
 	 */
-	string getTableName() => "";
+	pure string getTableName() => "";
 	
 	
 	
@@ -49,6 +64,82 @@ class CrudApi extends BaseObject
 	 */
 	async void init()
 	{
+	}
+	
+	
+	
+	/**
+	 * Process item before response
+	 */
+	async Dict processItem(Dict item)
+	{
+		return item;
+	}
+	
+	
+	
+	/**
+	 * Process items
+	 */
+	async void processItems()
+	{
+	}
+	
+	
+	
+	/**
+	 * Convert primare key before query
+	 */
+	async Dict convertPrimaryKey(Dict pk)
+	{
+		return pk;
+	}
+	
+	
+	
+	/**
+	 * Convert item before save to database
+	 */
+	async Dict convertItem(Dict item)
+	{
+		Dict settings = this.settings();
+		Dict settings_keys = settings.keys();
+		Dict item_keys = item.keys();
+		
+		for (int i=0; i<settings_keys.count(); i++)
+		{
+			string key = settings_keys[i];
+			var value = item[key];
+			Dict field = settings[key];
+			
+			/* Set default value */
+			var default_value = field["default"] |> default bool false;
+			if (rtl::isEmpty(value))
+			{
+				item = rtl::setAttr(item, key, default_value);
+			}
+		}
+		
+		for (int i=0; i<item_keys.count(); i++)
+		{
+			string key = item_keys[i];
+			
+			/* Remove if key does not exists */
+			if (not settings.has(key))
+			{
+				item = item.removeIm(key);
+			}
+			Dict field = settings[key];
+			
+			/* Remove readonly key */
+			bool readonly = field["readonly"] |> default bool false;
+			if (readonly)
+			{
+				item = item.removeIm(key);
+			}
+		}
+		
+		return item;
 	}
 	
 	
@@ -74,92 +165,79 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Process item to output
+	 * Add error
 	 */
-	async Dict processItem(Dict item)
+	async bool addFieldError(string field_name, string error)
 	{
-		return item;
+		if (not this.field_errors.has(field_name))
+		{
+			this.field_errors.set(field_name, new Vector());
+		}
+		Vector<string> errors = this.field_errors[field_name];
+		errors.push(error);
 	}
 	
 	
 	
 	/**
-	 * Process items to output
+	 * Validate form
 	 */
-	async Collection<Dict> processItems(Collection<Dict> items)
+	async bool validateForm()
 	{
-		return items;
+		bool res = true;
+		
+		Dict settings = this.settings();
+		Dict keys = settings.keys();
+		
+		for (int i=0; i<keys.count(); i++)
+		{
+			string key = keys[i];
+			var value = this.item[key];
+			if (not settings.has(key)) continue;
+			
+			Dict field = settings[key];
+			bool required = field["required"] |> default bool false;
+			if (required and rtl::isEmpty(value))
+			{
+				this.addFieldError( key, _("Runtime.Web.CRUD", "This field must be filled") );
+				res = false;
+			}
+		}
+		
+		return res;
 	}
 	
 	
 	
 	/**
-	 * Convert primare key before query
+	 * Validate
 	 */
-	async Dict convertPrimaryKey(Dict pk)
+	async bool validate()
 	{
-		return pk;
+		if (this.action == "add" or this.action == "update")
+		{
+			list res = await this.validateForm();
+			if (not res)
+			{
+				throw new ApiException
+				(
+					_("Runtime.Web.CRUD", "Validation fields error"),
+					rtl::ERROR_VALIDATION,
+					{
+						"field_errors": this.field_errors
+					}
+				);
+			}
+		}
 	}
 	
 	
 	
 	/**
-	 * Convert item before query
+	 * After
 	 */
-	async Dict convertItem(Dict item)
+	async bool after()
 	{
-		item = item.removeIm("id");
-		return item;
-	}
-	
-	
-	
-	/**
-	 * Validate item
-	 */
-	async list<bool, RemoteCallAnswer> validateItem(Dict item, RemoteCallAnswer answer)
-	{
-		return [true, item, answer];
-	}
-	
-	
-	
-	/**
-	 * Validate primary key
-	 */
-	async list<bool, RemoteCallAnswer> validatePrimaryKey(Dict pk, RemoteCallAnswer answer)
-	{
-		return [true, pk, answer];
-	}
-	
-	
-	
-	/**
-	 * Can create item
-	 */
-	async list<bool, RemoteCallAnswer> canCreateItem(Dict new_item, RemoteCallAnswer answer)
-	{
-		return [true, new_item, answer];
-	}
-	
-	
-	
-	/**
-	 * Can update item
-	 */
-	async list<bool, RemoteCallAnswer> canUpdateItem(Dict pk, Dict old_item, Dict new_item, RemoteCallAnswer answer)
-	{
-		return [true, new_item, answer];
-	}
-	
-	
-	
-	/**
-	 * Can delete item
-	 */
-	async list<bool, RemoteCallAnswer> canDeleteItem(Dict pk, Dict old_item, RemoteCallAnswer answer)
-	{
-		return [true, null, answer];
 	}
 	
 	
@@ -169,13 +247,23 @@ class CrudApi extends BaseObject
 	 */
 	QueryBuilder buildSearchQuery()
 	{
-		string table_name = this.getTableName();
+		string table_name = static::getTableName();
 		QueryBuilder q = new QueryBuilder()
 			.select(table_name)
 			.offset(0, 100)
 			.order( this.getDefaultSearchOrder() )
 		;
 		return q;
+	}
+	
+	
+	
+	/**
+	 * Search query before
+	 */
+	async bool searchQueryBefore()
+	{
+		return true;
 	}
 	
 	
@@ -209,9 +297,19 @@ class CrudApi extends BaseObject
 		}
 		
 		await cursor.close();
-		Collection items = await this.processItems( items.toCollection() );
 		
 		return [q, items];
+	}
+	
+	
+	
+	/**
+	 * Create query before
+	 */
+	async bool createQueryBefore()
+	{
+		this.new_item = await this.convertItem(this.new_item);
+		return true;
 	}
 	
 	
@@ -221,10 +319,9 @@ class CrudApi extends BaseObject
 	 */
 	async var createQuery(Dict item)
 	{
-		string table_name = this.getTableName();
+		string table_name = static::getTableName();
 		
 		/* To database */
-		item = await this.convertItem(item);
 		item = this.toDatabase(item);
 		
 		/* Get ORM driver */
@@ -241,18 +338,28 @@ class CrudApi extends BaseObject
 	
 	
 	/**
+	 * Update query before
+	 */
+	async bool updateQueryBefore()
+	{
+		this.pk = await this.convertPrimaryKey(this.pk);
+		this.new_item = await this.convertItem(this.new_item);
+		return true;
+	}
+	
+	
+	
+	/**
 	 * Update query
 	 */
 	async void updateQuery(Dict pk, Dict item)
 	{
-		string table_name = this.getTableName();
+		string table_name = static::getTableName();
 		
 		/* Process item */
-		item = await this.convertItem(item);
 		item = this.toDatabase(item);
 		
 		/* Process primary key */
-		pk = await this.convertPrimaryKey(pk);
 		pk = this.toDatabase(pk);
 		
 		/* Get ORM driver */
@@ -266,14 +373,24 @@ class CrudApi extends BaseObject
 	
 	
 	/**
+	 * Delete query before
+	 */
+	async bool deleteQueryBefore()
+	{
+		this.pk = await this.convertPrimaryKey(this.pk);
+		return true;
+	}
+	
+	
+	
+	/**
 	 * Delete query
 	 */
 	async void deleteQuery(Dict pk)
 	{
-		string table_name = this.getTableName();
+		string table_name = static::getTableName();
 		
 		/* Process primary key */
-		pk = await this.convertPrimaryKey(pk);
 		pk = this.toDatabase(pk);
 		
 		/* Get ORM driver */
@@ -291,7 +408,7 @@ class CrudApi extends BaseObject
 	 */
 	async Dict getByPrimaryKey(Dict pk)
 	{
-		string table_name = this.getTableName();
+		string table_name = static::getTableName();
 		
 		/* Process primary key */
 		pk = await this.convertPrimaryKey(pk);
@@ -315,27 +432,45 @@ class CrudApi extends BaseObject
 	 */
 	static async list searchAction(RemoteCallRequest request, RemoteCallAnswer answer)
 	{
+		/* Create api */
 		CrudApi api = rtl::newInstance(static::getCurrentClassName());
+		
+		/* Get data from request */
 		api.action = "search";
 		api.request = request;
 		
 		/* Init api */
 		await api.init();
 		
+		/* Validate */
+		await api.validate();
+		
+		/* Can query */
+		bool res = await api.searchQueryBefore();
+		if (not res)
+		{
+			return [request, api.answer];
+		}
+		
 		/* Search query */
 		list res = await api.searchQuery();
-		QueryBuilder q = res[0];
-		Collection items = res[1];
+		api.q = res[0];
+		api.items = res[1];
+		
+		/* Process items */
+		await api.processItems();
 		
 		/* Create response */
 		Dict response =
 		{
-			"order": q._order,
-			"items": items,
+			"items": api.items,
 		};
-		answer = answer::success(answer, response);
+		api.answer = answer::success(answer, response);
 		
-		return [request, answer];
+		/* After query */
+		await api.after();
+		
+		return [request, api.answer];
 	}
 	
 	
@@ -345,55 +480,53 @@ class CrudApi extends BaseObject
 	 */
 	static async list addAction(RemoteCallRequest request, RemoteCallAnswer answer)
 	{
+		/* Create api */
 		CrudApi api = rtl::newInstance(static::getCurrentClassName());
+		
+		/* Get data from request */
 		api.action = "add";
+		api.answer = answer;
 		api.request = request;
+		api.item = request.data["item"] |> default Dict {};
+		api.new_item = api.item;
 		
 		/* Init api */
 		await api.init();
 		
-		/* Get item */
-		Dict item = request.data["item"];
-		
 		/* Validate */
-		list res = await api.validateItem(item, answer);
-		if (not res[0])
+		await api.validate();
+		
+		/* Can query */
+		bool res = await api.createQueryBefore();
+		if (not res)
 		{
-			answer = res[2];
-			return [request, answer];
+			return [request, api.answer];
 		}
-		
-		/* Get item */
-		item = res[1];
-		
-		/* Can create */
-		list res = await api.canCreateItem(item, answer);
-		if (not res[0])
-		{
-			answer = res[2];
-			return [request, answer];
-		}
-		
-		/* Get item */
-		item = res[1];
 		
 		/* Create query */
-		var id = await api.createQuery(item);
+		var id = await api.createQuery(api.new_item);
+		
+		/* Process item */
+		api.pk =
+		{
+			"id": id,
+		};
+		api.new_item = await api.getByPrimaryKey(api.pk);
+		api.new_item = await api.processItem(api.new_item);
 		
 		/* Create response */
-		item <= id <= id;
-		item = await api.processItem(item);
 		Dict response =
 		{
-			"pk":
-			{
-				"id": id,
-			},
-			"item": item,
+			"pk": api.pk,
+			"item": api.item,
+			"new_item": api.new_item,
 		};
-		answer = answer::success(answer, response);
+		api.answer = answer::success(answer, response);
 		
-		return [request, answer];
+		/* After query */
+		await api.after();
+		
+		return [request, api.answer];
 	}
 	
 	
@@ -403,70 +536,61 @@ class CrudApi extends BaseObject
 	 */
 	static async list updateAction(RemoteCallRequest request, RemoteCallAnswer answer)
 	{
+		/* Create api */
 		CrudApi api = rtl::newInstance(static::getCurrentClassName());
+		
+		/* Get data from request */
 		api.action = "update";
+		api.answer = answer;
 		api.request = request;
+		api.pk = request.data["pk"] |> default Dict {};
+		api.item = request.data["item"] |> default Dict {};
+		api.new_item = api.item;
 		
 		/* Init api */
 		await api.init();
 		
-		/* Get item */
-		Dict pk = request.data["pk"];
-		Dict new_item = request.data["item"];
-		
-		/* Validate pk */
-		list res = await api.validatePrimaryKey(pk, answer);
-		if (not res[0])
-		{
-			answer = res[2];
-			return [request, answer];
-		}
-		
-		/* Get item */
-		pk = res[1];
-		
 		/* Validate */
-		list res = await api.validateItem(new_item, answer);
-		if (not res[0])
-		{
-			answer = res[2];
-			return [request, answer];
-		}
-		
-		/* Get item */
-		new_item = res[1];
+		await api.validate();
 		
 		/* Find item */
-		Dict old_item = await api.getByPrimaryKey(pk);
-		if (old_item == null)
+		api.old_item = await api.getByPrimaryKey(api.pk);
+		if (api.old_item == null)
 		{
-			throw new ApiException("Item not found", rtl::ERROR_ITEM_NOT_FOUND);
+			throw new ApiException
+			(
+				_("Runtime.Web.CRUD", "Item not found"),
+				rtl::ERROR_ITEM_NOT_FOUND
+			);
 		}
 		
-		/* Can update */
-		list res = await api.canUpdateItem(pk, old_item, new_item, answer);
-		if (not res[0])
+		/* Can query */
+		bool res = await api.updateQueryBefore();
+		if (not res)
 		{
-			answer = res[2];
-			return [request, answer];
+			return [request, api.answer];
 		}
-		
-		/* Get item */
-		new_item = res[1];
 		
 		/* Update query */
-		await api.updateQuery(pk, new_item);
+		await api.updateQuery(api.pk, api.new_item);
 		
 		/* Create response */
-		new_item = await api.processItem(new_item);
+		api.new_item = await api.getByPrimaryKey(api.pk);
+		api.new_item = await api.processItem(api.new_item);
+		api.old_item = await api.processItem(api.old_item);
 		Dict response =
 		{
-			"pk": pk,
-			"item": new_item,
+			"pk": api.pk,
+			"item": api.item,
+			"new_item": api.new_item,
+			"old_item": api.old_item,
 		};
-		answer = answer::success(answer, response);
+		api.answer = answer::success(answer, response);
 		
-		return [request, answer];
+		/* After query */
+		await api.after();
+		
+		return [request, api.answer];
 	}
 	
 	
@@ -476,55 +600,51 @@ class CrudApi extends BaseObject
 	 */
 	static async list deleteAction(RemoteCallRequest request, RemoteCallAnswer answer)
 	{
+		/* Create api */
 		CrudApi api = rtl::newInstance(static::getCurrentClassName());
+		
+		/* Get data from request */
 		api.action = "delete";
+		api.answer = answer;
 		api.request = request;
+		api.pk = request.data["pk"] |> default Dict {};
 		
 		/* Init api */
 		await api.init();
 		
-		/* Get item */
-		Dict pk = request.data["pk"];
-		
-		/* Validate pk */
-		list res = api.validatePrimaryKey(pk, answer);
-		if (not res[0])
-		{
-			answer = res[2];
-			return [request, answer];
-		}
-		
-		/* Get item */
-		pk = res[1];
+		/* Validate */
+		await api.validate();
 		
 		/* Find item */
-		Dict old_item = await api.getByPrimaryKey(pk);
-		if (old_item == null)
+		api.old_item = await api.getByPrimaryKey(api.pk);
+		if (api.old_item == null)
 		{
 			throw new ApiException("Item not found", rtl::ERROR_ITEM_NOT_FOUND);
 		}
 		
-		/* Can update */
-		list res = await api.canDeleteItem(pk, old_item, answer);
-		if (not res[0])
+		/* Can query */
+		bool res = await api.deleteQueryBefore();
+		if (not res)
 		{
-			answer = res[2];
-			return [request, answer];
+			return [request, api.answer];
 		}
 		
 		/* Update query */
-		await api.deleteQuery(pk);
+		await api.deleteQuery(api.pk);
 		
 		/* Create response */
-		old_item = await api.processItem(old_item);
+		api.old_item = await api.processItem(api.old_item);
 		Dict response =
 		{
-			"pk": pk,
-			"item": old_item,
+			"pk": api.pk,
+			"item": api.old_item,
 		};
-		answer = answer::success(answer, response);
+		api.answer = answer::success(answer, response);
 		
-		return [request, answer];
+		/* After query */
+		await api.after();
+		
+		return [request, api.answer];
 	}
 	
 }
