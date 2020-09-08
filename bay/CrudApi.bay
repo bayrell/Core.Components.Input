@@ -38,9 +38,11 @@ class CrudApi extends BaseObject
 	RemoteCallRequest request = null;
 	
 	/* Search */
+	var filter = null;
 	QueryBuilder q = null;
 	int page = 0;
 	int pages = 0;
+	int total = 0;
 	int limit = 100;
 	Collection<Dict> items = null;
 	
@@ -56,6 +58,30 @@ class CrudApi extends BaseObject
 	 * Returns crud table name
 	 */
 	pure string getTableName() => "";
+	
+	
+	
+	/**
+	 * Returns table field value
+	 */
+	Collection<Collection<string>> getDefaultOrder() =>
+	[
+		["id", "desc"]
+	];
+	
+	
+	
+	/**
+	 * Returns default limit
+	 */
+	int getDefaultLimit() => 10;
+	
+	
+	
+	/**
+	 * Returns maximum limit
+	 */
+	Collection<Collection<string>> getMaxLimit() => 1000;
 	
 	
 	
@@ -248,10 +274,10 @@ class CrudApi extends BaseObject
 	QueryBuilder buildSearchQuery()
 	{
 		string table_name = static::getTableName();
-		QueryBuilder q = new QueryBuilder()
-			.select(table_name)
-			.offset(0, 100)
-			.order( this.getDefaultSearchOrder() )
+		QueryBuilder q = new QueryBuilder{ "_found_rows": true }
+			.select( table_name )
+			.page( this.page, this.limit )
+			.order( this.getDefaultOrder() )
 		;
 		return q;
 	}
@@ -271,7 +297,7 @@ class CrudApi extends BaseObject
 	/**
 	 * Search query
 	 */
-	async list<QueryBuilder, Collection> searchQuery()
+	async void searchQuery()
 	{
 		/* Get ORM driver */
 		ORMDriver orm = @.getDriver(classof ORMDriver);
@@ -296,9 +322,12 @@ class CrudApi extends BaseObject
 			items.push(row);
 		}
 		
-		await cursor.close();
+		this.q = q;
+		this.items = items.toCollection();
+		this.total = await cursor.foundRows();
+		this.pages = (this.limit > 0) ? rtl::ceil(this.total / this.limit) : 0;
 		
-		return [q, items];
+		await cursor.close();
 	}
 	
 	
@@ -438,6 +467,9 @@ class CrudApi extends BaseObject
 		/* Get data from request */
 		api.action = "search";
 		api.request = request;
+		api.page = request.data["page"] |> default int 0;
+		api.limit = request.data["limit"] |> default int api.getDefaultLimit();
+		if (api.limit > api.getMaxLimit()) api.limit = api.getMaxLimit();
 		
 		/* Init api */
 		await api.init();
@@ -453,9 +485,7 @@ class CrudApi extends BaseObject
 		}
 		
 		/* Search query */
-		list res = await api.searchQuery();
-		api.q = res[0];
-		api.items = res[1];
+		await api.searchQuery();
 		
 		/* Process items */
 		await api.processItems();
@@ -463,7 +493,12 @@ class CrudApi extends BaseObject
 		/* Create response */
 		Dict response =
 		{
+			"filter": api.filter,
 			"items": api.items,
+			"page": api.page,
+			"limit": api.limit,
+			"total": api.total,
+			"pages": api.pages,
 		};
 		api.answer = answer::success(answer, response);
 		

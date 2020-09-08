@@ -9,6 +9,7 @@
 <use name="Runtime.Web.RenderDriver" />
 <use name="Runtime.Web.Events.MouseClickEvent" />
 <use name="Runtime.Web.Button.Button" component="true" />
+<use name="Runtime.Web.CRUD.CrudFilter" component="true" />
 <use name="Runtime.Web.CRUD.CrudPageModel" />
 <use name="Runtime.Web.Dialog.Dialog" component="true" />
 <use name="Runtime.Web.Dialog.DialogEvent" />
@@ -20,30 +21,11 @@
 <use name="Runtime.Web.Input.Label" component="true" />
 <use name="Runtime.Web.Input.Select" component="true" />
 <use name="Runtime.Web.Input.SelectText" component="true" />
+<use name="Runtime.Web.Table.Pagination" component="true" />
 <use name="Runtime.Web.Table.Table" component="true" />
 <use name="Runtime.Web.Table.TableModel" />
 
 <style>
-%crud %(Table)table{
-	border-collapse: collapse;
-	border: 1px #ccc solid;
-	margin-top: 10px;
-}
-%crud %(Table)td, %crud %(Table)th{
-	border: 1px #ccc solid;
-	padding: 5px;
-}
-%crud %(Table)row:hover td{
-	background: #eee;
-}
-%crud %(Table)td-edit-buttons{
-	margin-left: -2px;
-	margin-right: -2px;
-}
-%crud %(Table)td-edit-buttons .button{
-	margin-left: 2px;
-	margin-right: 2px;
-}
 </style>
 
 
@@ -52,16 +34,29 @@
 	%var Dict messages = params["messages"];
 	%var Dict crud_settings = params["crud_settings"];
 	%var Collection<string> form_fields = params["form_fields"];
+	%var Collection<string> filter_fields = params["filter_fields"];
 	%var Collection<string> table_fields = params["table_fields"];
 	
 	<div class='crud'>
 		
 		<div class='buttons'>
-			<Button @event:MouseClickEvent="onShowAddClick">{ messages["add"] }</Button>
+			<Button @event:MouseClickEvent="onShowAddClick" type="primary">{ messages["add"] }</Button>
 		</div>
+		
+		%if (rtl::exists(filter_fields))
+		{
+			<div class='filter'>
+				<CrudFilter @name="filter" struct={ crud_settings } fields={ filter_fields } />
+			</div>
+		}
 		
 		<div class='table'>
 			<Table @name="table" struct={ crud_settings } fields={ table_fields } />
+			<Pagination
+				page={ model.table.page + 1 }
+				pages={ model.table.pages }
+				delta={ model.table.delta }
+			/>
 		</div>
 		
 		<div class='dialogs'>

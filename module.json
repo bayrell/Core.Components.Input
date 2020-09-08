@@ -2,6 +2,7 @@
 	"name": "Runtime.Web.CRUD",
 	"assets":
 	[
+		"CrudFilter",
 		"CrudPage",
 		"CrudPageModel",
 		"ModuleDescription"

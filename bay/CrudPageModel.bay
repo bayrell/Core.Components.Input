@@ -19,6 +19,9 @@
 namespace Runtime.Web.CRUD;
 
 use Runtime.BaseStruct;
+use Runtime.Core.RemoteCallAnswer;
+use Runtime.Core.RemoteCallRequest;
+use Runtime.Web.Request;
 use Runtime.Web.Table.TableModel;
 use Runtime.Web.Dialog.DialogModel;
 use Runtime.Web.Form.FormModel;
@@ -28,8 +31,28 @@ struct CrudPageModel extends BaseStruct
 {
 	FormModel form_add = new FormModel();
 	FormModel form_edit = new FormModel();
+	FormModel filter = new FormModel();
 	TableModel table = new TableModel();
 	DialogModel dialog_add = new DialogModel();
 	DialogModel dialog_edit = new DialogModel();
 	DialogModel dialog_delete = new DialogModel();
+	
+	
+	/**
+	 * Crud search
+	 */
+	static RemoteCallAnswer getCrudSearchParams(Request request)
+	{
+		Map data = new Map();
+		
+		if (rtl::exists(request.query))
+		{
+			string page = request.query.get("page", 1) - 1;
+			if (page < 0) page = 0;
+			data.set("page", page);
+			data.set("limit", 20);
+		}
+		
+		return data.toDict();
+	}
 }
