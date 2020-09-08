@@ -30,6 +30,9 @@
 %select{
 	width: 100%;
 	padding: 6px 12px;
+	background-color: ${ vars["colors", "default", "background"] };
+	border: 1px ${ vars["colors", "default", "border"] } solid;
+	outline: transparent;
 }
 </style>
 
@@ -39,19 +42,24 @@
 	
 	%var string name = (params != null) ? params.get("name", "") : "";
 	
-	<select class='select' @event:ChangeEvent="onChange" name={ name } value={ model }>
+	<select class='select' @event:ChangeEvent="onChange" name={ name } value={ rtl::isEmpty(model) ? "" : model }>
 	%var Collection options = params["options"];
 	%if (rtl::exists(options))
 	{
-		%if (params["select_value"] == true)
+		%var Dict selected = {};
+		%if (params["show_select_value"] == true)
 		{
-			<option value="">{ _("Runtime.Web.Input", "Select value") }</option>
+			%if (model === "" or model === null)
+			{
+				%var selected = { "selected": "selected" };
+			}
+			<option value="" ...selected>{ _("Runtime.Web.Input", "Select value") }</option>
 		}
 		%for (int i=0; i<options.count(); i++)
 		{
 			%var Dict item = options[i];
-			%var Dict selected = {};
-			%if (item["id"] == model)
+			%var selected = {};
+			%if (item["id"] == model and model !== "" and model !== null)
 			{
 				%var selected = { "selected": "selected" };
 			}
