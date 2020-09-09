@@ -6,6 +6,7 @@
 		"Label",
 		"Select",
 		"SelectText",
+		"TextArea",
 		"ModuleDescription"
 	]
 }
