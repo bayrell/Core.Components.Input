@@ -29,6 +29,7 @@ use Runtime.ORM.QueryBuilder;
 use Runtime.Web.Backend.ApiList;
 use Runtime.Web.Backend.ApiMethod;
 use Runtime.Web.CRUD.CrudApi;
+use Runtime.Web.CRUD.FieldInfo;
 
 
 class CrudApi extends BaseObject
@@ -128,34 +129,33 @@ class CrudApi extends BaseObject
 	 */
 	async Dict convertItem(Dict item)
 	{
-		Dict settings = this.settings();
-		Dict settings_keys = settings.keys();
+		Collection<FieldInfo> settings = this.settings();
 		Dict item_keys = item.keys();
 		
-		for (int i=0; i<settings_keys.count(); i++)
+		for (int i=0; i<settings.count(); i++)
 		{
-			string key = settings_keys[i];
-			var value = item[key];
-			Dict field = settings[key];
+			FieldInfo field = settings[i];
+			var value = item[field.api_name];
 			
 			/* Set default value */
 			var default_value = field["default"] |> default bool false;
 			if (rtl::isEmpty(value))
 			{
-				item = rtl::setAttr(item, key, default_value);
+				item = rtl::setAttr(item, field.api_name, default_value);
 			}
 		}
 		
 		for (int i=0; i<item_keys.count(); i++)
 		{
 			string key = item_keys[i];
+			FieldInfo field = FieldInfo::getFieldInfo(settings, key);
 			
 			/* Remove if key does not exists */
-			if (not settings.has(key))
+			if (field == null)
 			{
 				item = item.removeIm(key);
+				continue;
 			}
-			Dict field = settings[key];
 			
 			/* Remove readonly key */
 			bool readonly = field["readonly"] |> default bool false;
@@ -212,20 +212,18 @@ class CrudApi extends BaseObject
 	{
 		bool res = true;
 		
-		Dict settings = this.settings();
-		Dict keys = settings.keys();
+		Collection<FieldInfo> settings = this.settings();
 		
-		for (int i=0; i<keys.count(); i++)
+		for (int i=0; i<settings.count(); i++)
 		{
-			string key = keys[i];
-			var value = this.item[key];
-			if (not settings.has(key)) continue;
+			FieldInfo field = settings[i];
+			var value = this.item[field.api_name];
+			if (field == null) continue;
 			
-			Dict field = settings[key];
 			bool required = field["required"] |> default bool false;
 			if (required and rtl::isEmpty(value))
 			{
-				this.addFieldError( key, _("Runtime.Web.CRUD", "This field must be filled") );
+				this.addFieldError( field.api_name, _("Runtime.Web.CRUD", "This field must be filled") );
 				res = false;
 			}
 		}

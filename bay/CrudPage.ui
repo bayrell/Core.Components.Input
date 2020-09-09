@@ -59,13 +59,18 @@
 			/>
 		</div>
 		
+		%var Dict dialog_form_settings = params["dialog_form"] |> default Dict {};
 		<div class='dialogs'>
-			<Dialog @name="dialog_add" style={ DialogModel::STYLE_CONTENT } show_buttons={ false }>
+			<Dialog @name="dialog_add" style={ DialogModel::STYLE_CONTENT } show_buttons={ false } 
+				...dialog_form_settings
+			>
 				<Form @name="form_add" action="add" struct={ crud_settings } fields={ form_fields }
 					@event:FormEvent="onFormEvent"
 				/>
 			</Dialog>
-			<Dialog @name="dialog_edit" style={ DialogModel::STYLE_CONTENT } show_buttons={ false }>
+			<Dialog @name="dialog_edit" style={ DialogModel::STYLE_CONTENT } show_buttons={ false } 
+				...dialog_form_settings
+			>
 				<Form @name="form_edit" action="edit" struct={ crud_settings } fields={ form_fields }
 					@event:FormEvent="onFormEvent"
 				/>
@@ -76,6 +81,16 @@
 		</div>
 	</div>
 	
+</template>
+
+
+<template name="fieldNumber">
+	%var TableModel table_model = params["table-model"];
+	%var int index = params["row-index"];
+	%if (table_model)
+	{
+		{ table_model.page * table_model.limit + index + 1 }
+	}
 </template>
 
 
@@ -146,11 +161,26 @@ async void onRowDeleteClick(Message<MouseClickEvent> msg)
 	int id = msg.sender.params["data-id"];
 	Dict item = this.table.call("getItemById", id);
 	
+	string message = "";
+	fn f = this.params["messages", "delete"];
+	if (rtl::exists(f))
+	{
+		if (rtl::isFn(f))
+		{
+			message = f(item);
+		}
+		else message = f;
+	}
+	else
+	{
+		message = _("Runtime.Web.CRUD", "Do you realy want to delete '%name%' ?", { "name": item["name"] } );
+	}
+	
 	this.dialog_delete.update
 	(
 		"show",
 		{
-			"text": _("Runtime.Web.CRUD", "Do you realy want to delete '%name%' ?", { "name": item["name"] } ),
+			"text": message,
 			"tag":
 			{
 				"item": item,

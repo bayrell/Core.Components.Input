@@ -5,6 +5,7 @@
 		"CrudFilter",
 		"CrudPage",
 		"CrudPageModel",
+		"FieldInfo",
 		"ModuleDescription"
 	]
 }
