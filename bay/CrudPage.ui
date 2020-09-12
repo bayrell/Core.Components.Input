@@ -1,6 +1,24 @@
+<!--
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2016-2020 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+-->
+
 <class version="1.0"
 	name="Runtime.Web.CRUD.CrudPage" extends="Runtime.Web.Component" 
-	module="Runtime.Web.CRUD." model="Runtime.Web.CRUD.CrudPageModel"
+	module="Runtime.Web.CRUD" model="Runtime.Web.CRUD.CrudPageModel"
 >
 
 <use name="Runtime.Core.Message" />
@@ -60,23 +78,36 @@
 		</div>
 		
 		%var Dict dialog_form_settings = params["dialog_form"] |> default Dict {};
+		%var Dict form_settings = params["form"] |> default Dict {};
 		<div class='dialogs'>
 			<Dialog @name="dialog_add" style={ DialogModel::STYLE_CONTENT } show_buttons={ false } 
 				...dialog_form_settings
 			>
 				<Form @name="form_add" action="add" struct={ crud_settings } fields={ form_fields }
-					@event:FormEvent="onFormEvent"
+					@event:FormEvent="onFormEvent" ...form_settings
 				/>
 			</Dialog>
 			<Dialog @name="dialog_edit" style={ DialogModel::STYLE_CONTENT } show_buttons={ false } 
 				...dialog_form_settings
 			>
 				<Form @name="form_edit" action="edit" struct={ crud_settings } fields={ form_fields }
-					@event:FormEvent="onFormEvent"
+					@event:FormEvent="onFormEvent" ...form_settings
 				/>
 			</Dialog>
 			<Dialog @name="dialog_delete" style={ DialogModel::STYLE_CONFIRM } auto_hide={ false }
 				@event:DialogEvent="onDialogEvent"
+				buttons=[
+					{
+						"type": "danger",
+						"data-action": "ok",
+						"value": "OK",
+					},
+					{
+						"type": "default",
+						"data-action": "cancel",
+						"value": "Cancel",
+					},
+				]
 			/>
 		</div>
 	</div>
@@ -90,6 +121,32 @@
 	%if (table_model)
 	{
 		{ table_model.page * table_model.limit + index + 1 }
+	}
+</template>
+
+
+<template name="renderButton" args="LayoutModel layout, var model, Dict params, var content, string button_type">
+	%var TableModel table_model = params["table-model"];
+	%var Dict item = params["row-data"];
+	%var int index = params["row-index"];
+	%if (button_type == "edit")
+	{
+		<Button type='small' data-index={ index } data-id={ item["id"] }
+			@event:MouseClickEvent="onRowEditClick" @key="edit"
+		>
+			{ _("Runtime.Web.CRUD", "Edit") }
+		</Button>
+	}
+	%if (button_type == "delete")
+	{
+		%var TableModel table_model = params["table-model"];
+		%var Dict item = params["row-data"];
+		%var int index = params["row-index"];
+		<Button type='small danger' data-index={ index } data-id={ item["id"] }
+			@event:MouseClickEvent="onRowDeleteClick" @key="delete"
+		>
+			{ _("Runtime.Web.CRUD", "Delete") }
+		</Button>
 	}
 </template>
 
@@ -110,7 +167,7 @@
 	%var TableModel table_model = params["table-model"];
 	%var Dict item = params["row-data"];
 	%var int index = params["row-index"];
-	<Button type='small' data-index={ index } data-id={ item["id"] }
+	<Button type='small danger' data-index={ index } data-id={ item["id"] }
 		@event:MouseClickEvent="onRowDeleteClick" @key="delete"
 	>
 		{ _("Runtime.Web.CRUD", "Delete") }
@@ -209,6 +266,8 @@ async void onDialogEvent(Message<DialogEvent> msg)
 			await this.onItemDelete(e.tag["item"]);
 		}
 	}
+	
+	await this.signal(e);
 }
 
 
@@ -227,11 +286,11 @@ async void onFormEvent(Message<FormEvent> msg)
 		}
 		else if (e.event == FormEvent::ACTION_CREATE)
 		{
-			await this.onItemAdd();
+			await this.onItemCreate();
 		}
 	}
 	
-	if (msg.sender == this.form_edit)
+	else if (msg.sender == this.form_edit)
 	{
 		if (e.event == FormEvent::ACTION_CANCEL)
 		{
@@ -242,14 +301,16 @@ async void onFormEvent(Message<FormEvent> msg)
 			await this.onItemUpdate();
 		}
 	}
+	
+	await this.signal(e);
 }
 
 
 
 /**
- * Add item
+ * Create item
  */
-async void onItemAdd()
+async void onItemCreate()
 {
 	Dict item = this.form_add.model("item");
 	this.form_add.update("setWaitMessage");
@@ -259,7 +320,7 @@ async void onItemAdd()
 	{
 		"object_name": this.getCrudObjectName(),
 		"interface_name": "core.crud",
-		"method_name": "add",
+		"method_name": "create",
 		"data":
 		{
 			"item": item,

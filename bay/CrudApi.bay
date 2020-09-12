@@ -163,6 +163,20 @@ class CrudApi extends BaseObject
 			{
 				item = item.removeIm(key);
 			}
+			
+			/* Can create */
+			bool can_create = field["can_create"] |> default bool false;
+			if (this.action == "create" and not can_create)
+			{
+				item = item.removeIm(key);
+			}
+			
+			/* Can update */
+			bool can_update = field["can_update"] |> default bool false;
+			if (this.action == "update" and not can_update)
+			{
+				item = item.removeIm(key);
+			}
 		}
 		
 		return item;
@@ -335,7 +349,6 @@ class CrudApi extends BaseObject
 	 */
 	async bool createQueryBefore()
 	{
-		this.new_item = await this.convertItem(this.new_item);
 		return true;
 	}
 	
@@ -344,9 +357,12 @@ class CrudApi extends BaseObject
 	/**
 	 * Create query
 	 */
-	async var createQuery(Dict item)
+	async void createQuery()
 	{
 		string table_name = static::getTableName();
+		
+		/* Convert item */
+		Dict item = await this.convertItem(this.item);
 		
 		/* To database */
 		item = this.toDatabase(item);
@@ -359,7 +375,12 @@ class CrudApi extends BaseObject
 		int id = await cursor.lastInsertId();
 		await cursor.close();
 		
-		return id;
+		/* Process item */
+		this.pk =
+		{
+			"id": id,
+		};
+		this.new_item = await this.getByPrimaryKey(this.pk);
 	}
 	
 	
@@ -369,8 +390,6 @@ class CrudApi extends BaseObject
 	 */
 	async bool updateQueryBefore()
 	{
-		this.pk = await this.convertPrimaryKey(this.pk);
-		this.new_item = await this.convertItem(this.new_item);
 		return true;
 	}
 	
@@ -379,9 +398,22 @@ class CrudApi extends BaseObject
 	/**
 	 * Update query
 	 */
-	async void updateQuery(Dict pk, Dict item)
+	async void updateQuery()
 	{
+		Dict pk = this.pk;
+		Dict item = this.new_item;
+		
+		Collection keys = item.keys();
+		if (keys.count() == 0)
+		{
+			return false;
+		}
+		
 		string table_name = static::getTableName();
+		
+		/* Convert item */
+		pk = await this.convertPrimaryKey(pk);
+		item = await this.convertItem(item);
 		
 		/* Process item */
 		item = this.toDatabase(item);
@@ -395,6 +427,9 @@ class CrudApi extends BaseObject
 		/* Create query */
 		Cursor cursor = await orm.update(table_name, pk, item);
 		await cursor.close();
+		
+		/* Set new item */
+		this.new_item = await this.getByPrimaryKey(this.pk);
 	}
 	
 	
@@ -404,7 +439,6 @@ class CrudApi extends BaseObject
 	 */
 	async bool deleteQueryBefore()
 	{
-		this.pk = await this.convertPrimaryKey(this.pk);
 		return true;
 	}
 	
@@ -413,11 +447,13 @@ class CrudApi extends BaseObject
 	/**
 	 * Delete query
 	 */
-	async void deleteQuery(Dict pk)
+	async void deleteQuery()
 	{
+		Dict pk = this.pk;
 		string table_name = static::getTableName();
 		
 		/* Process primary key */
+		pk = await this.convertPrimaryKey(pk);
 		pk = this.toDatabase(pk);
 		
 		/* Get ORM driver */
@@ -448,6 +484,9 @@ class CrudApi extends BaseObject
 		Cursor cursor = await orm.select(table_name, pk, 0, 1);
 		Dict item = cursor.fetchOne();
 		await cursor.close();
+		
+		/* From database */
+		item = await this.fromDatabase(item);
 		
 		return item;
 	}
@@ -509,19 +548,18 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Add api action
+	 * Create api action
 	 */
-	static async list addAction(RemoteCallRequest request, RemoteCallAnswer answer)
+	static async list createAction(RemoteCallRequest request, RemoteCallAnswer answer)
 	{
 		/* Create api */
 		CrudApi api = rtl::newInstance(static::getCurrentClassName());
 		
 		/* Get data from request */
-		api.action = "add";
+		api.action = "create";
 		api.answer = answer;
 		api.request = request;
 		api.item = request.data["item"] |> default Dict {};
-		api.new_item = api.item;
 		
 		/* Init api */
 		await api.init();
@@ -531,28 +569,21 @@ class CrudApi extends BaseObject
 		
 		/* Can query */
 		bool res = await api.createQueryBefore();
-		if (not res)
+		if (res)
 		{
-			return [request, api.answer];
+			/* Create query */
+			await api.createQuery();
 		}
 		
-		/* Create query */
-		var id = await api.createQuery(api.new_item);
-		
 		/* Process item */
-		api.pk =
-		{
-			"id": id,
-		};
-		api.new_item = await api.getByPrimaryKey(api.pk);
-		api.new_item = await api.processItem(api.new_item);
+		Dict new_item = await api.processItem(api.new_item);
 		
 		/* Create response */
 		Dict response =
 		{
 			"pk": api.pk,
 			"item": api.item,
-			"new_item": api.new_item,
+			"new_item": new_item,
 		};
 		api.answer = answer::success(answer, response);
 		
@@ -578,7 +609,6 @@ class CrudApi extends BaseObject
 		api.request = request;
 		api.pk = request.data["pk"] |> default Dict {};
 		api.item = request.data["item"] |> default Dict {};
-		api.new_item = api.item;
 		
 		/* Init api */
 		await api.init();
@@ -588,6 +618,7 @@ class CrudApi extends BaseObject
 		
 		/* Find item */
 		api.old_item = await api.getByPrimaryKey(api.pk);
+		api.new_item = api.old_item;
 		if (api.old_item == null)
 		{
 			throw new ApiException
@@ -599,24 +630,30 @@ class CrudApi extends BaseObject
 		
 		/* Can query */
 		bool res = await api.updateQueryBefore();
-		if (not res)
+		if (res)
 		{
-			return [request, api.answer];
+			/* Update query */
+			await api.updateQuery();
 		}
 		
-		/* Update query */
-		await api.updateQuery(api.pk, api.new_item);
+		/* Process item */
+		Dict new_item = null, old_item = null;
+		old_item = await api.processItem(api.old_item);
+		if (api.new_item != api.old_item)
+		{
+			new_item = await api.processItem(api.new_item);
+		}
+		else
+		{
+			new_item = old_item;
+		}
 		
-		/* Create response */
-		api.new_item = await api.getByPrimaryKey(api.pk);
-		api.new_item = await api.processItem(api.new_item);
-		api.old_item = await api.processItem(api.old_item);
 		Dict response =
 		{
 			"pk": api.pk,
 			"item": api.item,
-			"new_item": api.new_item,
-			"old_item": api.old_item,
+			"new_item": new_item,
+			"old_item": old_item,
 		};
 		api.answer = answer::success(answer, response);
 		
@@ -657,20 +694,18 @@ class CrudApi extends BaseObject
 		
 		/* Can query */
 		bool res = await api.deleteQueryBefore();
-		if (not res)
+		if (res)
 		{
-			return [request, api.answer];
+			/* Update query */
+			await api.deleteQuery();
 		}
 		
-		/* Update query */
-		await api.deleteQuery(api.pk);
-		
 		/* Create response */
-		api.old_item = await api.processItem(api.old_item);
+		Dict old_item = await api.processItem(api.old_item);
 		Dict response =
 		{
 			"pk": api.pk,
-			"item": api.old_item,
+			"item": old_item,
 		};
 		api.answer = answer::success(answer, response);
 		

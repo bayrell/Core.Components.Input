@@ -44,6 +44,8 @@ struct FieldInfo extends BaseStruct
 	bool virtual = false;
 	string group = "default";
 	var default_value = null;
+	bool can_create = true;
+	bool can_update = true;
 	
 	/* Extra params */
 	Dict params = {};
