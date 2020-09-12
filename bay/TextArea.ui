@@ -45,8 +45,7 @@
 	%var string type = (params != null) ? params.get("type", "input") : "";
 	%var primitive tag = (params != null) ? params.get("@tag", "") : "";
 	<textarea class='input' @tag={ tag } @event:ChangeEvent="onChange"
-		name={ name } type={ type }
-	>{ model }</textarea>
+		name={ name } type={ type } value={ model } />
 </template>
 
 
