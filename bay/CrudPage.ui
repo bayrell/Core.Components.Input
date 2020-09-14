@@ -21,6 +21,7 @@
 	module="Runtime.Web.CRUD" model="Runtime.Web.CRUD.CrudPageModel"
 >
 
+<use name="Runtime.lib" />
 <use name="Runtime.Core.Message" />
 <use name="Runtime.Core.RemoteCallAnswer" />
 <use name="Runtime.Web.LayoutModel" />
@@ -29,6 +30,7 @@
 <use name="Runtime.Web.Button.Button" component="true" />
 <use name="Runtime.Web.CRUD.CrudFilter" component="true" />
 <use name="Runtime.Web.CRUD.CrudPageModel" />
+<use name="Runtime.Web.CRUD.FieldInfo" />
 <use name="Runtime.Web.Dialog.Dialog" component="true" />
 <use name="Runtime.Web.Dialog.DialogEvent" />
 <use name="Runtime.Web.Dialog.DialogModel" />
@@ -50,7 +52,7 @@
 <template name="render">
 	
 	%var Dict messages = params["messages"];
-	%var Dict crud_settings = params["crud_settings"];
+	%var Collection<FieldInfo> struct = params["struct"];
 	%var Collection<string> form_fields = params["form_fields"];
 	%var Collection<string> filter_fields = params["filter_fields"];
 	%var Collection<string> table_fields = params["table_fields"];
@@ -64,12 +66,12 @@
 		%if (rtl::exists(filter_fields))
 		{
 			<div class='filter'>
-				<CrudFilter @name="filter" struct={ crud_settings } fields={ filter_fields } />
+				<CrudFilter @name="filter" struct={ struct } fields={ filter_fields } />
 			</div>
 		}
 		
 		<div class='table'>
-			<Table @name="table" struct={ crud_settings } fields={ table_fields } />
+			<Table @name="table" struct={ struct } fields={ table_fields } />
 			<Pagination
 				page={ model.table.page + 1 }
 				pages={ model.table.pages }
@@ -83,14 +85,14 @@
 			<Dialog @name="dialog_add" style={ DialogModel::STYLE_CONTENT } show_buttons={ false } 
 				...dialog_form_settings
 			>
-				<Form @name="form_add" action="add" struct={ crud_settings } fields={ form_fields }
+				<Form @name="form_add" action="add" struct={ struct } fields={ form_fields }
 					@event:FormEvent="onFormEvent" ...form_settings
 				/>
 			</Dialog>
 			<Dialog @name="dialog_edit" style={ DialogModel::STYLE_CONTENT } show_buttons={ false } 
 				...dialog_form_settings
 			>
-				<Form @name="form_edit" action="edit" struct={ crud_settings } fields={ form_fields }
+				<Form @name="form_edit" action="edit" struct={ struct } fields={ form_fields }
 					@event:FormEvent="onFormEvent" ...form_settings
 				/>
 			</Dialog>
@@ -126,12 +128,13 @@
 
 
 <template name="renderButton" args="LayoutModel layout, var model, Dict params, var content, string button_type">
+	%var Collection<FieldInfo> struct = params["struct"];
 	%var TableModel table_model = params["table-model"];
 	%var Dict item = params["row-data"];
 	%var int index = params["row-index"];
 	%if (button_type == "edit")
 	{
-		<Button type='small' data-index={ index } data-id={ item["id"] }
+		<Button type='small' data-index={ index } data-pk={ static::getPrimaryKey(struct, item) }
 			@event:MouseClickEvent="onRowEditClick" @key="edit"
 		>
 			{ _("Runtime.Web.CRUD", "Edit") }
@@ -142,7 +145,7 @@
 		%var TableModel table_model = params["table-model"];
 		%var Dict item = params["row-data"];
 		%var int index = params["row-index"];
-		<Button type='small danger' data-index={ index } data-id={ item["id"] }
+		<Button type='small danger' data-index={ index } data-pk={ static::getPrimaryKey(struct, item) }
 			@event:MouseClickEvent="onRowDeleteClick" @key="delete"
 		>
 			{ _("Runtime.Web.CRUD", "Delete") }
@@ -152,10 +155,11 @@
 
 
 <template name="buttonEdit">
+	%var Collection<FieldInfo> struct = params["struct"];
 	%var TableModel table_model = params["table-model"];
 	%var Dict item = params["row-data"];
 	%var int index = params["row-index"];
-	<Button type='small' data-index={ index } data-id={ item["id"] }
+	<Button type='small' data-index={ index } data-pk={ static::getPrimaryKey(struct, item) }
 		@event:MouseClickEvent="onRowEditClick" @key="edit"
 	>
 		{ _("Runtime.Web.CRUD", "Edit") }
@@ -164,10 +168,11 @@
 
 
 <template name="buttonDelete">
+	%var Collection<FieldInfo> struct = params["struct"];
 	%var TableModel table_model = params["table-model"];
 	%var Dict item = params["row-data"];
 	%var int index = params["row-index"];
-	<Button type='small danger' data-index={ index } data-id={ item["id"] }
+	<Button type='small danger' data-index={ index } data-pk={ static::getPrimaryKey(struct, item) }
 		@event:MouseClickEvent="onRowDeleteClick" @key="delete"
 	>
 		{ _("Runtime.Web.CRUD", "Delete") }
@@ -182,6 +187,24 @@
  * Returns object name
  */
 string getCrudObjectName() => this.params.get("object_name", "");
+
+
+
+/**
+ * Returns primary key by item
+ */
+pure Dict getPrimaryKey(Collection<FieldInfo> struct, Dict item)
+{
+	Map pk = new Map();
+	struct = struct.filter( lib::equalAttr("primary", true) );
+	for (int i=0; i < struct.count(); i++)
+	{
+		FieldInfo field = struct[i];
+		var value = item[field.api_name];
+		pk.set(field.api_name, value);
+	}
+	return pk.toDict();
+}
 
 
 
@@ -201,8 +224,8 @@ async void onShowAddClick(Message<MouseClickEvent> msg)
  */
 async void onRowEditClick(Message<MouseClickEvent> msg)
 {
-	int id = msg.sender.params["data-id"];
-	Dict item = this.table.call("getItemById", id);
+	Dict pk = msg.sender.params["data-pk"];
+	Dict item = this.table.call("getFirstItem", pk);
 	this.dialog_edit.update("show");
 	this.form_edit.update("clear");
 	this.form_edit.update("setItem", item);
@@ -215,8 +238,8 @@ async void onRowEditClick(Message<MouseClickEvent> msg)
  */
 async void onRowDeleteClick(Message<MouseClickEvent> msg)
 {
-	int id = msg.sender.params["data-id"];
-	Dict item = this.table.call("getItemById", id);
+	Dict pk = msg.sender.params["data-pk"];
+	Dict item = this.table.call("getFirstItem", pk);
 	
 	string message = "";
 	fn f = this.params["messages", "delete"];
@@ -346,7 +369,9 @@ async void onItemCreate()
  */
 async void onItemUpdate()
 {
+	Dict old_item = this.form_edit.model("old_item");
 	Dict item = this.form_edit.model("item");
+	Dict pk = static::getPrimaryKey(this.params["struct"], old_item);
 	this.form_edit.update("setWaitMessage");
 	
 	/* Send api */
@@ -357,17 +382,14 @@ async void onItemUpdate()
 		"method_name": "update",
 		"data":
 		{
-			"pk":
-			{
-				"id": item["id"],
-			},
+			"pk": pk,
 			"item": item,
 		},
 	};
 	
 	if (answer.isSuccess())
 	{
-		this.table.update("setItem", item["id"], answer.response["new_item"]);
+		this.table.update("setItem", pk, answer.response["new_item"]);
 		this.dialog_edit.update("hide");
 	}
 	else
@@ -385,6 +407,7 @@ async void onItemUpdate()
 async void onItemDelete(Dict item)
 {
 	this.dialog_delete.update("setWaitMessage");
+	Dict pk = static::getPrimaryKey(this.params["struct"], item);
 	
 	/* Send api */
 	RemoteCallAnswer answer = await RenderDriver::remoteBusCall
@@ -394,16 +417,13 @@ async void onItemDelete(Dict item)
 		"method_name": "delete",
 		"data":
 		{
-			"pk":
-			{
-				"id": item["id"],
-			},
+			"pk": pk,
 		},
 	};
 	
 	if (answer.isSuccess())
 	{
-		this.table.update("removeItemById", item["id"]);
+		this.table.update("removeItem", pk);
 		this.dialog_delete.update("hide");
 	}
 	else

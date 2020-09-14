@@ -19,6 +19,7 @@
 namespace Runtime.Web.CRUD;
 
 use Runtime.rtl;
+use Runtime.lib;
 use Runtime.BaseObject;
 use Runtime.Core.ApiException;
 use Runtime.Core.RemoteCallAnswer;
@@ -37,6 +38,7 @@ class CrudApi extends BaseObject
 	string action = "";
 	RemoteCallAnswer answer = null;
 	RemoteCallRequest request = null;
+	Collection<FieldInfo> struct = null;
 	
 	/* Search */
 	var filter = null;
@@ -67,6 +69,43 @@ class CrudApi extends BaseObject
 	 * Returns crud table name
 	 */
 	bool isSuccess() => this.is_success;
+	
+	
+	
+	/**
+	 * Returns table field value
+	 */
+	Collection<FieldInfo> settings() => [];
+	
+	
+	
+	/**
+	 * Returns struct
+	 */
+	Collection<FieldInfo> getStruct()
+	{
+		if (this.struct == null) this.struct = this.settings();
+		return this.struct;
+	}
+	
+	
+	
+	/**
+	 * Returns primary key by item
+	 */
+	Dict getPrimaryKeyFromItem(Dict item)
+	{
+		Map pk = new Map();
+		Collection<FieldInfo> settings = this.getStruct();
+		settings = settings.filter( lib::equalAttr("primary", true) );
+		for (int i=0; i < settings.count(); i++)
+		{
+			FieldInfo field = settings[i];
+			var value = item[field.api_name];
+			pk.set(field.api_name, value);
+		}
+		return pk.toDict();
+	}
 	
 	
 	
@@ -137,7 +176,7 @@ class CrudApi extends BaseObject
 	 */
 	async Dict convertItem(Dict item)
 	{
-		Collection<FieldInfo> settings = this.settings();
+		Collection<FieldInfo> settings = this.getStruct();
 		Dict item_keys = item.keys();
 		
 		for (int i=0; i<settings.count(); i++)
@@ -234,7 +273,7 @@ class CrudApi extends BaseObject
 	{
 		bool res = true;
 		
-		Collection<FieldInfo> settings = this.settings();
+		Collection<FieldInfo> settings = this.getStruct();
 		for (int i=0; i<settings.count(); i++)
 		{
 			FieldInfo field = settings[i];
@@ -292,23 +331,26 @@ class CrudApi extends BaseObject
 	 */
 	async Dict getByPrimaryKey(Dict pk)
 	{
+		Dict item = null;
 		string table_name = static::getTableName();
 		
 		/* Process primary key */
 		pk = await this.convertPrimaryKey(pk);
-		pk = this.toDatabase(pk);
-		
-		/* Get ORM driver */
-		ORMDriver orm = @.getDriver(classof ORMDriver);
-		
-		/* Create query */
-		Cursor cursor = await orm.select(table_name, pk, 0, 1);
-		Dict item = cursor.fetchOne();
-		await cursor.close();
-		
-		/* From database */
-		item = await this.fromDatabase(item);
-		
+		if (pk != null)
+		{
+			pk = this.toDatabase(pk);
+			
+			/* Get ORM driver */
+			ORMDriver orm = @.getDriver(classof ORMDriver);
+			
+			/* Create query */
+			Cursor cursor = await orm.select(table_name, pk, 0, 1);
+			Dict item = cursor.fetchOne();
+			await cursor.close();
+			
+			/* From database */
+			item = await this.fromDatabase(item);
+		}
 		return item;
 	}
 	
@@ -477,10 +519,17 @@ class CrudApi extends BaseObject
 		await cursor.close();
 		
 		/* Process item */
-		this.pk =
+		Map pk = new Map();
+		Collection<FieldInfo> settings = this.getStruct();
+		settings = settings.filter( lib::equalAttr("primary", true) );
+		for (int i=0; i < settings.count(); i++)
 		{
-			"id": id,
-		};
+			FieldInfo field = settings[i];
+			var value = item[field.api_name];
+			if (field.auto_increment) value = id;
+			pk.set(field.api_name, value);
+		}
+		this.pk = pk.toDict();
 		this.new_item = await this.getByPrimaryKey(this.pk);
 	}
 	
@@ -594,6 +643,7 @@ class CrudApi extends BaseObject
 		await cursor.close();
 		
 		/* Set new item */
+		this.pk = this.getPrimaryKeyFromItem(this.item);
 		this.new_item = await this.getByPrimaryKey(this.pk);
 	}
 	

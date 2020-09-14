@@ -39,6 +39,8 @@ struct FieldInfo extends BaseStruct
 	
 	/* DB Type */
 	string dbtype = "";
+	bool auto_increment = false;
+	bool primary = false;
 	bool required = false;
 	bool readonly = false;
 	bool virtual = false;
