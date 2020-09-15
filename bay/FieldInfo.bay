@@ -44,18 +44,31 @@ struct FieldInfo extends BaseStruct
 	bool required = false;
 	bool readonly = false;
 	bool virtual = false;
-	string group = "default";
-	var default_value = null;
 	bool can_create = true;
 	bool can_update = true;
+	string group = "default";
+	var default_value = null;
 	
 	/* Extra params */
+	Dict foreign = {};
 	Dict params = {};
 	
 	
 	/**
 	 * Returns FieldInfo from Collection
 	 */
-	pure FieldInfo getFieldInfo(Collection<FieldInfo> settings, string field_name)
+	pure memorize FieldInfo getFieldInfo(Collection<FieldInfo> settings, string field_name)
 		=> settings.findItem( lib::equalAttr("api_name", field_name) );
+	
+	
+	/**
+	 * Filter form
+	 */
+	pure bool filterForm(Collection<FieldInfo> settings, string form_type, string field_name)
+	{
+		FieldInfo info = static::getFieldInfo(settings, field_name);
+		if (form_type == "create" and info.can_create == false) return false;
+		if (form_type == "update" and info.can_update == false) return false;
+		return true;
+	}
 }

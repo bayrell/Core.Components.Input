@@ -39,9 +39,10 @@ class CrudApi extends BaseObject
 	RemoteCallAnswer answer = null;
 	RemoteCallRequest request = null;
 	Collection<FieldInfo> struct = null;
+	Dict foreigns = {};
 	
 	/* Search */
-	var filter = null;
+	Dict find = null;
 	QueryBuilder q = null;
 	int page = 0;
 	int pages = 0;
@@ -147,6 +148,35 @@ class CrudApi extends BaseObject
 	 */
 	async Dict processItem(Dict item)
 	{
+		Collection<FieldInfo> settings = this.getStruct();
+		Dict item_keys = item.keys();
+		for (int i=0; i<settings.count(); i++)
+		{
+			FieldInfo field = settings[i];
+			string api_name = field.api_name;
+			
+			/* Add value for virtual field */
+			if (field.virtual)
+			{
+				/* Get foreign value */
+				if (field.foreign != null)
+				{
+					var new_value = null;
+					string foreign_from = field.foreign["from"];
+					string foreign_key = field.foreign["key"];
+					var foreign_attr = field.foreign["value"];
+					var foreign_value = item[foreign_key];
+					Collection options = this.foreigns[foreign_from];
+					if (options != null)
+					{
+						Dict foreign_item = options.findItem( lib::equalAttr("id", foreign_value) );
+						new_value = rtl::attr(foreign_item, foreign_attr, null);
+					}
+					item <= api_name <= new_value;
+				}
+			}
+		}
+		
 		return item;
 	}
 	
@@ -182,7 +212,40 @@ class CrudApi extends BaseObject
 		for (int i=0; i<settings.count(); i++)
 		{
 			FieldInfo field = settings[i];
+			string key = field.api_name;
 			var value = item[field.api_name];
+			
+			/* Remove readonly key */
+			bool readonly = field["readonly"] |> default bool false;
+			if (readonly)
+			{
+				item = item.removeIm(key);
+				continue;
+			}
+			
+			/* Remove virtual key */
+			bool virtual = field["virtual"] |> default bool false;
+			if (virtual)
+			{
+				item = item.removeIm(key);
+				continue;
+			}
+			
+			/* Can create */
+			bool can_create = field["can_create"] |> default bool false;
+			if (this.action == "create" and not can_create)
+			{
+				item = item.removeIm(key);
+				continue;
+			}
+			
+			/* Can update */
+			bool can_update = field["can_update"] |> default bool false;
+			if (this.action == "update" and not can_update)
+			{
+				item = item.removeIm(key);
+				continue;
+			}
 			
 			/* Set default value */
 			var default_value = field["default"] |> default bool false;
@@ -202,27 +265,6 @@ class CrudApi extends BaseObject
 			{
 				item = item.removeIm(key);
 				continue;
-			}
-			
-			/* Remove readonly key */
-			bool readonly = field["readonly"] |> default bool false;
-			if (readonly)
-			{
-				item = item.removeIm(key);
-			}
-			
-			/* Can create */
-			bool can_create = field["can_create"] |> default bool false;
-			if (this.action == "create" and not can_create)
-			{
-				item = item.removeIm(key);
-			}
-			
-			/* Can update */
-			bool can_update = field["can_update"] |> default bool false;
-			if (this.action == "update" and not can_update)
-			{
-				item = item.removeIm(key);
 			}
 		}
 		
@@ -322,6 +364,10 @@ class CrudApi extends BaseObject
 	 */
 	async bool after()
 	{
+		if (this.isSuccess())
+		{
+			this.answer = rtl::setAttr(this.answer, ["response", "foreigns"], this.foreigns);
+		}
 	}
 	
 	
@@ -423,7 +469,7 @@ class CrudApi extends BaseObject
 	/**
 	 * Search
 	 */
-	async void search()
+	async void doSearch()
 	{
 		/* Validate */
 		await this.validate();
@@ -477,12 +523,41 @@ class CrudApi extends BaseObject
 		await api.init();
 		
 		/* Search */
-		await api.search();
+		await api.doSearch();
 		
 		/* After query */
 		await api.after();
 		
 		return [request, api.answer];
+	}
+	
+	
+	
+	/**
+	 * Search
+	 */
+	static async void search(Dict find = null)
+	{
+		/* Create api */
+		CrudApi api = rtl::newInstance(static::getCurrentClassName());
+		
+		/* Get data from request */
+		api.action = "search";
+		api.find = find;
+		api.page = find["page"] |> default int 0;
+		api.limit = find["limit"] |> default int -1;
+		
+		/* Query */
+		await api.searchQuery();
+		
+		return
+		{
+			"items": api.items,
+			"page": api.page,
+			"pages": api.pages,
+			"limit": api.limit,
+			"total": api.total,
+		};
 	}
 	
 	
@@ -538,7 +613,7 @@ class CrudApi extends BaseObject
 	/**
 	 * Create
 	 */
-	async void create()
+	async void doCreate()
 	{
 		/* Validate */
 		await this.validate();
@@ -589,12 +664,32 @@ class CrudApi extends BaseObject
 		await api.init();
 		
 		/* Create */
-		await api.create();
+		await api.doCreate();
 		
 		/* After query */
 		await api.after();
 		
 		return [request, api.answer];
+	}
+	
+	
+	
+	/**
+	 * Create
+	 */
+	static async void create(Dict item)
+	{
+		/* Create api */
+		CrudApi api = rtl::newInstance(static::getCurrentClassName());
+		
+		/* Get data from request */
+		api.action = "create";
+		api.item = item;
+		
+		/* Query */
+		await api.createQuery();
+		
+		return api.new_item;
 	}
 	
 	
@@ -652,7 +747,7 @@ class CrudApi extends BaseObject
 	/**
 	 * Update
 	 */
-	async void update()
+	async void doUpdate()
 	{
 		/* Validate */
 		await this.validate();
@@ -721,12 +816,33 @@ class CrudApi extends BaseObject
 		await api.init();
 		
 		/* Update */
-		await api.update();
+		await api.doUpdate();
 		
 		/* After query */
 		await api.after();
 		
 		return [request, api.answer];
+	}
+	
+	
+	
+	/**
+	 * Update
+	 */
+	static async void update(Dict pk, Dict item)
+	{
+		/* Create api */
+		CrudApi api = rtl::newInstance(static::getCurrentClassName());
+		
+		/* Get data from request */
+		api.action = "update";
+		api.pk = pk;
+		api.item = item;
+		
+		/* Query */
+		await api.updateQuery();
+		
+		return api.new_item;
 	}
 	
 	
@@ -766,7 +882,7 @@ class CrudApi extends BaseObject
 	/**
 	 * Update
 	 */
-	async void delete()
+	async void doDelete()
 	{
 		/* Init api */
 		await this.init();
@@ -820,7 +936,7 @@ class CrudApi extends BaseObject
 		await api.init();
 		
 		/* Delete */
-		await api.delete();
+		await api.doDelete();
 		
 		/* After query */
 		await api.after();
@@ -828,4 +944,23 @@ class CrudApi extends BaseObject
 		return [request, api.answer];
 	}
 	
+	
+	
+	/**
+	 * Delete
+	 */
+	static async void delete(Dict pk)
+	{
+		/* Create api */
+		CrudApi api = rtl::newInstance(static::getCurrentClassName());
+		
+		/* Get data from request */
+		api.action = "delete";
+		api.pk = pk;
+		
+		/* Query */
+		await api.deleteQuery();
+		
+		return api.new_item;
+	}
 }

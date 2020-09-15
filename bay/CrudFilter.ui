@@ -90,8 +90,8 @@
  */
 pure Dict patchSettings(LayoutModel layout, Dict field, Dict class_settings, var model, Dict params)
 {
-	bool filter_show_select_value = class_settings["filter_show_select_value"] |> default bool false;
-	if (filter_show_select_value)
+	bool show_select_value_filter = class_settings["show_select_value_filter"] |> default bool false;
+	if (show_select_value_filter)
 	{
 		class_settings <= show_select_value <= true;
 	}

@@ -21,6 +21,8 @@ namespace Runtime.Web.CRUD;
 use Runtime.BaseStruct;
 use Runtime.Core.RemoteCallAnswer;
 use Runtime.Core.RemoteCallRequest;
+use Runtime.Web.RenderContainer;
+use Runtime.Web.RenderDriver;
 use Runtime.Web.Request;
 use Runtime.Web.Table.TableModel;
 use Runtime.Web.Dialog.DialogModel;
@@ -36,12 +38,31 @@ struct CrudPageModel extends BaseStruct
 	DialogModel dialog_add = new DialogModel();
 	DialogModel dialog_edit = new DialogModel();
 	DialogModel dialog_delete = new DialogModel();
+	Dict foreigns = {};
+	Dict params = {};
+	
+	
+	
+	/**
+	 * Curd Search
+	 */
+	static async CrudPageModel crudSearch(Dict items, RenderContainer container)
+	{
+		/* Remote call */
+		Dict search_params = static::getCrudSearchParams(container.request);
+		items <= data <= search_params;
+		RemoteCallAnswer answer = await RenderDriver::remoteBusCall(items, container);
+		
+		/* Answer */
+		return static::fromAnswer(static::newInstance{}, answer);
+	}
+	
 	
 	
 	/**
 	 * Crud search
 	 */
-	static RemoteCallAnswer getCrudSearchParams(Request request)
+	pure RemoteCallAnswer getCrudSearchParams(Request request)
 	{
 		Map data = new Map();
 		
@@ -54,5 +75,23 @@ struct CrudPageModel extends BaseStruct
 		}
 		
 		return data.toDict();
+	}
+	
+	
+	
+	/**
+	 * From answer
+	 */
+	pure CrudPageModel fromAnswer(CrudPageModel model, RemoteCallAnswer answer)
+	{
+		if (answer.isSuccess())
+		{
+			model <= table <= rows <= answer.response["items"];
+			model <= table <= page <= answer.response["page"];
+			model <= table <= pages <= answer.response["pages"];
+			model <= table <= limit <= answer.response["limit"];
+			model <= foreigns <= answer.response["foreigns"];
+		}
+		return model;
 	}
 }
