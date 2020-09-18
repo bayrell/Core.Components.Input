@@ -89,18 +89,19 @@
 		(
 			curry FieldInfo::filterForm(struct, "update", ?)
 		);
+		%var string form_class_name = form_settings["class_name"] |> default string classof Form;
 		<div class='dialogs'>
 			<Dialog @name="dialog_add" style={ DialogModel::STYLE_CONTENT } show_buttons={ false } 
 				...dialog_form_settings
 			>
-				<Form @name="form_add" action="add" struct={ struct } fields={ form_add_fields }
+				<{form_class_name} @name="form_add" action="add" struct={ struct } fields={ form_add_fields }
 					@event:FormEvent="onFormEvent" ...form_settings
 				/>
 			</Dialog>
 			<Dialog @name="dialog_edit" style={ DialogModel::STYLE_CONTENT } show_buttons={ false } 
 				...dialog_form_settings
 			>
-				<Form @name="form_edit" action="edit" struct={ struct } fields={ form_edit_fields }
+				<{form_class_name} @name="form_edit" action="edit" struct={ struct } fields={ form_edit_fields }
 					@event:FormEvent="onFormEvent" ...form_settings
 				/>
 			</Dialog>
