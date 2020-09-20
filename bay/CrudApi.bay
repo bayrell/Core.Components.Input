@@ -21,16 +21,19 @@ namespace Runtime.Web.CRUD;
 use Runtime.rtl;
 use Runtime.lib;
 use Runtime.BaseObject;
+use Runtime.RuntimeUtils;
 use Runtime.Core.ApiException;
 use Runtime.Core.RemoteCallAnswer;
 use Runtime.Core.RemoteCallRequest;
 use Runtime.ORM.CursorInterface as Cursor;
 use Runtime.ORM.DriverInterface as ORMDriver;
 use Runtime.ORM.QueryBuilder;
+use Runtime.ORM.Record;
 use Runtime.Web.Backend.ApiList;
 use Runtime.Web.Backend.ApiMethod;
 use Runtime.Web.CRUD.CrudApi;
 use Runtime.Web.CRUD.FieldInfo;
+use Runtime.Web.CRUD.Rules.Rule;
 
 
 class CrudApi extends BaseObject
@@ -157,121 +160,16 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Returns primary key by item
-	 */
-	Dict getPrimaryKeyFromItem(Dict item)
-	{
-		Map pk = new Map();
-		Collection<FieldInfo> settings = this.getStruct();
-		settings = settings.filter( lib::equalAttr("primary", true) );
-		for (int i=0; i < settings.count(); i++)
-		{
-			FieldInfo field = settings[i];
-			var value = item[field.api_name];
-			pk.set(field.api_name, value);
-		}
-		return pk.toDict();
-	}
-	
-	
-	
-	/**
-	 * Convert primare key before query
-	 */
-	async Dict convertPrimaryKey(Dict pk)
-	{
-		return pk;
-	}
-	
-	
-	
-	/**
 	 * Convert item before save to database
 	 */
 	async Dict convertItem(Dict item)
 	{
-		Collection<FieldInfo> settings = this.getStruct();
-		Dict item_keys = item.keys();
-		
-		for (int i=0; i<settings.count(); i++)
+		Collection<Rule> rules = this.rules();
+		for (int i=0; i<rules.count(); i++)
 		{
-			FieldInfo field = settings[i];
-			string key = field.api_name;
-			var value = item[field.api_name];
-			
-			/* Remove readonly key */
-			bool readonly = field["readonly"] |> default bool false;
-			if (readonly)
-			{
-				item = item.removeIm(key);
-				continue;
-			}
-			
-			/* Remove virtual key */
-			bool virtual = field["virtual"] |> default bool false;
-			if (virtual)
-			{
-				item = item.removeIm(key);
-				continue;
-			}
-			
-			/* Can create */
-			bool can_create = field["can_create"] |> default bool false;
-			if (this.action == "create" and not can_create)
-			{
-				item = item.removeIm(key);
-				continue;
-			}
-			
-			/* Can update */
-			bool can_update = field["can_update"] |> default bool false;
-			if (this.action == "update" and not can_update)
-			{
-				item = item.removeIm(key);
-				continue;
-			}
-			
-			/* Set default value */
-			var default_value = field["default"] |> default bool false;
-			if (rtl::isEmpty(value))
-			{
-				item = rtl::setAttr(item, field.api_name, default_value);
-			}
+			Rule rule = rules[i];
+			item = rule::convertItem(rule, item, this.action);
 		}
-		
-		for (int i=0; i<item_keys.count(); i++)
-		{
-			string key = item_keys[i];
-			FieldInfo field = FieldInfo::getFieldInfo(settings, key);
-			
-			/* Remove if key does not exists */
-			if (field == null)
-			{
-				item = item.removeIm(key);
-				continue;
-			}
-		}
-		
-		return item;
-	}
-	
-	
-	
-	/**
-	 * Process item from database
-	 */
-	async Dict fromDatabase(Dict item)
-	{
-		return item;
-	}
-	
-	
-	
-	/**
-	 * Process item to database
-	 */
-	async Dict toDatabase(Dict item)
-	{
 		return item;
 	}
 	
@@ -312,253 +210,31 @@ class CrudApi extends BaseObject
 	 */
 	async bool afterQuery()
 	{
+		/* Get ORM class name */
+		string class_name = static::getORM();
+		fn foreignLoadKeys = rtl::method(class_name, "foreignLoadKeys");
+		fn foreignLoadOptions = rtl::method(class_name, "foreignLoadOptions");
+		
+		/* Get foreign keys */
 		if (this.action == "search")
 		{
-			for (int i=0; i<this.items.count(); i++)
-			{
-				Dict row = this.items[i];
-				static::foreignItem(row);
-			}
+			this.foreigns = await foreignLoadKeys(this.foreigns, this.items);
 		}
 		else if (this.action == "create")
 		{
-			static::foreignItem(this.new_item);
+			this.foreigns = await foreignLoadKeys(this.foreigns, [ this.new_item ]);
 		}
 		else if (this.action == "update")
 		{
-			static::foreignItem(this.old_item);
-			static::foreignItem(this.new_item);
+			this.foreigns = await foreignLoadKeys(this.foreigns, [ this.old_item, this.new_item ]);
 		}
 		else if (this.action == "delete")
 		{
-			static::foreignItem(this.old_item);
+			this.foreigns = await foreignLoadKeys(this.foreigns, [ this.old_item ]);
 		}
-		
-		await static::foreignRequest();
-	}
-	
-	
-	
-	/**
-	 * Analyze item for foreign keys
-	 */
-	void foreignItem(Dict item)
-	{
-		Dict foreigns = this.foreigns;
-		Collection<FieldInfo> settings = this.getStruct();
-		
-		/* Get id from primary key */
-		Dict pk = this.getPrimaryKeyFromItem(item);
-		
-		/* Push primary key */
-		for (int i=0; i<settings.count(); i++)
-		{
-			FieldInfo field = settings[i];
-			if (field.foreign == null) continue;
-			
-			string foreign_type = field.foreign["type"];
-			string foreign_name = field.foreign["name"];
-			string foreign_key = field.foreign["key"];
-			if (rtl::isEmpty(foreign_name))
-			{
-				continue;
-			}
-			
-			if (not foreigns.has(foreign_name))
-			{
-				foreigns = foreigns.setIm
-				(
-					foreign_name,
-					{
-						"field": field,
-						"keys": [],
-					}
-				);
-			}
-			
-			if (foreign_type == "one_to_many")
-			{
-				Dict foreign_item = null;
-				var foreign_value = item[foreign_key];
-				Collection arr = foreigns[foreign_name]["keys"];
-				int pos = arr.indexOf(foreign_value);
-				if (pos == -1)
-				{
-					foreigns <= { foreign_name } <= "keys" <= arr.pushIm(foreign_value);
-				}
-			}
-			if (foreign_type == "many_to_many")
-			{
-				Collection arr = foreigns[foreign_name]["keys"];
-				foreigns <= { foreign_name } <= "keys" <= arr.pushIm(pk);
-			}
-		}
-		
-		this.foreigns = foreigns;
-	}
-	
-	
-	
-	/**
-	 * Request foreign keys
-	 */
-	async void foreignRequest()
-	{
-		ORMDriver orm = @.getDriver(classof ORMDriver);
-		Collection<FieldInfo> settings = this.getStruct();
-		
-		/* Get primary field */
-		Collection<FieldInfo> primary_settings = settings.filter( lib::equalAttr("primary", true) );
-		FieldInfo primary_field = primary_settings[0];
-		string primary_api_name = primary_field["api_name"];
 		
 		/* Load foreign keys */
-		for (int i=0; i<settings.count(); i++)
-		{
-			FieldInfo field = settings[i];
-			string field_api_name = field["api_name"];
-			if (field.foreign != null)
-			{
-				/* Load dictionary */
-				string foreign_name = field.foreign["name"];
-				bool load_dictionary = field.foreign["load_dictionary"] |> default bool true;
-				if (load_dictionary and rtl::isEmpty(this.foreigns[foreign_name, "items"]))
-				{
-					string class_name = field.foreign["class_name"];
-					if (foreign_name != null and class_name != null)
-					{
-						fn f = rtl::method(class_name, "search");
-						Collection items = await f() |> attr "items";
-						this.foreigns = rtl::setAttr(this.foreigns, [foreign_name, "items"], items);
-					}
-				}
-				
-				/* Load many to many keys */
-				string foreign_type = field.foreign["type"];
-				string subtable = field["foreign", "subtable"];
-				string key_subtable = field["foreign", "key_subtable"];
-				string key_subtable2 = field["foreign", "key_subtable2"];
-				bool load_many_to_many = field.foreign["load_many_to_many"] |> default bool true;
-				bool save_many_to_many = field.foreign["save_many_to_many"] |> default bool true;
-				Collection foreign_keys = this.foreigns[foreign_name, "keys"];
-				if
-				(
-					load_many_to_many and
-					foreign_type == "many_to_many" and
-					not rtl::isEmpty(subtable) and
-					not rtl::isEmpty(key_subtable) and
-					not rtl::isEmpty(foreign_keys)
-				)
-				{
-					foreign_keys = foreign_keys.map( lib::attr(primary_api_name) );
-					
-					/* Build filter */
-					Map<string> filter = new Map();
-					filter.set(key_subtable, foreign_keys);
-					
-					/* ORM select */
-					Cursor cursor = await orm.select(subtable, filter.toDict());
-					Dict foreign_items = await cursor.fetchAll();
-					await cursor.close();
-					
-					/* Save foreign keys */
-					if (save_many_to_many and (this.action == "create" or this.action == "update"))
-					{
-						Collection new_items = this.item[field_api_name] |> default Collection null;
-						
-						/* Insert or update */
-						if (new_items != null)
-						{
-							for (int j=0; j<new_items.count(); j++)
-							{
-								Dict new_item = new_items[j];
-								Dict new_item_pk = new Map();
-								new_item_pk.set(key_subtable, new_item[key_subtable]);
-								new_item_pk.set(key_subtable2, new_item[key_subtable2]);
-								new_item_pk = new_item_pk.toDict();
-								
-								if (rtl::isEmpty(new_item_pk[key_subtable]))
-								{
-									continue;
-								}
-								if (new_item_pk[key_subtable] != this.new_item[primary_api_name])
-								{
-									continue;
-								}
-								
-								int index = foreign_items.find
-								(
-									bool (Dict foreign_item) use (new_item, key_subtable, key_subtable2) =>
-										new_item[key_subtable] != null and
-										new_item[key_subtable2] != null and
-										new_item[key_subtable] == foreign_item[key_subtable] and
-										new_item[key_subtable2] == foreign_item[key_subtable2]
-								);
-								
-								/* Query */
-								Dict new_item_update = new_item;
-								new_item_update = new_item_update.removeIm(key_subtable);
-								new_item_update = new_item_update.removeIm(key_subtable2);
-								await orm.insert_or_update(subtable, new_item_pk, new_item_update);
-								
-								/* Update foreign item */
-								if (index == -1)
-								{
-									foreign_items = foreign_items.pushIm(new_item);
-								}
-								else
-								{
-									foreign_items = foreign_items.setIm(index, new_item);
-								}
-							}
-						}
-						
-						/* Remove keys */
-						for (int j=foreign_items.count() - 1; j>=0; j--)
-						{
-							Dict foreign_item = foreign_items[j];
-							
-							if (rtl::isEmpty(this.new_item[primary_api_name]))
-							{
-								continue;
-							}
-							if (foreign_item[key_subtable] != this.new_item[primary_api_name])
-							{
-								continue;
-							}
-							
-							int index = new_items.find
-							(
-								bool (Dict new_item) use (foreign_item, key_subtable, key_subtable2) =>
-									new_item[key_subtable] != null and
-									new_item[key_subtable2] != null and
-									new_item[key_subtable] == foreign_item[key_subtable] and
-									new_item[key_subtable2] == foreign_item[key_subtable2]
-							);
-							
-							Dict new_item_pk = new Map();
-							new_item_pk.set(key_subtable, foreign_item[key_subtable]);
-							new_item_pk.set(key_subtable2, foreign_item[key_subtable2]);
-							
-							/* Remove foreign item */
-							if (index == -1)
-							{
-								await orm.delete(subtable, new_item_pk);
-								foreign_items = foreign_items.removeIm(j);
-							}
-						}
-						
-					}
-					
-					this.foreigns = rtl::setAttr
-					(
-						this.foreigns,
-						[foreign_name, "many_to_many"],
-						foreign_items
-					);
-				}
-			}
-		}
+		this.foreigns = await foreignLoadOptions(this.foreigns);
 	}
 	
 	
@@ -568,58 +244,11 @@ class CrudApi extends BaseObject
 	 */
 	async Dict processItem(Dict item)
 	{
-		Collection<FieldInfo> settings = this.getStruct();
+		/* Get ORM class name */
+		string class_name = static::getORM();
+		fn foreignProcessItem = rtl::method(class_name, "foreignProcessItem");
 		
-		/* Get primary field */
-		Collection<FieldInfo> primary_settings = settings.filter( lib::equalAttr("primary", true) );
-		FieldInfo primary_field = primary_settings[0];
-		string primary_api_name = primary_field["api_name"];
-		var primary_value = item[primary_api_name];
-		
-		Dict item_keys = item.keys();
-		for (int i=0; i<settings.count(); i++)
-		{
-			FieldInfo field = settings[i];
-			string api_name = field.api_name;
-			
-			/* Add value for virtual field */
-			if (field.virtual)
-			{
-				/* Get foreign value */
-				if (field.foreign != null)
-				{
-					string foreign_type = field.foreign["type"];
-					string foreign_name = field.foreign["name"];
-					string foreign_key = field.foreign["key"];
-					string key_subtable = field.foreign["key_subtable"];
-					if
-					(
-						not rtl::isEmpty(foreign_name) and
-						not rtl::isEmpty(key_subtable)
-					)
-					{
-						if (foreign_type == "one_to_many")
-						{
-							Dict foreign_item = null;
-							var foreign_value = item[foreign_key];
-							Collection options = this.foreigns[foreign_name, "items"];
-							if (options != null)
-							{
-								foreign_item = options.findItem( lib::equalAttr(key_subtable, foreign_value) );
-							}
-							item <= { api_name } <= foreign_item;
-						}
-						if (foreign_type == "many_to_many")
-						{
-							Dict items = this.foreigns[foreign_name, "many_to_many"]
-								|> lib::filter( lib::equalAttr(key_subtable, primary_value) )
-							;
-							item <= { api_name } <= items;
-						}
-					}
-				}
-			}
-		}
+		item = await foreignProcessItem(this.foreigns, item);
 		return item;
 	}
 	
@@ -652,7 +281,13 @@ class CrudApi extends BaseObject
 	{
 		if (this.isSuccess())
 		{
-			this.answer = rtl::setAttr(this.answer, ["response", "foreigns"], this.foreigns);
+			/* Set foreigns */
+			this.answer = rtl::setAttr
+			(
+				this.answer,
+				["response", "foreigns"],
+				RuntimeUtils::ObjectToPrimitive(this.foreigns, false)
+			);
 		}
 	}
 	
@@ -680,17 +315,14 @@ class CrudApi extends BaseObject
 	{
 		bool res = true;
 		
-		Collection<FieldInfo> settings = this.getStruct();
-		for (int i=0; i<settings.count(); i++)
+		Collection<Rule> rules = this.rules();
+		for (int i=0; i<rules.count(); i++)
 		{
-			FieldInfo field = settings[i];
-			var value = this.item[field.api_name];
-			if (field == null) continue;
-			
-			bool required = field["required"] |> default bool false;
-			if (required and rtl::isEmpty(value))
+			Rule rule = rules[i];
+			string error = rule::validate(rule, this.item);
+			if (error != "")
 			{
-				this.addFieldError( field.api_name, _("Runtime.Web.CRUD", "This field must be filled") );
+				this.addFieldError( rule.api_name, _("Runtime.Web.CRUD", error) );
 				res = false;
 			}
 		}
@@ -705,7 +337,7 @@ class CrudApi extends BaseObject
 	 */
 	async bool validate()
 	{
-		if (this.action == "add" or this.action == "update")
+		if (this.action == "create" or this.action == "update")
 		{
 			list res = await this.validateForm();
 			if (not res)
@@ -725,48 +357,13 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Returns item by pk
-	 */
-	async Dict getByPrimaryKey(Dict pk)
-	{
-		Dict item = null;
-		string table_name = static::getTableName();
-		
-		/* Process primary key */
-		pk = await this.convertPrimaryKey(pk);
-		if (pk != null)
-		{
-			pk = this.toDatabase(pk);
-			
-			/* Get ORM driver */
-			ORMDriver orm = @.getDriver(classof ORMDriver);
-			
-			/* Create query */
-			Cursor cursor = await orm.select(table_name, pk, 0, 1);
-			Dict item = cursor.fetchOne();
-			await cursor.close();
-			
-			/* From database */
-			item = await this.fromDatabase(item);
-		}
-		return item;
-	}
-	
-	
-	
-	/**
 	 * Build query
 	 */
-	QueryBuilder buildSearchQuery()
-	{
-		string table_name = static::getTableName();
-		QueryBuilder q = new QueryBuilder{ "_found_rows": true }
-			.select( table_name )
-			.page( this.page, this.limit )
-			.order( this.getDefaultOrder() )
-		;
-		return q;
-	}
+	QueryBuilder buildSearchQuery(QueryBuilder q) =>
+		q
+		.page( this.page, this.limit )
+		.order( this.getDefaultOrder() )
+	;	
 	
 	
 	
@@ -785,16 +382,17 @@ class CrudApi extends BaseObject
 	 */
 	async void searchQuery()
 	{
-		/* Get ORM driver */
-		ORMDriver orm = @.getDriver(classof ORMDriver);
-		
-		/* Build query */
-		QueryBuilder q = this.buildSearchQuery();
+		/* Get ORM class name */
+		string class_name = static::getORM();
+		fn select = rtl::method(class_name, "select");
 		
 		/* Execute query */
-		Cursor cursor = orm.execute(q);
+		QueryBuilder q = select() |> this.buildSearchQuery |> .asRecord(false);
 		
-		/* Get result */
+		/* Get items */
+		Cursor cursor = await q.execute();
+		
+		/* Fetch items */
 		Vector items = new Vector();
 		while (true)
 		{
@@ -803,16 +401,17 @@ class CrudApi extends BaseObject
 			{
 				break;
 			}
-			row = await this.fromDatabase(row);
+			row = q.fromDatabase(row);
 			items.push(row);
 		}
 		
+		await cursor.close();
+		
+		/* Result */
 		this.q = q;
 		this.items = items.toCollection();
 		this.total = await cursor.foundRows();
 		this.pages = (this.limit > 0) ? rtl::ceil(this.total / this.limit) : 0;
-		
-		await cursor.close();
 	}
 	
 	
@@ -891,35 +490,6 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Search
-	 */
-	static async void search(Dict find = null)
-	{
-		/* Create api */
-		CrudApi api = rtl::newInstance(static::getCurrentClassName());
-		
-		/* Get data from request */
-		api.action = "search";
-		api.find = find;
-		api.page = find["page"] |> default int 0;
-		api.limit = find["limit"] |> default int -1;
-		
-		/* Query */
-		await api.searchQuery();
-		
-		return
-		{
-			"items": api.items,
-			"page": api.page,
-			"pages": api.pages,
-			"limit": api.limit,
-			"total": api.total,
-		};
-	}
-	
-	
-	
-	/**
 	 * Create query before
 	 */
 	async bool canCreateQuery()
@@ -934,35 +504,24 @@ class CrudApi extends BaseObject
 	 */
 	async void createQuery()
 	{
-		string table_name = static::getTableName();
+		/* Get ORM class name */
+		string class_name = static::getORM();
+		fn getPrimaryKey = rtl::method(class_name, "getPrimaryKey");
+		fn save = rtl::method(class_name, "save");
+		fn foreignSave = rtl::method(class_name, "foreignSave");
 		
 		/* Convert item */
-		Dict item = await this.convertItem(this.item);
+		Dict update_item = await this.convertItem(this.item);
 		
-		/* To database */
-		item = this.toDatabase(item);
+		/* Save item */
+		this.new_item = await save(update_item);
 		
-		/* Get ORM driver */
-		ORMDriver orm = @.getDriver(classof ORMDriver);
+		/* Set new item */
+		this.pk = getPrimaryKey(this.new_item);
 		
-		/* Create query */
-		Cursor cursor = await orm.insert(table_name, item);
-		int id = await cursor.lastInsertId();
-		await cursor.close();
-		
-		/* Process item */
-		Map pk = new Map();
-		Collection<FieldInfo> settings = this.getStruct();
-		settings = settings.filter( lib::equalAttr("primary", true) );
-		for (int i=0; i < settings.count(); i++)
-		{
-			FieldInfo field = settings[i];
-			var value = item[field.api_name];
-			if (field.auto_increment) value = id;
-			pk.set(field.api_name, value);
-		}
-		this.pk = pk.toDict();
-		this.new_item = await this.getByPrimaryKey(this.pk);
+		/* Save foreign items */
+		Dict item = this.item.concat(this.pk);
+		await foreignSave(item);
 	}
 	
 	
@@ -991,11 +550,12 @@ class CrudApi extends BaseObject
 			this.is_success = true;
 		}
 		
-		/* Process item */
-		Dict new_item = null;
-		if (this.new_item)
+		/* Convert to Dict */
+		Dict new_item = this.new_item;
+		if (new_item instanceof Record) new_item = this.new_item.convertToDict();
+		if (new_item)
 		{
-			new_item = await this.processItem(this.new_item);
+			new_item = await this.processItem(new_item);
 		}
 		
 		/* Create response */
@@ -1039,26 +599,6 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Create
-	 */
-	static async void create(Dict item)
-	{
-		/* Create api */
-		CrudApi api = rtl::newInstance(static::getCurrentClassName());
-		
-		/* Get data from request */
-		api.action = "create";
-		api.item = item;
-		
-		/* Query */
-		await api.createQuery();
-		
-		return api.new_item;
-	}
-	
-	
-	
-	/**
 	 * Update query before
 	 */
 	async bool canUpdateQuery()
@@ -1076,34 +616,38 @@ class CrudApi extends BaseObject
 		Dict pk = this.pk;
 		Dict item = this.item;
 		
-		Collection keys = item.keys();
+		/* Convert item */
+		Dict update_item = await this.convertItem(item);
+		
+		Collection keys = update_item.keys();
 		if (keys.count() == 0)
 		{
 			return false;
 		}
 		
-		string table_name = static::getTableName();
+		/* Get ORM class name */
+		string class_name = static::getORM();
+		fn getPrimaryKey = rtl::method(class_name, "getPrimaryKey");
+		fn change = rtl::method(class_name, "change");
+		fn save = rtl::method(class_name, "save");
+		fn foreignSave = rtl::method(class_name, "foreignSave");
 		
-		/* Convert item */
-		pk = await this.convertPrimaryKey(pk);
-		item = await this.convertItem(item);
+		/* Save item */
+		this.new_item = change(this.old_item, update_item);
+		this.new_item = await save(this.new_item);
 		
-		/* Process item */
-		item = this.toDatabase(item);
+		/* Save foreign items */
+		await foreignSave(item);
 		
-		/* Process primary key */
-		pk = this.toDatabase(pk);
-		
-		/* Get ORM driver */
-		ORMDriver orm = @.getDriver(classof ORMDriver);
-		
-		/* Create query */
-		Cursor cursor = await orm.update(table_name, pk, item);
-		await cursor.close();
+		/*
+		this.new_item = this.old_item
+			|> curry ::change(?, update_item)
+			|> await ::save
+		;
+		*/
 		
 		/* Set new item */
-		this.pk = this.getPrimaryKeyFromItem(this.item);
-		this.new_item = await this.getByPrimaryKey(this.pk);
+		this.pk = getPrimaryKey(this.new_item);
 	}
 	
 	
@@ -1116,8 +660,12 @@ class CrudApi extends BaseObject
 		/* Validate */
 		await this.validate();
 		
+		/* Get ORM class name */
+		string class_name = static::getORM();
+		fn findItemByKey = rtl::method(class_name, "findItemByKey");
+		
 		/* Find item */
-		this.old_item = await this.getByPrimaryKey(this.pk);
+		this.old_item = await findItemByKey(this.pk);
 		this.new_item = this.old_item;
 		if (this.old_item == null)
 		{
@@ -1144,12 +692,16 @@ class CrudApi extends BaseObject
 			this.is_success = true;
 		}
 		
+		/* Convert to Dict */
+		Dict new_item = this.new_item, old_item = this.old_item;
+		if (new_item instanceof Record) new_item = this.new_item.convertToDict();
+		if (old_item instanceof Record) old_item = this.old_item.convertToDict();
+		
 		/* Process item */
-		Dict new_item = null, old_item = null;
-		old_item = await this.processItem(this.old_item);
+		old_item = await this.processItem(old_item);
 		if (this.new_item != this.old_item and this.new_item != null)
 		{
-			new_item = await this.processItem(this.new_item);
+			new_item = await this.processItem(new_item);
 		}
 		else
 		{
@@ -1198,27 +750,6 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Update
-	 */
-	static async void update(Dict pk, Dict item)
-	{
-		/* Create api */
-		CrudApi api = rtl::newInstance(static::getCurrentClassName());
-		
-		/* Get data from request */
-		api.action = "update";
-		api.pk = pk;
-		api.item = item;
-		
-		/* Query */
-		await api.updateQuery();
-		
-		return api.new_item;
-	}
-	
-	
-	
-	/**
 	 * Delete query before
 	 */
 	async bool canDeleteQuery()
@@ -1233,19 +764,12 @@ class CrudApi extends BaseObject
 	 */
 	async void deleteQuery()
 	{
-		Dict pk = this.pk;
-		string table_name = static::getTableName();
+		/* Get ORM class name */
+		string class_name = static::getORM();
+		fn delete = rtl::method(class_name, "delete");
 		
-		/* Process primary key */
-		pk = await this.convertPrimaryKey(pk);
-		pk = this.toDatabase(pk);
-		
-		/* Get ORM driver */
-		ORMDriver orm = @.getDriver(classof ORMDriver);
-		
-		/* Create query */
-		Cursor cursor = await orm.delete(table_name, pk);
-		await cursor.close();
+		/* Delete */
+		await delete(this.old_item);
 	}
 	
 	
@@ -1255,14 +779,15 @@ class CrudApi extends BaseObject
 	 */
 	async void doDelete()
 	{
-		/* Init api */
-		await this.init();
-		
 		/* Validate */
 		await this.validate();
 		
+		/* Get ORM class name */
+		string class_name = static::getORM();
+		fn findItemByKey = rtl::method(class_name, "findItemByKey");
+		
 		/* Find item */
-		this.old_item = await this.getByPrimaryKey(this.pk);
+		this.old_item = await findItemByKey(this.pk);
 		if (this.old_item == null)
 		{
 			throw new ApiException("Item not found", rtl::ERROR_ITEM_NOT_FOUND);
@@ -1283,6 +808,10 @@ class CrudApi extends BaseObject
 			
 			this.is_success = true;
 		}
+		
+		/* Convert to Dict */
+		Dict old_item = this.old_item;
+		if (old_item instanceof Record) old_item = this.old_item.convertToDict();
 		
 		/* Create response */
 		Dict old_item = await this.processItem(this.old_item);
@@ -1322,23 +851,4 @@ class CrudApi extends BaseObject
 		return [request, api.answer];
 	}
 	
-	
-	
-	/**
-	 * Delete
-	 */
-	static async void delete(Dict pk)
-	{
-		/* Create api */
-		CrudApi api = rtl::newInstance(static::getCurrentClassName());
-		
-		/* Get data from request */
-		api.action = "delete";
-		api.pk = pk;
-		
-		/* Query */
-		await api.deleteQuery();
-		
-		return api.new_item;
-	}
 }
