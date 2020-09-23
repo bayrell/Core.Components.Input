@@ -27,6 +27,8 @@ use Runtime.Core.RemoteCallAnswer;
 use Runtime.Core.RemoteCallRequest;
 use Runtime.ORM.CursorInterface as Cursor;
 use Runtime.ORM.DriverInterface as ORMDriver;
+use Runtime.ORM.Foreign;
+use Runtime.ORM.ForeignKey;
 use Runtime.ORM.QueryBuilder;
 use Runtime.ORM.Record;
 use Runtime.Web.Backend.ApiList;
@@ -189,6 +191,10 @@ class CrudApi extends BaseObject
 	 */
 	async bool beforeQuery()
 	{
+		/* Get ORM class name */
+		string class_name = static::getORM();
+		this.foreign = Foreign::init(class_name);
+		
 		if (this.action == "search")
 		{
 		}
@@ -210,31 +216,31 @@ class CrudApi extends BaseObject
 	 */
 	async bool afterQuery()
 	{
-		/* Get ORM class name */
-		string class_name = static::getORM();
-		fn foreignLoadKeys = rtl::method(class_name, "foreignLoadKeys");
-		fn foreignLoadOptions = rtl::method(class_name, "foreignLoadOptions");
-		
 		/* Get foreign keys */
 		if (this.action == "search")
 		{
-			this.foreigns = await foreignLoadKeys(this.foreigns, this.items);
+			this.foreign = this.items.reduce
+			(
+				Foreign (Foreign foreign, Dict item) => foreign::addItem(foreign, item),
+				this.foreign
+			);
 		}
 		else if (this.action == "create")
 		{
-			this.foreigns = await foreignLoadKeys(this.foreigns, [ this.new_item ]);
+			this.foreign = this.foreign::addItem(this.foreign, this.new_item);
 		}
 		else if (this.action == "update")
 		{
-			this.foreigns = await foreignLoadKeys(this.foreigns, [ this.old_item, this.new_item ]);
+			this.foreign = this.foreign::addItem(this.foreign, this.old_item);
+			this.foreign = this.foreign::addItem(this.foreign, this.new_item);
 		}
 		else if (this.action == "delete")
 		{
-			this.foreigns = await foreignLoadKeys(this.foreigns, [ this.old_item ]);
+			this.foreign = this.foreign::addItem(this.foreign, this.old_item);
 		}
 		
 		/* Load foreign keys */
-		this.foreigns = await foreignLoadOptions(this.foreigns);
+		this.foreign = await this.foreign.loadFullDictionary(this.foreign);
 	}
 	
 	
@@ -244,11 +250,7 @@ class CrudApi extends BaseObject
 	 */
 	async Dict processItem(Dict item)
 	{
-		/* Get ORM class name */
-		string class_name = static::getORM();
-		fn foreignProcessItem = rtl::method(class_name, "foreignProcessItem");
-		
-		item = await foreignProcessItem(this.foreigns, item);
+		item = this.foreign::processItem(this.foreign, item);
 		return item;
 	}
 	
@@ -286,7 +288,7 @@ class CrudApi extends BaseObject
 			(
 				this.answer,
 				["response", "foreigns"],
-				RuntimeUtils::ObjectToPrimitive(this.foreigns, false)
+				RuntimeUtils::ObjectToPrimitive(this.foreign.fields, false)
 			);
 		}
 	}
@@ -384,10 +386,12 @@ class CrudApi extends BaseObject
 	{
 		/* Get ORM class name */
 		string class_name = static::getORM();
-		fn select = rtl::method(class_name, "select");
 		
 		/* Execute query */
-		QueryBuilder q = select() |> this.buildSearchQuery |> .asRecord(false);
+		QueryBuilder q = class_name
+			|> lib::applyMethod("select")
+			|> this.buildSearchQuery
+		;
 		
 		/* Get items */
 		Cursor cursor = await q.execute();
@@ -448,7 +452,10 @@ class CrudApi extends BaseObject
 		Dict response =
 		{
 			"filter": this.filter,
-			"items": this.items,
+			"items": this.items.map
+			(
+				Dict (Record item) => (item instanceof Record) ? item.convertToDict() : item
+			),
 			"page": this.page,
 			"limit": this.limit,
 			"total": this.total,
@@ -508,7 +515,6 @@ class CrudApi extends BaseObject
 		string class_name = static::getORM();
 		fn getPrimaryKey = rtl::method(class_name, "getPrimaryKey");
 		fn save = rtl::method(class_name, "save");
-		fn foreignSave = rtl::method(class_name, "foreignSave");
 		
 		/* Convert item */
 		Dict update_item = await this.convertItem(this.item);
@@ -521,7 +527,7 @@ class CrudApi extends BaseObject
 		
 		/* Save foreign items */
 		Dict item = this.item.concat(this.pk);
-		await foreignSave(item);
+		await this.foreign::save(this.foreign, item);
 	}
 	
 	
@@ -550,13 +556,14 @@ class CrudApi extends BaseObject
 			this.is_success = true;
 		}
 		
-		/* Convert to Dict */
 		Dict new_item = this.new_item;
-		if (new_item instanceof Record) new_item = this.new_item.convertToDict();
 		if (new_item)
 		{
 			new_item = await this.processItem(new_item);
 		}
+		
+		/* Convert to Dict */
+		if (new_item instanceof Record) new_item = new_item.convertToDict();
 		
 		/* Create response */
 		Dict response =
@@ -630,21 +637,15 @@ class CrudApi extends BaseObject
 		fn getPrimaryKey = rtl::method(class_name, "getPrimaryKey");
 		fn change = rtl::method(class_name, "change");
 		fn save = rtl::method(class_name, "save");
-		fn foreignSave = rtl::method(class_name, "foreignSave");
 		
 		/* Save item */
 		this.new_item = change(this.old_item, update_item);
 		this.new_item = await save(this.new_item);
 		
 		/* Save foreign items */
-		await foreignSave(item);
-		
-		/*
-		this.new_item = this.old_item
-			|> curry ::change(?, update_item)
-			|> await ::save
-		;
-		*/
+		pk = getPrimaryKey(this.new_item);
+		item = this.item.concat(pk);
+		await this.foreign::save(this.foreign, item);
 		
 		/* Set new item */
 		this.pk = getPrimaryKey(this.new_item);
@@ -692,10 +693,7 @@ class CrudApi extends BaseObject
 			this.is_success = true;
 		}
 		
-		/* Convert to Dict */
 		Dict new_item = this.new_item, old_item = this.old_item;
-		if (new_item instanceof Record) new_item = this.new_item.convertToDict();
-		if (old_item instanceof Record) old_item = this.old_item.convertToDict();
 		
 		/* Process item */
 		old_item = await this.processItem(old_item);
@@ -707,6 +705,10 @@ class CrudApi extends BaseObject
 		{
 			new_item = old_item;
 		}
+		
+		/* Convert to Dict */
+		if (new_item instanceof Record) new_item = new_item.convertToDict();
+		if (old_item instanceof Record) old_item = old_item.convertToDict();
 		
 		Dict response =
 		{
@@ -809,12 +811,14 @@ class CrudApi extends BaseObject
 			this.is_success = true;
 		}
 		
-		/* Convert to Dict */
 		Dict old_item = this.old_item;
-		if (old_item instanceof Record) old_item = this.old_item.convertToDict();
 		
 		/* Create response */
 		Dict old_item = await this.processItem(this.old_item);
+		
+		/* Convert to Dict */
+		if (old_item instanceof Record) old_item = old_item.convertToDict();
+		
 		Dict response =
 		{
 			"pk": this.pk,
