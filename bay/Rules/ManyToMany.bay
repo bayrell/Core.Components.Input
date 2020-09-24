@@ -22,11 +22,9 @@ use Runtime.BaseStruct;
 use Runtime.Web.CRUD.Rules.Rule;
 
 
-struct ForeignKey extends Rule
+struct ManyToMany extends Rule
 {
-	static const string LOAD_FULL_DICTIONARY = "LOAD_FULL_DICTIONARY";
-	static const string LOAD_PART_DICTIONARY = "LOAD_PART_DICTIONARY";
-	string api_name = "";
-	string options = "";
-	bool save = false;
+	string class_name = "";
+	string option_name = "";
+	string key_name = "";
 }

@@ -19,6 +19,7 @@
 namespace Runtime.Web.CRUD;
 
 use Runtime.BaseStruct;
+use Runtime.Exceptions.RuntimeException;
 use Runtime.Core.RemoteCallAnswer;
 use Runtime.Core.RemoteCallRequest;
 use Runtime.Web.RenderContainer;
@@ -52,6 +53,12 @@ struct CrudPageModel extends BaseStruct
 		Dict search_params = static::getCrudSearchParams(container.request);
 		items <= data <= search_params;
 		RemoteCallAnswer answer = await RenderDriver::remoteBusCall(items, container);
+		
+		/* Throw exception */
+		if (not answer.isSuccess())
+		{
+			throw new RuntimeException(answer.error_message, answer.error_code);
+		}
 		
 		/* Answer */
 		return static::fromAnswer(static::newInstance{}, answer);

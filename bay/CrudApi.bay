@@ -28,13 +28,14 @@ use Runtime.Core.RemoteCallRequest;
 use Runtime.ORM.CursorInterface as Cursor;
 use Runtime.ORM.DriverInterface as ORMDriver;
 use Runtime.ORM.Foreign;
-use Runtime.ORM.ForeignKey;
 use Runtime.ORM.QueryBuilder;
 use Runtime.ORM.Record;
 use Runtime.Web.Backend.ApiList;
 use Runtime.Web.Backend.ApiMethod;
 use Runtime.Web.CRUD.CrudApi;
 use Runtime.Web.CRUD.FieldInfo;
+use Runtime.Web.CRUD.Rules.Dictionary;
+use Runtime.Web.CRUD.Rules.ManyToMany;
 use Runtime.Web.CRUD.Rules.Rule;
 
 
@@ -189,7 +190,7 @@ class CrudApi extends BaseObject
 	/**
 	 * Before query
 	 */
-	async bool beforeQuery()
+	async void beforeQuery()
 	{
 		/* Get ORM class name */
 		string class_name = static::getORM();
@@ -214,33 +215,55 @@ class CrudApi extends BaseObject
 	/**
 	 * After query
 	 */
-	async bool afterQuery()
+	async void afterQuery()
 	{
 		/* Get foreign keys */
 		if (this.action == "search")
 		{
-			this.foreign = this.items.reduce
-			(
-				Foreign (Foreign foreign, Dict item) => foreign::addItem(foreign, item),
-				this.foreign
-			);
+			for (int i=0; i<this.items.count(); i++)
+			{
+				Dict row = this.items[i];
+				this.addForeignItem(row);
+			}
 		}
 		else if (this.action == "create")
 		{
-			this.foreign = this.foreign::addItem(this.foreign, this.new_item);
+			this.addForeignItem(this.new_item);
 		}
 		else if (this.action == "update")
 		{
-			this.foreign = this.foreign::addItem(this.foreign, this.old_item);
-			this.foreign = this.foreign::addItem(this.foreign, this.new_item);
+			this.addForeignItem(this.old_item);
+			this.addForeignItem(this.new_item);
 		}
 		else if (this.action == "delete")
 		{
-			this.foreign = this.foreign::addItem(this.foreign, this.old_item);
+			this.addForeignItem(this.old_item);
 		}
 		
-		/* Load foreign keys */
-		this.foreign = await this.foreign.loadFullDictionary(this.foreign);
+		/* Load options */
+		Collection<Dictionary> rules = this.rules().filter( lib::isInstance(classof Dictionary) );
+		for (int i=0; i<rules.count(); i++)
+		{
+			Dictionary rule = rules[i];
+			if (rule.class_name != "" and rule.option_name != "")
+			{
+				this.foreign = await this.foreign::loadOptions
+				(
+					this.foreign, rule.class_name, rule.option_name
+				);
+			}
+		}
+	}
+	
+	
+	
+	/**
+	 * Add foreign item
+	 */
+	void addForeignItem(Dict item)
+	{
+		Collection<Dictionary> dictionary = this.rules().filter( lib::isInstance(classof Dictionary) );
+		Collection<ManyToMany> rules = this.rules().filter( lib::isInstance(classof ManyToMany) );
 	}
 	
 	
@@ -250,7 +273,7 @@ class CrudApi extends BaseObject
 	 */
 	async Dict processItem(Dict item)
 	{
-		item = this.foreign::processItem(this.foreign, item);
+		/*item = this.foreign::processItem(this.foreign, item);*/
 		return item;
 	}
 	
@@ -279,16 +302,16 @@ class CrudApi extends BaseObject
 	/**
 	 * After
 	 */
-	async bool after()
+	async void after()
 	{
 		if (this.isSuccess())
 		{
-			/* Set foreigns */
+			/* Add foreign options */
 			this.answer = rtl::setAttr
 			(
 				this.answer,
-				["response", "foreigns"],
-				RuntimeUtils::ObjectToPrimitive(this.foreign.fields, false)
+				["response", "foreigns", "options"],
+				RuntimeUtils::ObjectToPrimitive(this.foreign.options, false)
 			);
 		}
 	}
@@ -337,7 +360,7 @@ class CrudApi extends BaseObject
 	/**
 	 * Validate
 	 */
-	async bool validate()
+	async void validate()
 	{
 		if (this.action == "create" or this.action == "update")
 		{
@@ -524,10 +547,6 @@ class CrudApi extends BaseObject
 		
 		/* Set new item */
 		this.pk = getPrimaryKey(this.new_item);
-		
-		/* Save foreign items */
-		Dict item = this.item.concat(this.pk);
-		await this.foreign::save(this.foreign, item);
 	}
 	
 	
@@ -625,7 +644,6 @@ class CrudApi extends BaseObject
 		
 		/* Convert item */
 		Dict update_item = await this.convertItem(item);
-		
 		Collection keys = update_item.keys();
 		if (keys.count() == 0)
 		{
@@ -641,11 +659,6 @@ class CrudApi extends BaseObject
 		/* Save item */
 		this.new_item = change(this.old_item, update_item);
 		this.new_item = await save(this.new_item);
-		
-		/* Save foreign items */
-		pk = getPrimaryKey(this.new_item);
-		item = this.item.concat(pk);
-		await this.foreign::save(this.foreign, item);
 		
 		/* Set new item */
 		this.pk = getPrimaryKey(this.new_item);

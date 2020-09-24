@@ -16,21 +16,23 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Web.CRUD;
+namespace Runtime.Web.CRUD.Rules;
 
 use Runtime.BaseStruct;
+use Runtime.Web.CRUD.Rules.Rule;
 
 
-struct Default extends BaseStruct
+struct DefaultValue extends Rule
 {
 	string api_name = "";
-	pure string validate(Required rule, Dict item) => "";
-	pure string convertItem(Required rule, Dict item, string action)
+	var value = "";
+	pure string validate(DefaultValue rule, Dict item) => "";
+	pure string convertItem(DefaultValue rule, Dict item, string action)
 	{
 		var value = item[rule.api_name];
 		if (rtl::isEmpty(value))
 		{
-			item = rtl::setAttr(item, field.api_name, default_value);
+			item = rtl::setAttr(item, rule.api_name, rule.value);
 		}
 		return item;
 	}
