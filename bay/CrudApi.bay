@@ -21,6 +21,7 @@ namespace Runtime.Web.CRUD;
 use Runtime.rtl;
 use Runtime.lib;
 use Runtime.BaseObject;
+use Runtime.BaseStruct;
 use Runtime.RuntimeUtils;
 use Runtime.Core.ApiException;
 use Runtime.Core.RemoteCallAnswer;
@@ -223,33 +224,46 @@ class CrudApi extends BaseObject
 			for (int i=0; i<this.items.count(); i++)
 			{
 				Dict row = this.items[i];
-				this.addForeignItem(row);
+				this.addManyToMany(row);
 			}
 		}
 		else if (this.action == "create")
 		{
-			this.addForeignItem(this.new_item);
+			this.addManyToMany(this.new_item);
 		}
 		else if (this.action == "update")
 		{
-			this.addForeignItem(this.old_item);
-			this.addForeignItem(this.new_item);
+			this.addManyToMany(this.old_item);
+			this.addManyToMany(this.new_item);
 		}
 		else if (this.action == "delete")
 		{
-			this.addForeignItem(this.old_item);
+			this.addManyToMany(this.old_item);
 		}
 		
-		/* Load options */
+		/* Load dictionary */
+		await this.loadDictionary();
+		
+		/* Load many to many */
+		await this.loadManyToMany();
+	}
+	
+	
+	
+	/**
+	 * Load Dictionary
+	 */
+	async void loadDictionary()
+	{
 		Collection<Dictionary> rules = this.rules().filter( lib::isInstance(classof Dictionary) );
 		for (int i=0; i<rules.count(); i++)
 		{
 			Dictionary rule = rules[i];
-			if (rule.class_name != "" and rule.option_name != "")
+			if (rule.class_name != "" and rule.field_name != "")
 			{
 				this.foreign = await this.foreign::loadOptions
 				(
-					this.foreign, rule.class_name, rule.option_name
+					this.foreign, rule.class_name, rule.field_name
 				);
 			}
 		}
@@ -258,12 +272,73 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Add foreign item
+	 * Add Many To Many
 	 */
-	void addForeignItem(Dict item)
+	void addManyToMany(Dict item)
 	{
-		Collection<Dictionary> dictionary = this.rules().filter( lib::isInstance(classof Dictionary) );
-		Collection<ManyToMany> rules = this.rules().filter( lib::isInstance(classof ManyToMany) );
+		Collection<Dictionary> rules = this.rules().filter
+		(
+			bool (BaseStruct rule) => rule instanceof Dictionary or rule instanceof ManyToMany
+		);
+		
+		for (int i=0; i<rules.count(); i++)
+		{
+			Dictionary rule = rules[i];
+			if (rule.class_name != "" and rule.field_name != "" and rule.key_name != "")
+			{
+				this.foreign = await this.foreign::addItem
+				(
+					this.foreign, item, rule.class_name, rule.field_name, rule.key_name
+				);
+			}
+		}
+		
+	}
+	
+	
+	
+	/**
+	 * Load Many To Many
+	 */
+	async void loadManyToMany()
+	{
+		Collection<Dictionary> rules = this.rules().filter( lib::isInstance(classof ManyToMany) );
+		for (int i=0; i<rules.count(); i++)
+		{
+			Dictionary rule = rules[i];
+			if (rule.class_name != "" and rule.field_name != "" and rule.field_name != "")
+			{
+				this.foreign = await this.foreign::loadManyToMany
+				(
+					this.foreign, rule.class_name, rule.field_name, rule.key_name
+				);
+			}
+		}
+	}
+	
+	
+	
+	/**
+	 * Save Many To Many
+	 */
+	async void saveManyToManyItem(Dict item)
+	{
+		Collection<Dictionary> rules = this.rules().filter( lib::isInstance(classof ManyToMany) );
+		for (int i=0; i<rules.count(); i++)
+		{
+			Dictionary rule = rules[i];
+			if (rule.class_name != "" and rule.field_name != "" and rule.field_name != "" and rule.save)
+			{
+				Collection new_values = item[rule.field_name];
+				if (new_values != null)
+				{
+					await this.foreign::saveManyToMany
+					(
+						this.foreign, item, new_values, rule.class_name, rule.field_name, rule.key_name
+					);
+				}
+			}
+		}
 	}
 	
 	
@@ -273,7 +348,18 @@ class CrudApi extends BaseObject
 	 */
 	async Dict processItem(Dict item)
 	{
-		/*item = this.foreign::processItem(this.foreign, item);*/
+		Collection<Dictionary> rules = this.rules().filter( lib::isInstance(classof ManyToMany) );
+		for (int i=0; i<rules.count(); i++)
+		{
+			Dictionary rule = rules[i];
+			if (rule.class_name != "" and rule.field_name != "" and rule.field_name != "")
+			{
+				item = this.foreign::processManyToMany
+				(
+					this.foreign, item, rule.class_name, rule.field_name, rule.key_name
+				);
+			}
+		}
 		return item;
 	}
 	
@@ -290,6 +376,7 @@ class CrudApi extends BaseObject
 			for (int i=0; i<this.items.count(); i++)
 			{
 				Dict row = this.items[i];
+				if (row instanceof Record) row = row.convertToDict();
 				row = await this.processItem(row);
 				new_items.push(row);
 			}
@@ -310,8 +397,8 @@ class CrudApi extends BaseObject
 			this.answer = rtl::setAttr
 			(
 				this.answer,
-				["response", "foreigns", "options"],
-				RuntimeUtils::ObjectToPrimitive(this.foreign.options, false)
+				["response", "foreigns"],
+				RuntimeUtils::ObjectToPrimitive(this.foreign.fields, false)
 			);
 		}
 	}
@@ -547,6 +634,10 @@ class CrudApi extends BaseObject
 		
 		/* Set new item */
 		this.pk = getPrimaryKey(this.new_item);
+		
+		/* Save foreign items */
+		Dict item = this.item.concat(this.pk);
+		await this.saveManyToManyItem(item);
 	}
 	
 	
@@ -576,13 +667,15 @@ class CrudApi extends BaseObject
 		}
 		
 		Dict new_item = this.new_item;
+		
+		/* Convert to Dict */
+		if (new_item instanceof Record) new_item = new_item.convertToDict();
+		
+		/* Process item */
 		if (new_item)
 		{
 			new_item = await this.processItem(new_item);
 		}
-		
-		/* Convert to Dict */
-		if (new_item instanceof Record) new_item = new_item.convertToDict();
 		
 		/* Create response */
 		Dict response =
@@ -662,6 +755,10 @@ class CrudApi extends BaseObject
 		
 		/* Set new item */
 		this.pk = getPrimaryKey(this.new_item);
+		
+		/* Save foreign items */
+		item = this.item.concat(this.pk);
+		await this.saveManyToManyItem(item);
 	}
 	
 	
@@ -708,6 +805,10 @@ class CrudApi extends BaseObject
 		
 		Dict new_item = this.new_item, old_item = this.old_item;
 		
+		/* Convert to Dict */
+		if (new_item instanceof Record) new_item = new_item.convertToDict();
+		if (old_item instanceof Record) old_item = old_item.convertToDict();
+		
 		/* Process item */
 		old_item = await this.processItem(old_item);
 		if (this.new_item != this.old_item and this.new_item != null)
@@ -719,10 +820,7 @@ class CrudApi extends BaseObject
 			new_item = old_item;
 		}
 		
-		/* Convert to Dict */
-		if (new_item instanceof Record) new_item = new_item.convertToDict();
-		if (old_item instanceof Record) old_item = old_item.convertToDict();
-		
+		/* Create response */
 		Dict response =
 		{
 			"pk": this.pk,
@@ -826,12 +924,13 @@ class CrudApi extends BaseObject
 		
 		Dict old_item = this.old_item;
 		
-		/* Create response */
-		Dict old_item = await this.processItem(this.old_item);
-		
 		/* Convert to Dict */
 		if (old_item instanceof Record) old_item = old_item.convertToDict();
 		
+		/* Process item */
+		Dict old_item = await this.processItem(this.old_item);
+		
+		/* Create response */
 		Dict response =
 		{
 			"pk": this.pk,

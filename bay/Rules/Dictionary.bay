@@ -25,6 +25,6 @@ use Runtime.Web.CRUD.Rules.Rule;
 struct Dictionary extends Rule
 {
 	string class_name = "";
-	string option_name = "";
+	string field_name = "";
 	string key_name = "";
 }

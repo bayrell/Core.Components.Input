@@ -25,6 +25,7 @@ use Runtime.Web.CRUD.Rules.Rule;
 struct ManyToMany extends Rule
 {
 	string class_name = "";
-	string option_name = "";
+	string field_name = "";
 	string key_name = "";
+	bool save = false;
 }
