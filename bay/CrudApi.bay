@@ -46,7 +46,7 @@ class CrudApi extends BaseObject
 	RemoteCallAnswer answer = null;
 	RemoteCallRequest request = null;
 	Collection<FieldInfo> struct = null;
-	Dict foreigns = {};
+	Foreign foreign = null;
 	
 	/* Search */
 	Dict find = null;
@@ -227,6 +227,10 @@ class CrudApi extends BaseObject
 				this.addManyToMany(row);
 			}
 		}
+		else if (this.action == "getItem")
+		{
+			this.addManyToMany(this.new_item);
+		}
 		else if (this.action == "create")
 		{
 			this.addManyToMany(this.new_item);
@@ -242,31 +246,13 @@ class CrudApi extends BaseObject
 		}
 		
 		/* Load dictionary */
-		await this.loadDictionary();
+		if (this.action == "search" or this.action == "getItem")
+		{
+			await this.loadDictionary();
+		}
 		
 		/* Load many to many */
 		await this.loadManyToMany();
-	}
-	
-	
-	
-	/**
-	 * Load Dictionary
-	 */
-	async void loadDictionary()
-	{
-		Collection<Dictionary> rules = this.rules().filter( lib::isInstance(classof Dictionary) );
-		for (int i=0; i<rules.count(); i++)
-		{
-			Dictionary rule = rules[i];
-			if (rule.class_name != "" and rule.field_name != "")
-			{
-				this.foreign = await this.foreign::loadOptions
-				(
-					this.foreign, rule.class_name, rule.field_name
-				);
-			}
-		}
 	}
 	
 	
@@ -288,11 +274,32 @@ class CrudApi extends BaseObject
 			{
 				this.foreign = await this.foreign::addItem
 				(
-					this.foreign, item, rule.class_name, rule.field_name, rule.key_name
+					this.foreign, item, rule.field_name, rule.class_name, rule.key_name
 				);
 			}
 		}
 		
+	}
+	
+	
+	
+	/**
+	 * Load Dictionary
+	 */
+	async void loadDictionary()
+	{
+		Collection<Dictionary> rules = this.rules().filter( lib::isInstance(classof Dictionary) );
+		for (int i=0; i<rules.count(); i++)
+		{
+			Dictionary rule = rules[i];
+			if (rule.class_name != "" and rule.field_name != "")
+			{
+				this.foreign = await this.foreign::loadOptions
+				(
+					this.foreign, rule.field_name, rule.class_name
+				);
+			}
+		}
 	}
 	
 	
@@ -310,7 +317,7 @@ class CrudApi extends BaseObject
 			{
 				this.foreign = await this.foreign::loadManyToMany
 				(
-					this.foreign, rule.class_name, rule.field_name, rule.key_name
+					this.foreign, rule.field_name, rule.class_name, rule.key_name
 				);
 			}
 		}
@@ -332,9 +339,9 @@ class CrudApi extends BaseObject
 				Collection new_values = item[rule.field_name];
 				if (new_values != null)
 				{
-					await this.foreign::saveManyToMany
+					this.foreign = await this.foreign::saveManyToMany
 					(
-						this.foreign, item, new_values, rule.class_name, rule.field_name, rule.key_name
+						this.foreign, item, new_values, rule.field_name, rule.class_name, rule.key_name
 					);
 				}
 			}
@@ -356,7 +363,7 @@ class CrudApi extends BaseObject
 			{
 				item = this.foreign::processManyToMany
 				(
-					this.foreign, item, rule.class_name, rule.field_name, rule.key_name
+					this.foreign, item, rule.field_name, rule.class_name, rule.key_name
 				);
 			}
 		}
