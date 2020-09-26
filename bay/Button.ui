@@ -1,0 +1,101 @@
+<!--
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2016-2020 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+-->
+
+<class version="1.0"
+	name="Runtime.Web.Input.Button" extends="Runtime.Web.Component" 
+	module="Runtime.Web.Input"
+>
+
+<use name="Runtime.Core.Message" />
+<use name="Runtime.Web.LayoutModel" />
+<use name="Runtime.Web.Events.MouseClickEvent" />
+
+<style>
+%button{
+	padding: 6px 12px;
+	cursor: pointer;
+	background-color: ${ vars["colors", "default", "background"] };
+	border: 1px ${ vars["colors", "default", "border"] } solid;
+	color: ${ vars["colors", "default", "text"] };
+	/*box-shadow: 0px 2px 5px 0px rgba(0,0,0,0.25);*/
+	outline: 0;
+}
+%button:hover{
+	background-color: ${ vars["colors", "default", "hover"] };
+	border: 1px ${ vars["colors", "default", "border"] } solid;
+	color: ${ vars["colors", "default", "hover-text"] };
+}
+%button:active{
+	box-shadow: inset 0px 2px 5px 0px rgba(0,0,0,0.25);
+}
+%button.primary{
+	background-color: ${ vars["colors", "primary", "background"] };
+	border: 1px ${ vars["colors", "primary", "border"] } solid;
+	color: ${ vars["colors", "primary", "text"] };
+}
+%button.primary:hover{
+	background-color: ${ vars["colors", "primary", "hover-background"] };
+	border: 1px ${ vars["colors", "primary", "border"] } solid;
+	color: ${ vars["colors", "primary", "hover-text"] };
+}
+%button.danger{
+	background-color: ${ vars["colors", "danger", "background"] };
+	border: 1px ${ vars["colors", "danger", "border"] } solid;
+	color: ${ vars["colors", "danger", "text"] };
+}
+%button.danger:hover{
+	background-color: ${ vars["colors", "danger", "hover-background"] };
+	border: 1px ${ vars["colors", "danger", "border"] } solid;
+	color: ${ vars["colors", "danger", "hover-text"] };
+}
+%button.success{
+	background-color: ${ vars["colors", "success", "background"] };
+	border: 1px ${ vars["colors", "success", "border"] } solid;
+	color: ${ vars["colors", "success", "text"] };
+}
+%button.success:hover{
+	background-color: ${ vars["colors", "success", "hover-background"] };
+	border: 1px ${ vars["colors", "success", "border"] } solid;
+	color: ${ vars["colors", "success", "hover-text"] };
+}
+%button.small{
+	padding: 3px 6px;
+}
+</style>
+
+
+<template name="render">
+	<button class='button' class={ params["type"] } @tag={ params["@tag"] } @event:MouseClickEvent="onClick">
+		{ content }
+	</button>
+</template>
+
+
+<script type="frontend">
+
+/**
+ * Mouse click event
+ */
+async void onClick(Message<MouseClickEvent> msg)
+{
+	await this.signal(msg.data);
+}
+
+</script>
+
+</class>

@@ -2,6 +2,7 @@
 	"name": "Runtime.Web.Input",
 	"assets":
 	[
+		"Button",
 		"Input",
 		"Label",
 		"Select",
