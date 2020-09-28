@@ -140,7 +140,7 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Returns table field value
+	 * Returns default order
 	 */
 	Collection<Collection<string>> getDefaultOrder() =>
 	[
@@ -150,9 +150,32 @@ class CrudApi extends BaseObject
 	
 	
 	/**
+	 * Returns default filter
+	 */
+	Collection<Collection<string>> getDefaultFilter() =>
+	[
+	];
+	
+	
+	
+	/**
 	 * Returns default limit
 	 */
 	int getDefaultLimit() => 10;
+	
+	
+	
+	/**
+	 * Returns search order
+	 */
+	Collection<Collection<string>> getSearchOrder() => this.getDefaultOrder();
+	
+	
+	
+	/**
+	 * Returns search filter
+	 */
+	Collection<Collection<string>> getSearchFilter() => this.getDefaultFilter();
 	
 	
 	
@@ -481,7 +504,8 @@ class CrudApi extends BaseObject
 	QueryBuilder buildSearchQuery(QueryBuilder q) =>
 		q
 		.page( this.page, this.limit )
-		.order( this.getDefaultOrder() )
+		.filter( this.getSearchFilter() )
+		.order( this.getSearchOrder() )
 	;	
 	
 	
@@ -614,6 +638,13 @@ class CrudApi extends BaseObject
 	
 	
 	/**
+	 * Find existing item for create
+	 */
+	async Record findItemForCreating() => null;
+	
+	
+	
+	/**
 	 * Create query before
 	 */
 	async bool canCreateQuery()
@@ -654,6 +685,21 @@ class CrudApi extends BaseObject
 	 */
 	async void doCreate()
 	{
+		/* Check if item exists */
+		this.old_item = this.findItemForCreating();
+		if (this.old_item)
+		{
+			string class_name = static::getORM();
+			fn getPrimaryKey = rtl::method(class_name, "getPrimaryKey");
+			this.pk = getPrimaryKey(this.old_item);
+			this.action = "update";
+			
+			/* Update existing item */
+			this.doUpdate();
+			
+			return;
+		}
+		
 		/* Validate */
 		await this.validate();
 		
@@ -783,7 +829,7 @@ class CrudApi extends BaseObject
 		fn findItemByKey = rtl::method(class_name, "findItemByKey");
 		
 		/* Find item */
-		this.old_item = await findItemByKey(this.pk);
+		if (this.old_item == null) this.old_item = await findItemByKey(this.pk);
 		this.new_item = this.old_item;
 		if (this.old_item == null)
 		{
@@ -880,16 +926,34 @@ class CrudApi extends BaseObject
 	
 	
 	/**
+	 * Force delete items
+	 */
+	bool isForceDelete() => true;
+	
+	
+	
+	/**
 	 * Delete query
 	 */
 	async void deleteQuery()
 	{
 		/* Get ORM class name */
 		string class_name = static::getORM();
-		fn delete = rtl::method(class_name, "delete");
-		
-		/* Delete */
-		await delete(this.old_item);
+		if (this.isForceDelete())
+		{
+			fn delete = rtl::method(class_name, "delete");
+			
+			/* Delete */
+			await delete(this.old_item);
+		}
+		else
+		{
+			string class_name = static::getORM();
+			fn getPrimaryKey = rtl::method(class_name, "getPrimaryKey");
+			fn update = rtl::method(class_name, "update");
+			Dict pk = getPrimaryKey(this.old_item);
+			update(pk, { "is_deleted": true });
+		}
 	}
 	
 	
