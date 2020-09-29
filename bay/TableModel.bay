@@ -1,0 +1,142 @@
+/*!
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2016-2020 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+namespace Runtime.Web.CRUD;
+
+use Runtime.lib;
+use Runtime.BaseStruct;
+
+
+struct TableModel extends BaseStruct
+{
+	Collection<Dict> rows = null;
+	int page = 0;
+	int pages = 0;
+	int delta = 5;
+	int limit = 100;
+	
+	
+	/**
+	 * Returns position of item
+	 */
+	pure int findPos(TableModel model, Dict find)
+	{
+		Collection<string> keys = find.keys();
+		return model.rows.find
+		(
+			bool (Dict row) use (find, keys)
+			{
+				for (int i=0; i<keys.count(); i++)
+				{
+					string key = keys[i];
+					var value1 = find[key];
+					var value2 = row[key];
+					if (value1 != value2) return false;
+				}
+				return true;
+			}
+		);
+	}
+	
+	
+	
+	/**
+	 * Find first item
+	 */
+	pure TableModel getFirstItem(TableModel model, Dict find)
+	{
+		if (model.rows == null)
+		{
+			return null;
+		}
+		int pos = static::findPos(model, find);
+		return model.rows.get(pos, null);
+	}
+	
+	
+	
+	/**
+	 * Add item
+	 */
+	pure TableModel addItem(TableModel model, Dict item)
+	{
+		if (model.rows == null)
+		{
+			model <= rows <= [];
+		}
+		model <= rows <= model.rows.pushIm(item);
+		return model;
+	}
+	
+	
+	
+	/**
+	 * Prepend item
+	 */
+	pure TableModel prependItem(TableModel model, Dict item)
+	{
+		if (model.rows == null)
+		{
+			model <= rows <= [];
+		}
+		model <= rows <= model.rows.prependIm(item);
+		return model;
+	}
+	
+	
+	
+	/**
+	 * Set item
+	 */
+	pure TableModel setItem(TableModel model, Dict find, Dict item)
+	{
+		if (model.rows == null)
+		{
+			model <= rows <= [];
+		}
+		
+		int pos = static::findPos(model, find);
+		if (pos != -1)
+		{
+			model <= rows <= model.rows.setIm(pos, item);
+		}
+		
+		return model;
+	}
+	
+	
+	
+	/**
+	 * Remove item by id
+	 */
+	pure TableModel removeItem(TableModel model, Dict find)
+	{
+		if (model.rows == null)
+		{
+			return model;
+		}
+		
+		int pos = static::findPos(model, find);
+		if (pos != -1)
+		{
+			model <= rows <= model.rows.removeIm(pos);
+		}
+		
+		return model;
+	}
+}

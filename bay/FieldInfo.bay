@@ -52,6 +52,7 @@ struct FieldInfo extends BaseStruct
 	/* Extra params */
 	Dict foreign = {};
 	Dict params = {};
+	Dict table = {};
 	
 	
 	/**

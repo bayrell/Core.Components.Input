@@ -17,18 +17,18 @@
 -->
 
 <class version="1.0"
-	name="Runtime.Web.CRUD.CrudFilter" extends="Runtime.Web.Form.Form" 
-	module="Runtime.Web.CRUD" model="Runtime.Web.Form.FormModel"
+	name="Runtime.Web.CRUD.CrudFilter" extends="Runtime.Web.CRUD.Form" 
+	module="Runtime.Web.CRUD" model="Runtime.Web.CRUD.FormModel"
 >
 
 <use name="Runtime.Core.Message" />
 <use name="Runtime.Web.LayoutModel" />
-<use name="Runtime.Web.Button.Button" component="true" />
+<use name="Runtime.Web.Input.Button" component="true" />
 <use name="Runtime.Web.Events.ChangeEvent" />
 <use name="Runtime.Web.Events.MouseClickEvent" />
-<use name="Runtime.Web.Form.Form" component="true" />
-<use name="Runtime.Web.Form.FormEvent" />
-<use name="Runtime.Web.Form.FormModel" />
+<use name="Runtime.Web.CRUD.Form" component="true" />
+<use name="Runtime.Web.CRUD.FormEvent" />
+<use name="Runtime.Web.CRUD.FormModel" />
 
 
 <style>

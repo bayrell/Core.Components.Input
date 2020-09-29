@@ -1,0 +1,170 @@
+<!--
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2016-2020 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+-->
+
+<class version="1.0"
+	name="Runtime.Web.CRUD.Table" extends="Runtime.Web.Component" 
+	module="Runtime.Web.CRUD" model="Runtime.Web.CRUD.TableModel"
+>
+
+<use name="Runtime.Core.Message" />
+<use name="Runtime.Web.LayoutModel" />
+<use name="Runtime.Web.CRUD.FieldInfo" />
+<use name="Runtime.Web.Events.MouseClickEvent" />
+
+
+<style>
+%table{
+	border-collapse: collapse;
+	border: 1px ${ vars["colors", "default", "border"] } solid;
+	margin-top: 10px;
+}
+%td, %th{
+	border: 1px ${ vars["colors", "default", "border"] } solid;
+	padding: 5px;
+}
+%row:hover td{
+	background-color: ${ vars["colors", "default", "hover-background"] };
+	color: ${ vars["colors", "default", "hover-text"] };
+}
+%td-edit-buttons{
+	margin-left: -2px;
+	margin-right: -2px;
+}
+%td-edit-buttons .button{
+	margin-left: 2px;
+	margin-right: 2px;
+}
+</style>
+
+
+<template name="render">
+	<table class='table'>
+		{ static::renderHeader(layout, model, params, content) }
+		{ static::renderRows(layout, model, params, content) }
+	</table>
+</template>
+
+
+<template name="renderRows">
+	%if (model.rows != null)
+	{
+		%for (int i=0; i<model.rows.count(); i++)
+		{
+			{ static::renderRow(layout, model, params, i) }
+		}
+	}
+</template>
+
+
+<template name="renderHeader" args="LayoutModel layout, TableModel model, Dict params">
+	
+	%var Collection<string> fields = params["fields"];
+	
+	<tr class="header">
+	%for (int i=0; i<fields.count(); i++)
+	{
+		%var string field_name = fields[i];
+		%var FieldInfo field = FieldInfo::getFieldInfo(params["struct"], field_name);
+		<th class="th" class={ "th-" ~ field_name } data-name={ field_name } @key={ "th-" ~ field_name }>
+			{ field["label"] }
+		</th>
+	}
+	</tr>
+	
+</template>
+
+
+<template name="renderRow" args="LayoutModel layout, TableModel model, Dict params, int index">
+	%var Dict row = model.rows[index];
+	%var Collection<string> fields = params["fields"];
+	
+	<tr class="row" data-index={ index } @key={ "tr-" ~ index }>
+	%for (int i=0; i<fields.count(); i++)
+	{
+		%var string field_name = fields[i];
+		%var FieldInfo field = FieldInfo::getFieldInfo(params["struct"], field_name);
+		%var string text_align = field["table", "text-align"] |> default string "left";
+		<td class="td" class={ "td-" ~ field_name } data-name={ field_name } @key={ "td-" ~ field_name }
+			style=
+			{
+				text_align != "left" ? ("text-align: " ~ text_align ~ ";") : ""
+			}
+		>
+			{ static::renderCell(layout, model, params, row, field_name, index) }
+		</td>
+	}
+	</tr>
+	
+</template>
+
+
+<template name="renderCell"
+	args="LayoutModel layout, TableModel model, Dict params, Dict row, string field_name, int index"
+>
+	%var Dict row = model.rows[index];
+	%var Collection<FieldInfo> struct = params["struct"];
+	%var FieldInfo field = FieldInfo::getFieldInfo(params["struct"], field_name);
+	
+	%if (field != null)
+	{
+		<!-- Patch field settings -->
+		%var field = static::patchField(layout, field, model, params);
+		
+		%var string class_name = field["class_name"] |> default string "";
+		%var string class_name_table = field["class_name_table"] |> default string "";
+		%var Dict class_settings = field["class_settings"] |> default Dict {};
+		%if (not rtl::isEmpty(class_name_table)){ %var class_name = class_name_table; }
+		
+		<!-- Patch class settings -->
+		%var class_settings = static::patchSettings(layout, field, class_settings, model, params);
+		
+		%if (not rtl::isEmpty(class_name))
+		{
+			<{class_name} @bind=["rows", index, field_name] used-by="table" @key={ field_name } struct={ struct }
+				name={ field_name } field-info={ field } row-index={ index } row-data={ row } table-model={ model }
+				...class_settings
+			/>
+		}
+	}
+</template>
+
+
+<script type="frontend">
+
+
+/**
+ * Patch field
+ */
+pure Dict patchField(LayoutModel layout, Dict field, var model, Dict params)
+{
+	return field;
+}
+
+
+
+/**
+ * Patch class settings
+ */
+pure Dict patchSettings(LayoutModel layout, Dict field, Dict class_settings, var model, Dict params)
+{
+	return class_settings;
+}
+
+</script>
+
+</class>

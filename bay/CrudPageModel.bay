@@ -25,9 +25,9 @@ use Runtime.Core.RemoteCallRequest;
 use Runtime.Web.RenderContainer;
 use Runtime.Web.RenderDriver;
 use Runtime.Web.Request;
-use Runtime.Web.Table.TableModel;
+use Runtime.Web.CRUD.TableModel;
 use Runtime.Web.Dialog.DialogModel;
-use Runtime.Web.Form.FormModel;
+use Runtime.Web.CRUD.FormModel;
 
 
 struct CrudPageModel extends BaseStruct

@@ -27,23 +27,23 @@
 <use name="Runtime.Web.LayoutModel" />
 <use name="Runtime.Web.RenderDriver" />
 <use name="Runtime.Web.Events.MouseClickEvent" />
-<use name="Runtime.Web.Button.Button" component="true" />
 <use name="Runtime.Web.CRUD.CrudFilter" component="true" />
 <use name="Runtime.Web.CRUD.CrudPageModel" />
 <use name="Runtime.Web.CRUD.FieldInfo" />
+<use name="Runtime.Web.CRUD.Form" component="true" />
+<use name="Runtime.Web.CRUD.FormEvent" />
+<use name="Runtime.Web.CRUD.FormModel" />
+<use name="Runtime.Web.CRUD.Pagination" component="true" />
+<use name="Runtime.Web.CRUD.Table" component="true" />
+<use name="Runtime.Web.CRUD.TableModel" />
 <use name="Runtime.Web.Dialog.Dialog" component="true" />
 <use name="Runtime.Web.Dialog.DialogEvent" />
 <use name="Runtime.Web.Dialog.DialogModel" />
-<use name="Runtime.Web.Form.Form" component="true" />
-<use name="Runtime.Web.Form.FormEvent" />
-<use name="Runtime.Web.Form.FormModel" />
+<use name="Runtime.Web.Input.Button" component="true" />
 <use name="Runtime.Web.Input.Input" component="true" />
 <use name="Runtime.Web.Input.Label" component="true" />
 <use name="Runtime.Web.Input.Select" component="true" />
 <use name="Runtime.Web.Input.SelectText" component="true" />
-<use name="Runtime.Web.Table.Pagination" component="true" />
-<use name="Runtime.Web.Table.Table" component="true" />
-<use name="Runtime.Web.Table.TableModel" />
 
 <style>
 </style>
