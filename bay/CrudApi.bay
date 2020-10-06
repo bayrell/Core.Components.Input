@@ -56,6 +56,7 @@ class CrudApi extends BaseObject
 	int total = 0;
 	int limit = 100;
 	Collection<Dict> items = null;
+	Collection filter = null;
 	
 	/* Save */
 	Map<Vector<string>> fields_errors = new Map();

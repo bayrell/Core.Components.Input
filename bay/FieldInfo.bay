@@ -68,6 +68,7 @@ struct FieldInfo extends BaseStruct
 	pure bool filterForm(Collection<FieldInfo> settings, string form_type, string field_name)
 	{
 		FieldInfo info = static::getFieldInfo(settings, field_name);
+		if (info == null) return false;
 		if (form_type == "create" and info.can_create == false) return false;
 		if (form_type == "update" and info.can_update == false) return false;
 		return true;
