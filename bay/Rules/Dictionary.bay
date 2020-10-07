@@ -18,7 +18,19 @@
 
 namespace Runtime.Web.CRUD.Rules;
 
+use Runtime.lib;
 use Runtime.BaseStruct;
+use Runtime.ORM.ConnectionInterface as Connection;
+use Runtime.ORM.CursorInterface as Cursor;
+use Runtime.ORM.DriverInterface as ORMDriver;
+use Runtime.ORM.QueryBuilder;
+use Runtime.ORM.Record;
+use Runtime.ORM.Annotations.AutoIncrement;
+use Runtime.ORM.Annotations.CoreType;
+use Runtime.ORM.Annotations.ForeignKey;
+use Runtime.ORM.Annotations.Primary;
+use Runtime.Web.CRUD.Foreign;
+use Runtime.Web.CRUD.ForeignField;
 use Runtime.Web.CRUD.Rules.Rule;
 
 
@@ -27,4 +39,48 @@ struct Dictionary extends Rule
 	string class_name = "";
 	string field_name = "";
 	string key_name = "";
+	fn buildSearchQuery = null;
+	
+	
+	
+	/**
+	 * Add item
+	 */
+	pure Foreign foreignAddItem(Dictionary rule, Foreign foreign, Record item)
+	{
+		return foreign;
+	}
+	
+	
+	
+	/**
+	 * Load full dictionary
+	 */
+	static async Foreign foreignLoadOptions(Dictionary rule, Foreign foreign, Dict db_settings = null)
+	{
+		string field_name = rule.field_name;
+		string class_name = rule.class_name;
+		fn buildSearchQuery = rule.buildSearchQuery;
+		if (buildSearchQuery == null) buildSearchQuery = QueryBuilder (QueryBuilder q) => q;
+		
+		if (class_name == "" or field_name == "")
+		{
+			return foreign;
+		}
+		
+		/* Get all options */
+		Collection<Dict> options =
+			class_name
+			|> lib::method("select")
+			|> lib::apply()
+			|> buildSearchQuery
+			|> await .all(db_settings)
+			|> lib::map( Dict (Record item) => item.convertToDict() )
+		;
+		
+		foreign <= fields <= { field_name } <= options <= options;
+		
+		return foreign;
+	}
+	
 }

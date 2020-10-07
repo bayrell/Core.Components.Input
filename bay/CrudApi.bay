@@ -290,19 +290,11 @@ class CrudApi extends BaseObject
 		(
 			bool (BaseStruct rule) => rule instanceof Dictionary or rule instanceof ManyToMany
 		);
-		
 		for (int i=0; i<rules.count(); i++)
 		{
 			Dictionary rule = rules[i];
-			if (rule.class_name != "" and rule.field_name != "" and rule.key_name != "")
-			{
-				this.foreign = await this.foreign::addItem
-				(
-					this.foreign, item, rule.field_name, rule.class_name, rule.key_name
-				);
-			}
+			this.foreign = rule::foreignAddItem(rule, this.foreign, item);
 		}
-		
 	}
 	
 	
@@ -316,13 +308,7 @@ class CrudApi extends BaseObject
 		for (int i=0; i<rules.count(); i++)
 		{
 			Dictionary rule = rules[i];
-			if (rule.class_name != "" and rule.field_name != "")
-			{
-				this.foreign = await this.foreign::loadOptions
-				(
-					this.foreign, rule.field_name, rule.class_name
-				);
-			}
+			this.foreign = await rule::foreignLoadOptions(rule, this.foreign);
 		}
 	}
 	
@@ -333,17 +319,11 @@ class CrudApi extends BaseObject
 	 */
 	async void loadManyToMany()
 	{
-		Collection<Dictionary> rules = this.rules().filter( lib::isInstance(classof ManyToMany) );
+		Collection<ManyToMany> rules = this.rules().filter( lib::isInstance(classof ManyToMany) );
 		for (int i=0; i<rules.count(); i++)
 		{
-			Dictionary rule = rules[i];
-			if (rule.class_name != "" and rule.field_name != "" and rule.field_name != "")
-			{
-				this.foreign = await this.foreign::loadManyToMany
-				(
-					this.foreign, rule.field_name, rule.class_name, rule.key_name
-				);
-			}
+			ManyToMany rule = rules[i];
+			this.foreign = await rule::foreignLoadManyToMany(rule, this.foreign);
 		}
 	}
 	
@@ -354,21 +334,12 @@ class CrudApi extends BaseObject
 	 */
 	async void saveManyToManyItem(Dict item)
 	{
-		Collection<Dictionary> rules = this.rules().filter( lib::isInstance(classof ManyToMany) );
+		Collection<ManyToMany> rules = this.rules().filter( lib::isInstance(classof ManyToMany) );
 		for (int i=0; i<rules.count(); i++)
 		{
-			Dictionary rule = rules[i];
-			if (rule.class_name != "" and rule.field_name != "" and rule.field_name != "" and rule.save)
-			{
-				Collection new_values = item[rule.field_name];
-				if (new_values != null)
-				{
-					this.foreign = await this.foreign::saveManyToMany
-					(
-						this.foreign, item, new_values, rule.field_name, rule.class_name, rule.key_name
-					);
-				}
-			}
+			ManyToMany rule = rules[i];
+			Collection new_values = item[rule.field_name];
+			this.foreign = await rule::foreignSaveManyToMany(rule, this.foreign, item, new_values);
 		}
 	}
 	
@@ -379,17 +350,11 @@ class CrudApi extends BaseObject
 	 */
 	async Dict processItem(Dict item)
 	{
-		Collection<Dictionary> rules = this.rules().filter( lib::isInstance(classof ManyToMany) );
+		Collection<ManyToMany> rules = this.rules().filter( lib::isInstance(classof ManyToMany) );
 		for (int i=0; i<rules.count(); i++)
 		{
-			Dictionary rule = rules[i];
-			if (rule.class_name != "" and rule.field_name != "" and rule.field_name != "")
-			{
-				item = this.foreign::processManyToMany
-				(
-					this.foreign, item, rule.field_name, rule.class_name, rule.key_name
-				);
-			}
+			ManyToMany rule = rules[i];
+			item = rule::processManyToMany(rule, this.foreign, item);
 		}
 		return item;
 	}
@@ -500,12 +465,19 @@ class CrudApi extends BaseObject
 	
 	
 	/**
+	 * Extend search filter
+	 */
+	Collection<list> extendSearchFilter(Collection<list> filter) => filter;
+
+	
+	
+	/**
 	 * Build query
 	 */
 	QueryBuilder buildSearchQuery(QueryBuilder q) =>
 		q
 		.page( this.page, this.limit )
-		.filter( this.getSearchFilter() )
+		.filter( this.getSearchFilter() |> this.extendSearchFilter )
 		.order( this.getSearchOrder() )
 	;	
 	
@@ -642,6 +614,32 @@ class CrudApi extends BaseObject
 	 * Find existing item for create
 	 */
 	async Record findItemForCreating() => null;
+	
+	
+	
+	/**
+	 * Find existing item for create
+	 */
+	async Record findItemByKey(Dict pk)
+	{
+		/* Get ORM class name */
+		string class_name = static::getORM();
+		fn select = rtl::method(class_name, "select");
+		fn getFilterByPrimaryKey = rtl::method(class_name, "getFilterByPrimaryKey");
+		
+		Collection<list> filter = getFilterByPrimaryKey(pk) |> this.extendSearchFilter;
+		if (filter == null) return null;
+		
+		/* Execute query */
+		Record res = select()
+			|> .filter(filter)
+			|> .asRecord(true)
+			|> .limit(1)
+			|> await .one()
+		;
+		
+		return res;
+	}
 	
 	
 	
@@ -825,12 +823,8 @@ class CrudApi extends BaseObject
 		/* Validate */
 		await this.validate();
 		
-		/* Get ORM class name */
-		string class_name = static::getORM();
-		fn findItemByKey = rtl::method(class_name, "findItemByKey");
-		
 		/* Find item */
-		if (this.old_item == null) this.old_item = await findItemByKey(this.pk);
+		if (this.old_item == null) this.old_item = await this.findItemByKey(this.pk);
 		this.new_item = this.old_item;
 		if (this.old_item == null)
 		{
@@ -967,12 +961,8 @@ class CrudApi extends BaseObject
 		/* Validate */
 		await this.validate();
 		
-		/* Get ORM class name */
-		string class_name = static::getORM();
-		fn findItemByKey = rtl::method(class_name, "findItemByKey");
-		
 		/* Find item */
-		this.old_item = await findItemByKey(this.pk);
+		this.old_item = await this.findItemByKey(this.pk);
 		if (this.old_item == null)
 		{
 			throw new ApiException("Item not found", rtl::ERROR_ITEM_NOT_FOUND);
