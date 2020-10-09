@@ -27,7 +27,7 @@
 
 
 <style>
-%select{
+.select{
 	width: 100%;
 	padding: 6px 12px;
 	background-color: ${ vars["colors", "default", "background"] };

@@ -3,6 +3,7 @@
 	"assets":
 	[
 		"Button",
+		"DatePicker",
 		"Input",
 		"Label",
 		"Select",

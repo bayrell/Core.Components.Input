@@ -17,47 +17,27 @@
 -->
 
 <class version="1.0"
-	name="Runtime.Web.Input.Input" extends="Runtime.Web.Component" 
+	name="Runtime.Web.Input.DatePicker" extends="Runtime.Web.Component" 
 	module="Runtime.Web.Input"
 >
 
 
 <use name="Runtime.Core.Message" />
-<use name="Runtime.Web.Events.ChangeEvent" />
+<use name="Runtime.Web.Events.User.ChangeEvent" />
 
 
 <style>
-.input{
-	width: 100%;
-	padding: 6px 12px;
-	background-color: ${ vars["colors", "default", "background"] };
-	border: 1px ${ vars["colors", "default", "border"] } solid;
-	outline: transparent;
-}
 </style>
 
 
 
 <template name="render">
-	%var string value = (params != null) ? params.get("value", "") : "";
-	%var string name = (params != null) ? params.get("name", "") : "";
-	%var string type = (params != null) ? params.get("type", "input") : "";
-	%var primitive tag = (params != null) ? params.get("@tag", "") : "";
-	<input class='input' @tag={ tag } @event:ChangeEvent="onChange"
-		name={ name } type={ type } value={ model != null ? model : value } />
+	{ model }
 </template>
 
 
 
 <script type="frontend">
-
-/**
- * On change
- */
-public void onChange(Message<ChangeEvent> msg)
-{
-	this.signal(msg.data);
-}
 
 </script>
 

@@ -32,15 +32,7 @@
 
 
 <template name="render">
-	%var fn r = params["render"];
-	%if (rtl::exists(r))
-	{
-		{ r(layout, model, params, content) }
-	}
-	%elseif (rtl::exists(model))
-	{
-		{ model }
-	}
+	{ model }
 </template>
 
 
