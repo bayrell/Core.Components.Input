@@ -45,17 +45,78 @@
 <use name="Runtime.Web.Input.Select" component="true" />
 <use name="Runtime.Web.Input.SelectText" component="true" />
 
+
 <style>
 </style>
 
 
+<script>
+
+
+/**
+ * Returns object name
+ */
+pure string getCrudObjectName() => "";
+
+
+/**
+ * Returns options
+ */
+pure Collection getOptions(LayoutModel layout, CrudPageModel model, Dict params, string name = "") => null;
+
+
+/**
+ * Returns crud struct
+ */
+pure Collection<FieldInfo> getStruct(LayoutModel layout, CrudPageModel model, Dict params) => [];
+
+
+/**
+ * Returns filter fields
+ */
+pure Collection<string> getFilterFields(LayoutModel layout, CrudPageModel model, Dict params) => [];
+
+
+/**
+ * Returns form fields
+ */
+pure Collection<string> getFormFields(LayoutModel layout, CrudPageModel model, Dict params) => [];
+
+
+/**
+ * Returns table fields
+ */
+pure Collection<string> getTableFields(LayoutModel layout, CrudPageModel model, Dict params) => [];
+
+
+/**
+ * Returns messages
+ */
+pure Dict<string> getMessages(LayoutModel layout, CrudPageModel model, Dict params) => {};
+
+
+/**
+ * Dialog settings
+ */
+pure Dict getDialogSettings(LayoutModel layout, CrudPageModel model, Dict params) => {};
+
+
+/**
+ * Form settings
+ */
+pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) => {};
+
+
+</script>
+
+
 <template name="render">
 	
-	%var Dict messages = params["messages"];
-	%var Collection<FieldInfo> struct = params["struct"];
-	%var Collection<string> form_fields = params["form_fields"];
-	%var Collection<string> filter_fields = params["filter_fields"];
-	%var Collection<string> table_fields = params["table_fields"];
+	%var Collection<FieldInfo> struct = static::getStruct(layout, model, params);
+	%var Collection<string> form_fields = static::getFormFields(layout, model, params);
+	%var Collection<string> filter_fields = static::getFilterFields(layout, model, params);
+	%var Collection<string> table_fields = static::getTableFields(layout, model, params);
+	%var Dict messages = static::getMessages(layout, model, params);
 	
 	<div class='crud'>
 		
@@ -79,56 +140,71 @@
 			/>
 		</div>
 		
-		%var Dict dialog_form_settings = params["dialog_form"] |> default Dict {};
-		%var Dict form_settings = params["form"] |> default Dict {};
-		%var Collection<string> form_add_fields = form_fields.filter
-		(
-			curry FieldInfo::filterForm(struct, "create", ?)
-		);
-		%var Collection<string> form_edit_fields = form_fields.filter
-		(
-			curry FieldInfo::filterForm(struct, "update", ?)
-		);
-		%var string form_class_name = form_settings["class_name"] |> default string classof Form;
-		<div class='dialogs'>
-			<Dialog @name="dialog_add" style={ DialogModel::STYLE_CONTENT } show_buttons={ false } 
-				...dialog_form_settings
-			>
-				<{form_class_name} @name="form_add" action="add" struct={ struct } fields={ form_add_fields }
-					@event:FormEvent="onFormEvent" ...form_settings
-				/>
-			</Dialog>
-			<Dialog @name="dialog_edit" style={ DialogModel::STYLE_CONTENT } show_buttons={ false } 
-				...dialog_form_settings
-			>
-				<{form_class_name} @name="form_edit" action="edit" struct={ struct } fields={ form_edit_fields }
-					@event:FormEvent="onFormEvent" ...form_settings
-				/>
-			</Dialog>
-			<Dialog @name="dialog_delete" style={ DialogModel::STYLE_CONFIRM } auto_hide={ false }
-				@event:DialogEvent="onDialogEvent"
-				buttons=[
-					{
-						"type": "danger",
-						"data-action": "ok",
-						"value": "OK",
-					},
-					{
-						"type": "default",
-						"data-action": "cancel",
-						"value": "Cancel",
-					},
-				]
-			/>
-		</div>
+		{ static::renderDialog(layout, model, params) }
 	</div>
 	
 </template>
 
 
-<template name="fieldNumber">
-	%var TableModel table_model = params["table-model"];
-	%var int index = params["row-index"];
+<template name="renderDialog" args="LayoutModel layout, CrudPageModel model, Dict params">
+	
+	%var Collection<FieldInfo> struct = static::getStruct(layout, model, params);
+	%var Collection<string> form_fields = static::getFormFields(layout, model, params);
+	%var Dict form_settings = static::getFormSettings(layout, model, params);
+	%var Collection<string> form_add_fields = form_fields.filter
+	(
+		curry FieldInfo::filterForm(struct, "create", ?)
+	);
+	%var Collection<string> form_edit_fields = form_fields.filter
+	(
+		curry FieldInfo::filterForm(struct, "update", ?)
+	);
+	%var string form_class_name = form_settings["class_name"] |> default string classof Form;
+	%var Dict dialog_form_settings = static::getDialogSettings(layout, model, params);
+	
+	<div class='dialogs'>
+		<Dialog @name="dialog_add" style={ DialogModel::STYLE_CONTENT } show_buttons={ false }
+			...dialog_form_settings
+		>
+			<{form_class_name} @name="form_add" action="add" struct={ struct } fields={ form_add_fields }
+				@event:FormEvent="onFormEvent" ...form_settings
+			/>
+		</Dialog>
+		<Dialog @name="dialog_edit" style={ DialogModel::STYLE_CONTENT } show_buttons={ false }
+			...dialog_form_settings
+		>
+			<{form_class_name} @name="form_edit" action="edit" struct={ struct } fields={ form_edit_fields }
+				@event:FormEvent="onFormEvent" ...form_settings
+			/>
+		</Dialog>
+		<Dialog @name="dialog_delete" style={ DialogModel::STYLE_CONFIRM } auto_hide={ false }
+			@event:DialogEvent="onDialogEvent"
+			buttons=[
+				{
+					"type": "danger",
+					"data-action": "ok",
+					"value": "OK",
+				},
+				{
+					"type": "default",
+					"data-action": "cancel",
+					"value": "Cancel",
+				},
+			]
+		/>
+	</div>
+	
+</template>
+
+
+<template name="renderDateTime" args="LayoutModel layout, var model, Dict params">
+	{ model }
+</template>
+
+
+<template name="renderNumber" args="LayoutModel layout, var model, Dict params">
+	%var TableModel table_model = params["crud_model"];
+	%var int index = params["crud_row_index"];
 	%if (table_model)
 	{
 		{ table_model.page * table_model.limit + index + 1 }
@@ -136,11 +212,17 @@
 </template>
 
 
-<template name="renderButton" args="LayoutModel layout, var model, Dict params, var content, string button_type">
-	%var Collection<FieldInfo> struct = params["struct"];
-	%var TableModel table_model = params["table-model"];
-	%var Dict item = params["row-data"];
-	%var int index = params["row-index"];
+<template name="renderButtons" args="LayoutModel layout, var model, Dict params">
+	{ static::renderButton(layout, model, params, "edit") }
+	{ static::renderButton(layout, model, params, "delete") }
+</template>
+
+
+<template name="renderButton" args="LayoutModel layout, var model, Dict params, string button_type">
+	%var Collection<FieldInfo> struct = params["crud_struct"];
+	%var TableModel table_model = params["crud_model"];
+	%var Dict item = params["crud_row_data"];
+	%var int index = params["crud_row_index"];
 	%if (button_type == "edit")
 	{
 		<Button type='small' data-index={ index } data-pk={ static::getPrimaryKey(struct, item) }
@@ -163,40 +245,7 @@
 </template>
 
 
-<template name="buttonEdit">
-	%var Collection<FieldInfo> struct = params["struct"];
-	%var TableModel table_model = params["table-model"];
-	%var Dict item = params["row-data"];
-	%var int index = params["row-index"];
-	<Button type='small' data-index={ index } data-pk={ static::getPrimaryKey(struct, item) }
-		@event:MouseClickEvent="onRowEditClick" @key="edit"
-	>
-		{ _("Runtime.Web.CRUD", "Edit") }
-	</Button>
-</template>
-
-
-<template name="buttonDelete">
-	%var Collection<FieldInfo> struct = params["struct"];
-	%var TableModel table_model = params["table-model"];
-	%var Dict item = params["row-data"];
-	%var int index = params["row-index"];
-	<Button type='small danger' data-index={ index } data-pk={ static::getPrimaryKey(struct, item) }
-		@event:MouseClickEvent="onRowDeleteClick" @key="delete"
-	>
-		{ _("Runtime.Web.CRUD", "Delete") }
-	</Button>
-</template>
-
-
-<script type="frontend">
-
-
-/**
- * Returns object name
- */
-string getCrudObjectName() => this.params.get("object_name", "");
-
+<script>
 
 
 /**
@@ -350,7 +399,7 @@ async void onItemCreate()
 	/* Send api */
 	RemoteCallAnswer answer = await RenderDriver::remoteBusCall
 	{
-		"object_name": this.getCrudObjectName(),
+		"object_name": static::getCrudObjectName(),
 		"interface_name": "core.crud",
 		"method_name": "create",
 		"data":
@@ -386,7 +435,7 @@ async void onItemUpdate()
 	/* Send api */
 	RemoteCallAnswer answer = await RenderDriver::remoteBusCall
 	{
-		"object_name": this.getCrudObjectName(),
+		"object_name": static::getCrudObjectName(),
 		"interface_name": "core.crud",
 		"method_name": "update",
 		"data":
@@ -421,7 +470,7 @@ async void onItemDelete(Dict item)
 	/* Send api */
 	RemoteCallAnswer answer = await RenderDriver::remoteBusCall
 	{
-		"object_name": this.getCrudObjectName(),
+		"object_name": static::getCrudObjectName(),
 		"interface_name": "core.crud",
 		"method_name": "delete",
 		"data":
@@ -440,7 +489,6 @@ async void onItemDelete(Dict item)
 		this.dialog_delete.update("setAnswer", answer);
 	}
 }
-
 
 
 </script>

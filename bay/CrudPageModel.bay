@@ -32,6 +32,7 @@ use Runtime.Web.CRUD.FormModel;
 
 struct CrudPageModel extends BaseStruct
 {
+	string action = "";
 	FormModel form_add = new FormModel();
 	FormModel form_edit = new FormModel();
 	FormModel filter = new FormModel();
@@ -61,7 +62,16 @@ struct CrudPageModel extends BaseStruct
 		}
 		
 		/* Answer */
-		return static::fromAnswer(static::newInstance{}, answer);
+		CrudPageModel page_model = static::newInstance{ "action": "search" };
+		if (answer.isSuccess())
+		{
+			page_model <= table <= rows <= answer.response["items"];
+			page_model <= table <= page <= answer.response["page"];
+			page_model <= table <= pages <= answer.response["pages"];
+			page_model <= table <= limit <= answer.response["limit"];
+			page_model <= foreigns <= answer.response["foreigns"];
+		}
+		return page_model;
 	}
 	
 	
@@ -85,20 +95,4 @@ struct CrudPageModel extends BaseStruct
 	}
 	
 	
-	
-	/**
-	 * From answer
-	 */
-	pure CrudPageModel fromAnswer(CrudPageModel model, RemoteCallAnswer answer)
-	{
-		if (answer.isSuccess())
-		{
-			model <= table <= rows <= answer.response["items"];
-			model <= table <= page <= answer.response["page"];
-			model <= table <= pages <= answer.response["pages"];
-			model <= table <= limit <= answer.response["limit"];
-			model <= foreigns <= answer.response["foreigns"];
-		}
-		return model;
-	}
 }

@@ -25,27 +25,28 @@
 <use name="Runtime.Web.LayoutModel" />
 <use name="Runtime.Web.CRUD.FieldInfo" />
 <use name="Runtime.Web.Events.MouseClickEvent" />
+<use name="Runtime.Web.Input.Button" />
 
 
 <style>
-%table{
+.table{
 	border-collapse: collapse;
 	border: 1px ${ vars["colors", "default", "border"] } solid;
 	margin-top: 10px;
 }
-%td, %th{
+.td, .th{
 	border: 1px ${ vars["colors", "default", "border"] } solid;
 	padding: 5px;
 }
-%row:hover td{
+.row:hover td{
 	background-color: ${ vars["colors", "default", "hover-background"] };
 	color: ${ vars["colors", "default", "hover-text"] };
 }
-%td-edit-buttons{
+.td-edit-buttons{
 	margin-left: -2px;
 	margin-right: -2px;
 }
-%td-edit-buttons .button{
+.td-edit-buttons .button, .td-edit-buttons %(Button)button{
 	margin-left: 2px;
 	margin-right: 2px;
 }
@@ -125,21 +126,68 @@
 		<!-- Patch field settings -->
 		%var field = static::patchField(layout, field, model, params);
 		
+		<!-- Get class name -->
 		%var string class_name = field["class_name"] |> default string "";
 		%var string class_name_table = field["class_name_table"] |> default string "";
-		%var Dict class_settings = field["class_settings"] |> default Dict {};
 		%if (not rtl::isEmpty(class_name_table)){ %var class_name = class_name_table; }
 		
 		<!-- Patch class settings -->
+		%var Dict class_settings = field["class_settings"] |> default Dict {};
+		%var class_settings = class_settings
+			.setIm("name", field_name)
+			.setIm("crud_class_name", class_name)
+			.setIm("crud_kind", "table")
+			.setIm("crud_struct", struct)
+			.setIm("crud_field_name", field_name)
+			.setIm("crud_field_info", field)
+			.setIm("crud_row_index", index)
+			.setIm("crud_row_data", row)
+			.setIm("crud_model", model)
+		;
 		%var class_settings = static::patchSettings(layout, field, class_settings, model, params);
+		%var fn calc = class_settings["calc"];
+		%var fn render = class_settings["render"];
+		%var fn canRender = class_settings["canRender"];
 		
-		%if (not rtl::isEmpty(class_name))
+		<!-- Calculate new value -->
+		%var var value = model["rows", index, field_name];
+		%if (rtl::exists(calc))
 		{
-			<{class_name} @bind=["rows", index, field_name] used-by="table" @key={ field_name } struct={ struct }
-				name={ field_name } field-info={ field } row-index={ index } row-data={ row } table-model={ model }
-				...class_settings
-			/>
+			%var value = calc(layout, value, class_settings);
+			%var class_settings = class_settings.setIm("value", value);
 		}
+		
+		<!-- Render value -->
+		%if
+		(
+			rtl::exists(render) and
+			(
+				not rtl::exists(canRender) or
+				( rtl::exists(canRender) and canRender(layout, model, class_settings) )
+			)
+		)
+		{
+			{ render(layout, value, class_settings) }
+		}
+		%else
+		{
+			%if (not rtl::isEmpty(class_name))
+			{
+				<{class_name} @bind=["rows", index, field_name] @key={ field_name } ...class_settings />
+			}
+		}
+		
+	}
+</template>
+
+
+<template name="renderField" args="LayoutModel layout, TableModel model, Dict class_settings">
+	%var string class_name = class_settings["crud_class_name"];
+	%var string field_name = class_settings["crud_field_name"];
+	%var int index = class_settings["crud_row_index"];
+	%if (not rtl::isEmpty(class_name))
+	{
+		<{class_name} @bind=["rows", index, field_name] @key={ field_name } ...class_settings />
 	}
 </template>
 

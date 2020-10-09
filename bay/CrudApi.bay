@@ -519,7 +519,7 @@ class CrudApi extends BaseObject
 			{
 				break;
 			}
-			row = q.fromDatabase(row);
+			row = q.fromDatabase(cursor.getConnection(), row);
 			items.push(row);
 		}
 		
