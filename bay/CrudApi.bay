@@ -28,13 +28,14 @@ use Runtime.Core.RemoteCallAnswer;
 use Runtime.Core.RemoteCallRequest;
 use Runtime.ORM.CursorInterface as Cursor;
 use Runtime.ORM.DriverInterface as ORMDriver;
-use Runtime.ORM.Foreign;
 use Runtime.ORM.QueryBuilder;
 use Runtime.ORM.Record;
 use Runtime.Web.Backend.ApiList;
 use Runtime.Web.Backend.ApiMethod;
 use Runtime.Web.CRUD.CrudApi;
 use Runtime.Web.CRUD.FieldInfo;
+use Runtime.Web.CRUD.Foreign;
+use Runtime.Web.CRUD.ForeignField;
 use Runtime.Web.CRUD.Rules.Dictionary;
 use Runtime.Web.CRUD.Rules.ManyToMany;
 use Runtime.Web.CRUD.Rules.Rule;
@@ -350,11 +351,15 @@ class CrudApi extends BaseObject
 	 */
 	async Dict processItem(Dict item)
 	{
-		Collection<ManyToMany> rules = this.rules().filter( lib::isInstance(classof ManyToMany) );
+		Collection<Rule> rules = this.rules();
 		for (int i=0; i<rules.count(); i++)
 		{
-			ManyToMany rule = rules[i];
-			item = rule::processManyToMany(rule, this.foreign, item);
+			Rule rule = rules[i];
+			item = rule::convertItem(rule, item, this.action);
+			if (item instanceof ManyToMany)
+			{
+				item = rule::processManyToMany(rule, this.foreign, item);
+			}
 		}
 		return item;
 	}

@@ -42,4 +42,5 @@ struct AllowFields extends Rule
 		
 		return item;
 	}
+	pure Dict processItem(Rule rule, Dict item, string action) => static::convertItem(rule, item, action);
 }
