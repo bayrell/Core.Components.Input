@@ -32,7 +32,11 @@
 
 
 <template name="render">
-	{ model }
+	%var string value = (params != null) ? params.get("value", "") : "";
+	%var string def_value = (params != null) ? params.get("default", "") : "";
+	%var value = value != null ? value : model;
+	%if (rtl::isEmpty(value)){ %var value = def_value; }
+	{ value }
 </template>
 
 

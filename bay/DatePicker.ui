@@ -22,22 +22,57 @@
 >
 
 
+<use name="Runtime.DateTime" />
 <use name="Runtime.Core.Message" />
-<use name="Runtime.Web.Events.User.ChangeEvent" />
+<use name="Runtime.Web.Events.ChangeEvent" />
 
 
 <style>
+.input{
+	width: 100%;
+	padding: 6px 12px;
+	background-color: ${ vars["colors", "default", "background"] };
+	border: 1px ${ vars["colors", "default", "border"] } solid;
+	outline: transparent;
+}
 </style>
 
 
 
 <template name="render">
-	{ model }
+	%var string text = "";
+	%var string value = (params != null) ? params.get("value", "") : "";
+	%var string name = (params != null) ? params.get("name", "") : "";
+	%var string type = (params != null) ? params.get("type", "input") : "";
+	%var primitive tag = (params != null) ? params.get("@tag", "") : "";
+	%var value = value != null ? value : model;
+	%if (value != null) { %var text = value.getDate( layout.tz ); }
+	
+	<input class='input' @tag={ tag } @event:ChangeEvent="onChange"
+		name={ name } type={ type } value={ text } />
+	
 </template>
 
 
 
 <script type="frontend">
+
+/**
+ * On change
+ */
+public void onChange(Message<ChangeEvent> msg)
+{
+	string value = msg.data.value;
+	DateTime new_value = new DateTime
+	{
+		"y": rs::substr(value, 0, 4),
+		"m": rs::substr(value, 5, 2),
+		"d": rs::substr(value, 8, 2),
+		"tz": this.controller.layout.tz,
+	}
+	msg.data = msg.data.copy{ "value": new_value };
+	this.signal(msg.data);
+}
 
 </script>
 

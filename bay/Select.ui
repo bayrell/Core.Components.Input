@@ -41,15 +41,20 @@
 <template name="render">
 	
 	%var string name = (params != null) ? params.get("name", "") : "";
+	%var string value = (params != null) ? params.get("value", "") : "";
+	%var string def_value = (params != null) ? params.get("default", "") : "";
+	%var value = value != null ? value : model;
+	%if (rtl::isEmpty(value)){ %var value = def_value; }
+	%if (rtl::isEmpty(value)){ %var value = ""; }
 	
-	<select class='select' @event:ChangeEvent="onChange" name={ name } value={ rtl::isEmpty(model) ? "" : model }>
+	<select class='select' @event:ChangeEvent="onChange" name={ name } value={ value }>
 	%var Collection options = params["options"];
 	%if (rtl::exists(options))
 	{
 		%var Dict selected = {};
 		%if (params["show_select_value"] == true)
 		{
-			%if (model === "" or model === null)
+			%if (value === "" or value === null)
 			{
 				%var selected = { "selected": "selected" };
 			}
@@ -59,7 +64,7 @@
 		{
 			%var Dict item = options[i];
 			%var selected = {};
-			%if (item["id"] == model and model !== "" and model !== null)
+			%if (item["id"] == value and value !== "" and value !== null)
 			{
 				%var selected = { "selected": "selected" };
 			}
