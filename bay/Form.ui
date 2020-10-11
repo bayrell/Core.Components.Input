@@ -128,7 +128,7 @@
 		%if (not rtl::isEmpty(class_name_form)){ %var class_name = class_name_form; }
 		%var Collection<string> model_path = static::getBindPath(field);
 		
-		<!-- Patch class settings -->
+		<!-- Class settings -->
 		%var Dict class_settings = field["class_settings"] |> default Dict {};
 		%var class_settings = class_settings
 			.setIm("name", field_name)
@@ -141,9 +141,21 @@
 			.setIm("crud_model_path", model_path)
 			.setIm("crud_model", model)
 		;
+		
+		<!-- Calculate new value -->
+		%var fn calc = class_settings["calc"];
+		%var var value = rtl::attr(model, model_path);
+		%if (rtl::exists(calc))
+		{
+			%var value = calc(layout, value, class_settings);
+		}
+		%var class_settings = class_settings.setIm("value", value);
+		
 		%var class_settings = static::patchSettings(layout, field, class_settings, model, params);
+		%var fn can_render = class_settings["can_render"];
 		%var fn render = class_settings["render"];
-		%var fn canRender = class_settings["canRender"];
+		%var fn render_form = class_settings["render_form"];
+		%if (not rtl::isEmpty(render_form)){ %var render = render_form; }
 		
 		<div class='form_row' @key={ field_name }>
 			<div class='form_label'>{ field["label"] }:</div>
@@ -152,12 +164,12 @@
 				(
 					rtl::exists(render) and
 					(
-						not rtl::exists(canRender) or
-						( rtl::exists(canRender) and canRender(layout, model, class_settings) )
+						not rtl::exists(can_render) or
+						( rtl::exists(can_render) and can_render(layout, model, class_settings) )
 					)
 				)
 				{
-					{ render(layout, model, class_settings) }
+					{ render(layout, rtl::attr(model, model_path), class_settings) }
 				}
 				%else
 				{
@@ -168,7 +180,7 @@
 					}
 				}
 			</div>
-			{ static::renderFieldError(model, field_name) }
+			{ static::renderFieldError(layout, model, field_name) }
 		</div>
 	}
 </template>
@@ -186,7 +198,7 @@
 </template>
 
 
-<template name="renderFieldError" args="FormModel model, string field_name">
+<template name="renderFieldError" args="LayoutModel layout, FormModel model, string field_name">
 	<div class='form_error'>
 		%var Collection<string> errors = model["fields_errors"][field_name];
 		%if (errors != null)
@@ -320,7 +332,7 @@ async void onItemChange(Message<ChangeEvent> msg)
 	Dict params = msg.sender.params;
 	string field_name = params["name"];
 	string value = msg.data.value;
-	var model_path = params["model-path"];
+	var model_path = params["crud_model_path"];
 	
 	FormEvent event = new FormEvent
 	{

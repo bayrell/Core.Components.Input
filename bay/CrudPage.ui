@@ -22,6 +22,7 @@
 >
 
 <use name="Runtime.lib" />
+<use name="Runtime.DateTime" />
 <use name="Runtime.Core.Message" />
 <use name="Runtime.Core.RemoteCallAnswer" />
 <use name="Runtime.Web.LayoutModel" />
@@ -197,8 +198,25 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 </template>
 
 
-<template name="renderDateTime" args="LayoutModel layout, var model, Dict params">
-	{ model }
+<template name="renderDate" args="LayoutModel layout, DateTime model, Dict params">
+	%var string crud_kind = params["crud_kind"] |> default string "";
+	%var string class_name = params["crud_class_name"] |> default string "";
+	
+	%if (crud_kind == "table")
+	{
+		{ model != null ? model.getDate( layout.tz ) : "" }
+	}
+</template>
+
+
+<template name="renderDateTime" args="LayoutModel layout, DateTime model, Dict params">
+	%var string crud_kind = params["crud_kind"] |> default string "";
+	%var string class_name = params["crud_class_name"] |> default string "";
+	
+	%if (crud_kind == "table")
+	{
+		{ model != null ? model.getDate( layout.tz ) : "" }
+	}
 </template>
 
 
@@ -300,7 +318,8 @@ async void onRowDeleteClick(Message<MouseClickEvent> msg)
 	Dict item = this.table.call("getFirstItem", pk);
 	
 	string message = "";
-	fn f = this.params["messages", "delete"];
+	Dict<string> messages = static::getMessages(this.constructor.layout, this.model(), this.params);
+	fn f = messages["delete"];
 	if (rtl::exists(f))
 	{
 		if (rtl::isFn(f))
@@ -429,7 +448,7 @@ async void onItemUpdate()
 {
 	Dict old_item = this.form_edit.model("old_item");
 	Dict item = this.form_edit.model("item");
-	Dict pk = static::getPrimaryKey(this.params["struct"], old_item);
+	Dict pk = static::getPrimaryKey(static::getStruct(this.constructor.layout, this.model(), this.params), old_item);
 	this.form_edit.update("setWaitMessage");
 	
 	/* Send api */
@@ -465,7 +484,7 @@ async void onItemUpdate()
 async void onItemDelete(Dict item)
 {
 	this.dialog_delete.update("setWaitMessage");
-	Dict pk = static::getPrimaryKey(this.params["struct"], item);
+	Dict pk = static::getPrimaryKey(static::getStruct(), item);
 	
 	/* Send api */
 	RemoteCallAnswer answer = await RenderDriver::remoteBusCall

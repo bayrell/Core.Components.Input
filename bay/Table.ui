@@ -131,7 +131,7 @@
 		%var string class_name_table = field["class_name_table"] |> default string "";
 		%if (not rtl::isEmpty(class_name_table)){ %var class_name = class_name_table; }
 		
-		<!-- Patch class settings -->
+		<!-- Class settings -->
 		%var Dict class_settings = field["class_settings"] |> default Dict {};
 		%var class_settings = class_settings
 			.setIm("name", field_name)
@@ -144,26 +144,30 @@
 			.setIm("crud_row_data", row)
 			.setIm("crud_model", model)
 		;
-		%var class_settings = static::patchSettings(layout, field, class_settings, model, params);
-		%var fn calc = class_settings["calc"];
-		%var fn render = class_settings["render"];
-		%var fn canRender = class_settings["canRender"];
 		
 		<!-- Calculate new value -->
+		%var fn calc = class_settings["calc"];
 		%var var value = model["rows", index, field_name];
 		%if (rtl::exists(calc))
 		{
 			%var value = calc(layout, value, class_settings);
-			%var class_settings = class_settings.setIm("value", value);
 		}
+		%var class_settings = class_settings.setIm("value", value);
+		
+		<!-- Patch settings -->
+		%var class_settings = static::patchSettings(layout, field, class_settings, model, params);
+		%var fn can_render = class_settings["can_render"];
+		%var fn render = class_settings["render"];
+		%var fn render_table = class_settings["render_table"];
+		%if (not rtl::isEmpty(render_table)){ %var render = render_table; }
 		
 		<!-- Render value -->
 		%if
 		(
 			rtl::exists(render) and
 			(
-				not rtl::exists(canRender) or
-				( rtl::exists(canRender) and canRender(layout, model, class_settings) )
+				not rtl::exists(can_render) or
+				( rtl::exists(can_render) and can_render(layout, model, class_settings) )
 			)
 		)
 		{

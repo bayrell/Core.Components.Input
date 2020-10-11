@@ -71,7 +71,7 @@
 </template>
 
 
-<template name="renderFieldError" args="FormModel model, string field_name">
+<template name="renderFieldError" args="LayoutModel layout, FormModel model, string field_name">
 </template>
 
 

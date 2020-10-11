@@ -205,6 +205,54 @@ class CrudApi extends BaseObject
 	
 	
 	/**
+	 * Patch item before query
+	 */
+	async Record patchItem(Record item) => item;
+	
+	
+	
+	/**
+	 * Process item before response
+	 */
+	async Dict processItem(Dict item)
+	{
+		Collection<Rule> rules = this.rules();
+		for (int i=0; i<rules.count(); i++)
+		{
+			Rule rule = rules[i];
+			item = rule::processItem(rule, item, this.action);
+			if (item instanceof ManyToMany)
+			{
+				item = rule::processManyToMany(rule, this.foreign, item);
+			}
+		}
+		return item;
+	}
+	
+	
+	
+	/**
+	 * Process items
+	 */
+	async void processItems()
+	{
+		if (this.action == "search")
+		{
+			Vector new_items = new Vector();
+			for (int i=0; i<this.items.count(); i++)
+			{
+				Dict row = this.items[i];
+				if (row instanceof Record) row = row.convertToDict();
+				row = await this.processItem(row);
+				new_items.push(row);
+			}
+			this.items = new_items.toCollection();
+		}
+	}
+	
+	
+	
+	/**
 	 * Init request
 	 */
 	async void init()
@@ -341,47 +389,6 @@ class CrudApi extends BaseObject
 			ManyToMany rule = rules[i];
 			Collection new_values = item[rule.field_name];
 			this.foreign = await rule::foreignSaveManyToMany(rule, this.foreign, item, new_values);
-		}
-	}
-	
-	
-	
-	/**
-	 * Process item before response
-	 */
-	async Dict processItem(Dict item)
-	{
-		Collection<Rule> rules = this.rules();
-		for (int i=0; i<rules.count(); i++)
-		{
-			Rule rule = rules[i];
-			item = rule::convertItem(rule, item, this.action);
-			if (item instanceof ManyToMany)
-			{
-				item = rule::processManyToMany(rule, this.foreign, item);
-			}
-		}
-		return item;
-	}
-	
-	
-	
-	/**
-	 * Process items
-	 */
-	async void processItems()
-	{
-		if (this.action == "search")
-		{
-			Vector new_items = new Vector();
-			for (int i=0; i<this.items.count(); i++)
-			{
-				Dict row = this.items[i];
-				if (row instanceof Record) row = row.convertToDict();
-				row = await this.processItem(row);
-				new_items.push(row);
-			}
-			this.items = new_items.toCollection();
 		}
 	}
 	
@@ -665,6 +672,7 @@ class CrudApi extends BaseObject
 	{
 		/* Get ORM class name */
 		string class_name = static::getORM();
+		fn createInstance = rtl::method(class_name, "createInstance");
 		fn getPrimaryKey = rtl::method(class_name, "getPrimaryKey");
 		fn save = rtl::method(class_name, "save");
 		
@@ -672,7 +680,9 @@ class CrudApi extends BaseObject
 		Dict update_item = await this.convertItem(this.item);
 		
 		/* Save item */
-		this.new_item = await save(update_item);
+		this.new_item = createInstance(update_item);
+		this.new_item = await this.patchItem(this.new_item);
+		this.new_item = await save(this.new_item);
 		
 		/* Set new item */
 		this.pk = getPrimaryKey(this.new_item);
@@ -808,6 +818,7 @@ class CrudApi extends BaseObject
 		
 		/* Save item */
 		this.new_item = change(this.old_item, update_item);
+		this.new_item = await this.patchItem(this.new_item);
 		this.new_item = await save(this.new_item);
 		
 		/* Set new item */
