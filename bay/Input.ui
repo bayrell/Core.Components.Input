@@ -44,7 +44,7 @@
 	%var string name = (params != null) ? params.get("name", "") : "";
 	%var string type = (params != null) ? params.get("type", "input") : "";
 	%var primitive tag = (params != null) ? params.get("@tag", "") : "";
-	%var value = value != null ? value : model;
+	%var value = rtl::isEmpty(value) ? model : value;
 	%if (rtl::isEmpty(value)){ %var value = def_value; }
 	<input class='input' @tag={ tag } @event:ChangeEvent="onChange"
 		name={ name } type={ type } value={ model != null ? model : value } />

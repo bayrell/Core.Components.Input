@@ -33,10 +33,17 @@
 
 
 <template name="render">
+	%var string name = (params != null) ? params.get("name", "") : "";
+	%var string value = (params != null) ? params.get("value", "") : "";
+	%var string def_value = (params != null) ? params.get("default", "") : "";
+	%var value = rtl::isEmpty(value) ? model : value;
+	%if (rtl::isEmpty(value)){ %var value = def_value; }
+	%if (rtl::isEmpty(value)){ %var value = ""; }
+	
 	%var Collection options = params["options"];
 	%if (rtl::exists(options))
 	{
-		%var Dict item = options.findItem( lib::equalAttr("id", model) );
+		%var Dict item = options.findItem( lib::equalAttr("id", value) );
 		%if (rtl::exists(item))
 		{
 			{ item["value"] }
