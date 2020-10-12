@@ -56,7 +56,7 @@ struct Dictionary extends Rule
 	/**
 	 * Load full dictionary
 	 */
-	static async Foreign foreignLoadOptions(Dictionary rule, Foreign foreign, Dict db_settings = null)
+	static async Foreign foreignLoadDictionary(Dictionary rule, Foreign foreign, Dict db_settings = null)
 	{
 		string field_name = rule.field_name;
 		string class_name = rule.class_name;

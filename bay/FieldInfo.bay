@@ -31,15 +31,10 @@ struct FieldInfo extends BaseStruct
 	
 	/* UI Class name */
 	string class_name = "";
-	string class_name_table = "";
-	string class_name_form = "";
-	string class_name_filter = "";
-	Collection<string> class_name_extends = null;
-	Dict class_settings = null;
+	fn render = null;
+	fn calc = null;
 	
-	/* DB Type */
-	string dbtype = "";
-	bool auto_increment = false;
+	/* Flags */
 	bool primary = false;
 	bool required = false;
 	bool readonly = false;
@@ -49,10 +44,11 @@ struct FieldInfo extends BaseStruct
 	string group = "default";
 	var default_value = null;
 	
-	/* Extra params */
-	Dict foreign = {};
-	Dict params = {};
-	Dict table = {};
+	/* Field component settings */
+	Dict class_settings = {};
+	
+	/* Extra info */
+	Dict<FieldInfo> info = {};
 	
 	
 	/**

@@ -119,17 +119,22 @@
 	%var FieldInfo field = FieldInfo::getFieldInfo(struct, field_name);
 	%if (field != null)
 	{
-		<!-- Patch field settings -->
+		<!-- Patch field -->
 		%var field = static::patchField(layout, field, model, params);
+		%var Collection<string> model_path = static::getBindPath(field);
 		
 		<!-- Get class name -->
 		%var string class_name = field["class_name"] |> default string "";
-		%var string class_name_form = field["class_name_form"] |> default string "";
+		%var string class_name_form = field["info", "form", "class_name"] |> default string "";
 		%if (not rtl::isEmpty(class_name_form)){ %var class_name = class_name_form; }
-		%var Collection<string> model_path = static::getBindPath(field);
 		
 		<!-- Class settings -->
 		%var Dict class_settings = field["class_settings"] |> default Dict {};
+		%var Dict class_settings_form = field["info", "form", "class_settings"] |> default Dict null;
+		%if (not rtl::isEmpty(class_settings_form))
+		{
+			%var class_settings = class_settings.concat( class_settings_form );
+		}
 		%var class_settings = class_settings
 			.setIm("name", field_name)
 			.setIm("crud_class_name", class_name)
@@ -137,28 +142,37 @@
 			.setIm("crud_field_name", field_name)
 			.setIm("crud_field_info", field)
 			.setIm("crud_struct", struct)
-			.setIm("crud_row_data", model["item"])
-			.setIm("crud_model_path", model_path)
-			.setIm("crud_model", model)
+			.setIm("crud_item", model["item"])
+			.setIm("crud_form_model_path", model_path)
+			.setIm("crud_form_model", model)
 		;
 		
-		<!-- Calculate new value -->
-		%var fn calc = class_settings["calc"];
+		<!-- Get value -->
 		%var var value = rtl::attr(model, model_path);
-		%if (rtl::exists(calc))
-		{
-			%var value = calc(layout, value, class_settings);
-		}
+		
+		<!-- Calculate new value -->
+		%var fn calc = field["calc"];
+		%var fn calc_form = field["info", "form", "calc"];
+		%if (calc_form != null){ %var calc = calc_form; }
+		%if (rtl::exists(calc)){ %var value = calc(layout, value, class_settings); }
 		%var class_settings = class_settings.setIm("value", value);
 		
+		<!-- Patch settings -->
 		%var class_settings = static::patchSettings(layout, field, class_settings, model, params);
-		%var fn can_render = class_settings["can_render"];
-		%var fn render = class_settings["render"];
-		%var fn render_form = class_settings["render_form"];
+		
+		<!-- Render value -->
+		%var fn render = field["render"];
+		%var fn render_form = field["info", "form", "render"];
 		%if (not rtl::isEmpty(render_form)){ %var render = render_form; }
 		
+		%var fn can_render = field["can_render"];
+		%var fn can_render_form = field["info", "form", "can_render"];
+		%if (not rtl::isEmpty(can_render_form)){ %var can_render = can_render_form; }
+		
 		<div class='form_row' @key={ field_name }>
-			<div class='form_label'>{ field["label"] }:</div>
+			<div class='form_label'>
+				{ field["info", "form", "label"] ? field["info", "form", "label"] : field["label"] }:
+			</div>
 			<div class='form_value'>
 				%if
 				(
@@ -189,7 +203,7 @@
 <template name="renderField" args="LayoutModel layout, TableModel model, Dict class_settings">
 	%var string class_name = class_settings["crud_class_name"];
 	%var string field_name = class_settings["crud_field_name"];
-	%var Collection<string> model_path = class_settings["crud_model_path"];
+	%var Collection<string> model_path = class_settings["crud_form_model_path"];
 	%if (not rtl::isEmpty(class_name))
 	{
 		<{class_name} @bind={ model_path } @key={ field_name }
@@ -332,7 +346,7 @@ async void onItemChange(Message<ChangeEvent> msg)
 	Dict params = msg.sender.params;
 	string field_name = params["name"];
 	string value = msg.data.value;
-	var model_path = params["crud_model_path"];
+	var model_path = params["crud_form_model_path"];
 	
 	FormEvent event = new FormEvent
 	{

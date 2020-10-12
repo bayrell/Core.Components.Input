@@ -32,6 +32,12 @@ use Runtime.Web.CRUD.FormModel;
 
 struct CrudPageModel extends BaseStruct
 {
+	static const string ACTION_SEARCH = "search";
+	static const string ACTION_VIEW = "view";
+	static const string ACTION_CREATE = "create";
+	static const string ACTION_UPDATE = "update";
+	static const string ACTION_DELETE = "delete";
+	
 	string action = "";
 	FormModel form_add = new FormModel();
 	FormModel form_edit = new FormModel();
@@ -40,20 +46,32 @@ struct CrudPageModel extends BaseStruct
 	DialogModel dialog_add = new DialogModel();
 	DialogModel dialog_edit = new DialogModel();
 	DialogModel dialog_delete = new DialogModel();
+	Dict item = {};
 	Dict foreigns = {};
-	Dict params = {};
+	Dict data = {};
 	
 	
 	
 	/**
-	 * Curd Search
+	 * Crud Search
 	 */
-	static async CrudPageModel crudSearch(Dict items, RenderContainer container)
+	static async CrudPageModel crudSearch(string object_name, RenderContainer container)
 	{
 		/* Remote call */
 		Dict search_params = static::getCrudSearchParams(container.request);
-		items <= data <= search_params;
-		RemoteCallAnswer answer = await RenderDriver::remoteBusCall(items, container);
+		RemoteCallAnswer answer = await RenderDriver::remoteBusCall
+		(
+			{
+				"object_name": object_name,
+				"interface_name": "core.crud",
+				"method_name": "search",
+				"data":
+				{
+					"search": search_params,
+				}
+			},
+			container
+		);
 		
 		/* Throw exception */
 		if (not answer.isSuccess())
@@ -69,6 +87,44 @@ struct CrudPageModel extends BaseStruct
 			page_model <= table <= page <= answer.response["page"];
 			page_model <= table <= pages <= answer.response["pages"];
 			page_model <= table <= limit <= answer.response["limit"];
+			page_model <= foreigns <= answer.response["foreigns"];
+		}
+		return page_model;
+	}
+	
+	
+	
+	/**
+	 * Crud View
+	 */
+	static async CrudPageModel crudView(string object_name, Dict pk, RenderContainer container)
+	{
+		/* Remote call */
+		RemoteCallAnswer answer = await RenderDriver::remoteBusCall
+		(
+			{
+				"object_name": object_name,
+				"interface_name": "core.crud",
+				"method_name": "getItem",
+				"data":
+				{
+					"pk": pk,
+				}
+			},
+			container
+		);
+		
+		/* Throw exception */
+		if (not answer.isSuccess())
+		{
+			throw new RuntimeException(answer.error_message, answer.error_code);
+		}
+		
+		/* Answer */
+		CrudPageModel page_model = static::newInstance{ "action": "view" };
+		if (answer.isSuccess())
+		{
+			page_model <= item <= answer.response["item"];
 			page_model <= foreigns <= answer.response["foreigns"];
 		}
 		return page_model;

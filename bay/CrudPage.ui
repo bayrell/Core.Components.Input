@@ -27,6 +27,7 @@
 <use name="Runtime.Core.RemoteCallAnswer" />
 <use name="Runtime.Web.LayoutModel" />
 <use name="Runtime.Web.RenderDriver" />
+<use name="Runtime.Web.Route" />
 <use name="Runtime.Web.Events.MouseClickEvent" />
 <use name="Runtime.Web.CRUD.CrudFilter" component="true" />
 <use name="Runtime.Web.CRUD.CrudPageModel" />
@@ -45,10 +46,6 @@
 <use name="Runtime.Web.Input.Label" component="true" />
 <use name="Runtime.Web.Input.Select" component="true" />
 <use name="Runtime.Web.Input.SelectText" component="true" />
-
-
-<style>
-</style>
 
 
 <script>
@@ -91,6 +88,12 @@ pure Collection<string> getTableFields(LayoutModel layout, CrudPageModel model, 
 
 
 /**
+ * Returns view fields
+ */
+pure Collection<string> getViewFields(LayoutModel layout, CrudPageModel model, Dict params) => [];
+
+
+/**
  * Returns messages
  */
 pure Dict<string> getMessages(LayoutModel layout, CrudPageModel model, Dict params) => {};
@@ -111,16 +114,51 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 </script>
 
 
+<style>
+.view{}
+.view_row td{
+	padding-bottom: 5px;
+}
+.view_row_label{
+	text-align: right;
+	padding-right: 5px;
+}
+.view_row_content{
+	padding-left: 5px;
+}
+.view .buttons{
+	text-align: center;
+	padding-top: 10px;
+}
+.view .buttons .button, .view .buttons %(Button)button{
+	margin-left: 2px;
+	margin-right: 2px;
+}
+</style>
+
+
 <template name="render">
-	
+	<div class='crud' class={ "crud--" ~ model.action }>
+		%if (model.action == CrudPageModel::ACTION_SEARCH)
+		{
+			%render static::renderSearch(layout, model, params);
+		}
+		%else if (model.action == CrudPageModel::ACTION_VIEW)
+		{
+			%render static::renderView(layout, model, params);
+		}
+	</div>
+</template>
+
+
+<template name="renderSearch" args="LayoutModel layout, CrudPageModel model, Dict params">
 	%var Collection<FieldInfo> struct = static::getStruct(layout, model, params);
 	%var Collection<string> form_fields = static::getFormFields(layout, model, params);
 	%var Collection<string> filter_fields = static::getFilterFields(layout, model, params);
 	%var Collection<string> table_fields = static::getTableFields(layout, model, params);
 	%var Dict messages = static::getMessages(layout, model, params);
 	
-	<div class='crud'>
-		
+	<div class='search'>
 		<div class='buttons'>
 			<Button @event:MouseClickEvent="onShowAddClick" type="primary">{ messages["add"] }</Button>
 		</div>
@@ -132,7 +170,7 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 			</div>
 		}
 		
-		<div class='table'>
+		<div class='table_wrap'>
 			<Table @name="table" struct={ struct } fields={ table_fields } />
 			<Pagination
 				page={ model.table.page + 1 }
@@ -141,10 +179,126 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 			/>
 		</div>
 		
-		{ static::renderDialog(layout, model, params) }
+		<div class='dialog'>{ static::renderDialog(layout, model, params) }</div>
+	</div>
+</template>
+
+
+<template name="renderView" args="LayoutModel layout, CrudPageModel model, Dict params">
+	%var Collection<FieldInfo> struct = static::getStruct(layout, model, params);
+	%var Collection<string> view_fields = static::getViewFields(layout, model, params);
+	
+	<div class='view'>
+		<table class='table'>
+			%for (int i=0; i<view_fields.count(); i++)
+			{
+				%var string field_name = view_fields[i];
+				%var FieldInfo field = FieldInfo::getFieldInfo(struct, field_name);
+				%if (field != null)
+				{
+					<tr class='view_row' class={ "view_row--" ~ field_name }
+						data-name={ field_name } @key={ "view_row-" ~ field_name }
+					>
+						<td class='view_row_label'>
+							{ field["info", "view", "label"] ? field["info", "view", "label"] : field["label"] }:
+						</td>
+						<td class='view_row_content'>
+							{ static::renderViewContent(layout, model, params, field) }
+						</td>
+					</tr>
+				}
+			}
+			
+			<tr><td colspan='2'>
+				<div class='buttons'>
+					<Button type='' @event:MouseClickEvent="onViewEditClick" @key="edit"
+					>
+						{ _("Runtime.Web.CRUD", "Edit") }
+					</Button>
+					<Button type='danger' @event:MouseClickEvent="onViewDeleteClick" @key="delete"
+					>
+						{ _("Runtime.Web.CRUD", "Delete") }
+					</Button>
+				</div>
+			</td></tr>
+			
+		</table>
+		
+		<div class='dialog'>{ static::renderDialog(layout, model, params) }</div>
 	</div>
 	
 </template>
+
+
+
+<template name="renderViewContent" args="LayoutModel layout, TableModel model, Dict params, FieldInfo field">
+	%if (field != null)
+	{
+		%var Collection<FieldInfo> struct = static::getStruct(layout, model, params);
+		%var string field_name = field.api_name;
+		
+		<!-- Get class name -->
+		%var string class_name = field["class_name"] |> default string "";
+		%var string class_name_view = field["info", "view", "class_name"] |> default string "";
+		%if (not rtl::isEmpty(class_name_view)){ %var class_name = class_name_view; }
+		
+		<!-- Class settings -->
+		%var Dict class_settings = field["class_settings"] |> default Dict {};
+		%var Dict class_settings_view = field["info", "view", "class_settings"] |> default Dict null;
+		%if (not rtl::isEmpty(class_settings_view))
+		{
+			%var class_settings = class_settings.concat( class_settings_view );
+		}
+		%var class_settings = class_settings
+			.setIm("name", field_name)
+			.setIm("crud_struct", struct)
+			.setIm("crud_class_name", class_name)
+			.setIm("crud_kind", "view")
+			.setIm("crud_field_name", field_name)
+			.setIm("crud_field_info", field)
+			.setIm("crud_item", model.item)
+		;
+		
+		<!-- Get value -->
+		%var var value = model["item", field_name];
+		
+		<!-- Calculate new value -->
+		%var fn calc = field["calc"];
+		%var fn calc_view = field["info", "view", "calc"];
+		%if (calc_view != null){ %var calc = calc_view; }
+		%if (rtl::exists(calc)){ %var value = calc(layout, value, class_settings); }
+		%var class_settings = class_settings.setIm("value", value);
+		
+		<!-- Render value -->
+		%var fn render = field["render"];
+		%var fn render_view = field["info", "view", "render"];
+		%if (not rtl::isEmpty(render_view)){ %var render = render_view; }
+		
+		%var fn can_render = field["can_render"];
+		%var fn can_render_view = field["info", "view", "can_render"];
+		%if (not rtl::isEmpty(can_render_view)){ %var can_render = can_render_view; }
+		
+		%if
+		(
+			rtl::exists(render) and
+			(
+				not rtl::exists(can_render) or
+				( rtl::exists(can_render) and can_render(layout, model, class_settings) )
+			)
+		)
+		{
+			{ render(layout, value, class_settings) }
+		}
+		%else
+		{
+			%if (not rtl::isEmpty(class_name))
+			{
+				<{class_name} @key={ field_name } ...class_settings />
+			}
+		}
+	}
+</template>
+
 
 
 <template name="renderDialog" args="LayoutModel layout, CrudPageModel model, Dict params">
@@ -198,31 +352,23 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 </template>
 
 
-<template name="renderDate" args="LayoutModel layout, DateTime model, Dict params">
-	%var string crud_kind = params["crud_kind"] |> default string "";
-	%var string class_name = params["crud_class_name"] |> default string "";
-	
-	%if (crud_kind == "table")
-	{
-		{ model != null ? model.getDate( layout.tz ) : "" }
-	}
+<template name="renderDate" args="LayoutModel layout, DateTime value, Dict settings">
+	%var string crud_kind = settings["crud_kind"] |> default string "";
+	%var string class_name = settings["crud_class_name"] |> default string "";
+	{ value != null ? value.getDate( layout.tz ) : "" }
 </template>
 
 
-<template name="renderDateTime" args="LayoutModel layout, DateTime model, Dict params">
-	%var string crud_kind = params["crud_kind"] |> default string "";
-	%var string class_name = params["crud_class_name"] |> default string "";
-	
-	%if (crud_kind == "table")
-	{
-		{ model != null ? model.getDate( layout.tz ) : "" }
-	}
+<template name="renderDateTime" args="LayoutModel layout, DateTime value, Dict settings">
+	%var string crud_kind = settings["crud_kind"] |> default string "";
+	%var string class_name = settings["crud_class_name"] |> default string "";
+	{ value != null ? value.getDBTime( layout.tz ) : "" }
 </template>
 
 
-<template name="renderNumber" args="LayoutModel layout, var model, Dict params">
-	%var TableModel table_model = params["crud_model"];
-	%var int index = params["crud_row_index"];
+<template name="renderNumber" args="LayoutModel layout, var value, Dict settings">
+	%var TableModel table_model = settings["crud_table_model"];
+	%var int index = settings["crud_index"];
 	%if (table_model)
 	{
 		{ table_model.page * table_model.limit + index + 1 }
@@ -230,17 +376,17 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 </template>
 
 
-<template name="renderButtons" args="LayoutModel layout, var model, Dict params">
-	{ static::renderButton(layout, model, params, "edit") }
-	{ static::renderButton(layout, model, params, "delete") }
+<template name="renderButtons" args="LayoutModel layout, Dict settings">
+	{ static::renderButton(layout, settings, "edit") }
+	{ static::renderButton(layout, settings, "delete") }
 </template>
 
 
-<template name="renderButton" args="LayoutModel layout, var model, Dict params, string button_type">
-	%var Collection<FieldInfo> struct = params["crud_struct"];
-	%var TableModel table_model = params["crud_model"];
-	%var Dict item = params["crud_row_data"];
-	%var int index = params["crud_row_index"];
+<template name="renderButton" args="LayoutModel layout, Dict settings, string button_type, Dict options = null">
+	%var Collection<FieldInfo> struct = settings["crud_struct"];
+	%var TableModel table_model = settings["crud_table_model"];
+	%var Dict item = settings["crud_item"];
+	%var int index = settings["crud_index"];
 	%if (button_type == "edit")
 	{
 		<Button type='small' data-index={ index } data-pk={ static::getPrimaryKey(struct, item) }
@@ -249,11 +395,22 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 			{ _("Runtime.Web.CRUD", "Edit") }
 		</Button>
 	}
+	%else if (button_type == "view")
+	{
+		%var string url = layout.route_prefix ~ options["url"];
+		%var Dict pk = static::getPrimaryKey(struct, item);
+		%var url = Route::replace(url, pk);
+		<a href={ url } class='nolink' @key="view">
+			<Button type='small'>
+				{ _("Runtime.Web.CRUD", "View") }
+			</Button>
+		</a>
+	}
 	%if (button_type == "delete")
 	{
-		%var TableModel table_model = params["table-model"];
-		%var Dict item = params["row-data"];
-		%var int index = params["row-index"];
+		%var TableModel table_model = settings["crud_table_model"];
+		%var Dict item = settings["crud_item"];
+		%var int index = settings["crud_index"];
 		<Button type='small danger' data-index={ index } data-pk={ static::getPrimaryKey(struct, item) }
 			@event:MouseClickEvent="onRowDeleteClick" @key="delete"
 		>
@@ -291,6 +448,56 @@ async void onShowAddClick(Message<MouseClickEvent> msg)
 {
 	this.dialog_add.update("show");
 	this.form_add.update("clear");
+}
+
+
+
+/**
+ * On row edit
+ */
+async void  onViewEditClick(Message<MouseClickEvent> msg)
+{
+	this.dialog_edit.update("show");
+	this.form_edit.update("clear");
+	this.form_edit.update("setItem", this.model("item"));
+}
+
+
+
+/**
+ * On row delete
+ */
+async void  onViewDeleteClick(Message<MouseClickEvent> msg)
+{
+	Dict item = this.model("item");
+	
+	string message = "";
+	Dict<string> messages = static::getMessages(this.constructor.layout, this.model(), this.params);
+	fn f = messages["delete"];
+	if (rtl::exists(f))
+	{
+		if (rtl::isFn(f))
+		{
+			message = f(item);
+		}
+		else message = f;
+	}
+	else
+	{
+		message = _("Runtime.Web.CRUD", "Do you realy want to delete '%name%' ?", { "name": item["name"] } );
+	}
+	
+	this.dialog_delete.update
+	(
+		"show",
+		{
+			"text": message,
+			"tag":
+			{
+				"item": item,
+			},
+		}
+	);
 }
 
 
@@ -412,6 +619,7 @@ async void onFormEvent(Message<FormEvent> msg)
  */
 async void onItemCreate()
 {
+	string action = this.model("action");
 	Dict item = this.form_add.model("item");
 	this.form_add.update("setWaitMessage");
 	
@@ -429,7 +637,7 @@ async void onItemCreate()
 	
 	if (answer.isSuccess())
 	{
-		this.table.update("prependItem", answer.response["new_item"]);
+		if (action == "search") this.table.update("prependItem", answer.response["new_item"]);
 		this.dialog_add.update("hide");
 	}
 	else
@@ -446,6 +654,7 @@ async void onItemCreate()
  */
 async void onItemUpdate()
 {
+	string action = this.model("action");
 	Dict old_item = this.form_edit.model("old_item");
 	Dict item = this.form_edit.model("item");
 	Dict pk = static::getPrimaryKey(static::getStruct(this.constructor.layout, this.model(), this.params), old_item);
@@ -466,7 +675,8 @@ async void onItemUpdate()
 	
 	if (answer.isSuccess())
 	{
-		this.table.update("setItem", pk, answer.response["new_item"]);
+		if (action == "search") this.table.update("setItem", pk, answer.response["new_item"]);
+		else if (action == "view") this.update("setAttr", "item", answer.response["new_item"]);
 		this.dialog_edit.update("hide");
 	}
 	else
@@ -483,6 +693,7 @@ async void onItemUpdate()
  */
 async void onItemDelete(Dict item)
 {
+	string action = this.model("action");
 	this.dialog_delete.update("setWaitMessage");
 	Dict pk = static::getPrimaryKey(static::getStruct(), item);
 	
@@ -500,7 +711,8 @@ async void onItemDelete(Dict item)
 	
 	if (answer.isSuccess())
 	{
-		this.table.update("removeItem", pk);
+		if (action == "search") this.table.update("removeItem", pk);
+		else if (action == "view") this.update("setAttr", "item", null);
 		this.dialog_delete.update("hide");
 	}
 	else

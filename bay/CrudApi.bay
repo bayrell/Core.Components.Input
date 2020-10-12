@@ -91,6 +91,13 @@ class CrudApi extends BaseObject
 	
 	
 	/**
+	 * Returns true if request is get item
+	 */
+	bool isGetItem() => this.action == "getItem";
+	
+	
+	
+	/**
 	 * Returns true if request is create
 	 */
 	bool isCreate() => this.action == "create";
@@ -266,7 +273,7 @@ class CrudApi extends BaseObject
 	 */
 	async void beforeQuery()
 	{
-		/* Get ORM class name */
+		/* Init foreign */
 		string class_name = static::getORM();
 		this.foreign = Foreign::init(class_name);
 		
@@ -357,7 +364,7 @@ class CrudApi extends BaseObject
 		for (int i=0; i<rules.count(); i++)
 		{
 			Dictionary rule = rules[i];
-			this.foreign = await rule::foreignLoadOptions(rule, this.foreign);
+			this.foreign = await rule::foreignLoadDictionary(rule, this.foreign);
 		}
 	}
 	
@@ -623,6 +630,101 @@ class CrudApi extends BaseObject
 	
 	
 	/**
+	 * Returns true if can Query
+	 */
+	async bool canGetItemQuery()
+	{
+		return true;
+	}
+	
+	
+	
+	/**
+	 * Get item query
+	 */
+	async void getItemQuery()
+	{
+		this.new_item = await this.findItemByKey(this.pk);
+	}
+	
+	
+	
+	/**
+	 * Get item
+	 */
+	async void doGetItem()
+	{
+		/* Validate */
+		await this.validate();
+		
+		/* Can query */
+		bool res = await this.canGetItemQuery();
+		if (res)
+		{
+			/* Before query */
+			await this.beforeQuery();
+			
+			/* Get item query */
+			await this.getItemQuery();
+			
+			/* After query */
+			await this.afterQuery();
+			
+			/* Set success */
+			this.is_success = true;
+		}
+		
+		Dict new_item = this.new_item;
+		
+		/* Convert to Dict */
+		if (new_item instanceof Record) new_item = new_item.convertToDict();
+		
+		/* Process item */
+		if (new_item)
+		{
+			new_item = await this.processItem(new_item);
+		}
+		
+		/* Create response */
+		Dict response =
+		{
+			"pk": this.pk,
+			"item": new_item,
+		};
+		this.answer = this.answer::success(this.answer, response);
+	}
+	
+	
+	
+	/**
+	 * Get item api action
+	 */
+	static async list getItemAction(RemoteCallRequest request, RemoteCallAnswer answer)
+	{
+		/* Create api */
+		CrudApi api = rtl::newInstance(static::getCurrentClassName());
+		
+		/* Get data from request */
+		api.action = "getItem";
+		api.answer = answer;
+		api.request = request;
+		api.pk = request.data["pk"] |> default Dict {};
+		
+		/* Init api */
+		await api.init();
+		
+		/* Search */
+		await api.doGetItem();
+		
+		/* After query */
+		await api.after();
+		
+		return [request, api.answer];
+	}
+	
+	
+	
+	/**
 	 * Find existing item for create
 	 */
 	async Record findItemForCreating() => null;
@@ -656,7 +758,7 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Create query before
+	 * Returns true if can Query
 	 */
 	async bool canCreateQuery()
 	{
@@ -785,7 +887,7 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Update query before
+	 * Returns true if can Query
 	 */
 	async bool canUpdateQuery()
 	{
@@ -927,7 +1029,7 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Delete query before
+	 * Returns true if can Query
 	 */
 	async bool canDeleteQuery()
 	{
@@ -1006,7 +1108,7 @@ class CrudApi extends BaseObject
 		if (old_item instanceof Record) old_item = old_item.convertToDict();
 		
 		/* Process item */
-		Dict old_item = await this.processItem(this.old_item);
+		Dict old_item = await this.processItem(old_item);
 		
 		/* Create response */
 		Dict response =
