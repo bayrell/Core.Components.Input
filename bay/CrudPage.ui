@@ -148,6 +148,7 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 			%render static::renderView(layout, model, params);
 		}
 	</div>
+	<div class='crud_dialog'>{ static::renderDialog(layout, model, params) }</div>
 </template>
 
 
@@ -158,7 +159,7 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 	%var Collection<string> table_fields = static::getTableFields(layout, model, params);
 	%var Dict messages = static::getMessages(layout, model, params);
 	
-	<div class='search'>
+	<div class='search' @key='search'>
 		<div class='buttons'>
 			<Button @event:MouseClickEvent="onShowAddClick" type="primary">{ messages["add"] }</Button>
 		</div>
@@ -178,8 +179,6 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 				delta={ model.table.delta }
 			/>
 		</div>
-		
-		<div class='dialog'>{ static::renderDialog(layout, model, params) }</div>
 	</div>
 </template>
 
@@ -188,7 +187,7 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 	%var Collection<FieldInfo> struct = static::getStruct(layout, model, params);
 	%var Collection<string> view_fields = static::getViewFields(layout, model, params);
 	
-	<div class='view'>
+	<div class='view' @key='view'>
 		<table class='table'>
 			%for (int i=0; i<view_fields.count(); i++)
 			{
@@ -209,7 +208,7 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 				}
 			}
 			
-			<tr><td colspan='2'>
+			<tr @key='buttons'><td colspan='2'>
 				<div class='buttons'>
 					<Button type='' @event:MouseClickEvent="onViewEditClick" @key="edit"
 					>
@@ -223,8 +222,6 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 			</td></tr>
 			
 		</table>
-		
-		<div class='dialog'>{ static::renderDialog(layout, model, params) }</div>
 	</div>
 	
 </template>
@@ -448,6 +445,7 @@ async void onShowAddClick(Message<MouseClickEvent> msg)
 {
 	this.dialog_add.update("show");
 	this.form_add.update("clear");
+	this.form_add.update("setKind", "table");
 }
 
 
@@ -460,6 +458,7 @@ async void  onViewEditClick(Message<MouseClickEvent> msg)
 	this.dialog_edit.update("show");
 	this.form_edit.update("clear");
 	this.form_edit.update("setItem", this.model("item"));
+	this.form_edit.update("setKind", "view");
 }
 
 
@@ -495,6 +494,7 @@ async void  onViewDeleteClick(Message<MouseClickEvent> msg)
 			"tag":
 			{
 				"item": item,
+				"kind": "view",
 			},
 		}
 	);
@@ -512,6 +512,7 @@ async void onRowEditClick(Message<MouseClickEvent> msg)
 	this.dialog_edit.update("show");
 	this.form_edit.update("clear");
 	this.form_edit.update("setItem", item);
+	this.form_edit.update("setKind", "table");
 }
 
 
@@ -548,6 +549,7 @@ async void onRowDeleteClick(Message<MouseClickEvent> msg)
 			"tag":
 			{
 				"item": item,
+				"kind": "table",
 			},
 		}
 	);
@@ -570,7 +572,7 @@ async void onDialogEvent(Message<DialogEvent> msg)
 		}
 		else
 		{
-			await this.onItemDelete(e.tag["item"]);
+			await this.onItemDelete(e.tag["item"], e.tag["kind"]);
 		}
 	}
 	
@@ -619,12 +621,12 @@ async void onFormEvent(Message<FormEvent> msg)
  */
 async void onItemCreate()
 {
-	string action = this.model("action");
+	string kind = this.form_add.model("kind");
 	Dict item = this.form_add.model("item");
 	this.form_add.update("setWaitMessage");
 	
 	/* Send api */
-	RemoteCallAnswer answer = await RenderDriver::remoteBusCall
+	RemoteCallAnswer answer = await RenderDriver::externalBusCall
 	{
 		"object_name": static::getCrudObjectName(),
 		"interface_name": "core.crud",
@@ -637,7 +639,7 @@ async void onItemCreate()
 	
 	if (answer.isSuccess())
 	{
-		if (action == "search") this.table.update("prependItem", answer.response["new_item"]);
+		if (kind == "table") this.table.update("prependItem", answer.response["new_item"]);
 		this.dialog_add.update("hide");
 	}
 	else
@@ -654,14 +656,14 @@ async void onItemCreate()
  */
 async void onItemUpdate()
 {
-	string action = this.model("action");
+	string kind = this.form_edit.model("kind");
 	Dict old_item = this.form_edit.model("old_item");
 	Dict item = this.form_edit.model("item");
 	Dict pk = static::getPrimaryKey(static::getStruct(this.constructor.layout, this.model(), this.params), old_item);
 	this.form_edit.update("setWaitMessage");
 	
 	/* Send api */
-	RemoteCallAnswer answer = await RenderDriver::remoteBusCall
+	RemoteCallAnswer answer = await RenderDriver::externalBusCall
 	{
 		"object_name": static::getCrudObjectName(),
 		"interface_name": "core.crud",
@@ -675,8 +677,8 @@ async void onItemUpdate()
 	
 	if (answer.isSuccess())
 	{
-		if (action == "search") this.table.update("setItem", pk, answer.response["new_item"]);
-		else if (action == "view") this.update("setAttr", "item", answer.response["new_item"]);
+		if (kind == "table") this.table.update("setItem", pk, answer.response["new_item"]);
+		else if (kind == "view") this.update("setAttr", "item", answer.response["new_item"]);
 		this.dialog_edit.update("hide");
 	}
 	else
@@ -691,14 +693,13 @@ async void onItemUpdate()
 /**
  * Delete item
  */
-async void onItemDelete(Dict item)
+async void onItemDelete(Dict item, string kind)
 {
-	string action = this.model("action");
 	this.dialog_delete.update("setWaitMessage");
-	Dict pk = static::getPrimaryKey(static::getStruct(), item);
+	Dict pk = static::getPrimaryKey(static::getStruct(this.constructor.layout, this.model(), this.params), item);
 	
 	/* Send api */
-	RemoteCallAnswer answer = await RenderDriver::remoteBusCall
+	RemoteCallAnswer answer = await RenderDriver::externalBusCall
 	{
 		"object_name": static::getCrudObjectName(),
 		"interface_name": "core.crud",
@@ -711,8 +712,8 @@ async void onItemDelete(Dict item)
 	
 	if (answer.isSuccess())
 	{
-		if (action == "search") this.table.update("removeItem", pk);
-		else if (action == "view") this.update("setAttr", "item", null);
+		if (kind == "table") this.table.update("removeItem", pk);
+		else if (kind == "view") this.update("setAttr", "item", null);
 		this.dialog_delete.update("hide");
 	}
 	else

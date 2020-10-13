@@ -184,7 +184,30 @@ class CrudApi extends BaseObject
 	/**
 	 * Returns search filter
 	 */
-	Collection<Collection<string>> getSearchFilter() => this.getDefaultFilter();
+	Collection<Collection<string>> getSearchFilter()
+	{
+		if (this.filter == null) return this.getDefaultFilter();
+		if (not (this.filter instanceof Collection)) return this.getDefaultFilter();
+		
+		Collection filter = this.filter.filter
+		(
+			bool (var item)
+			{
+				if (not (item instanceof Collection)) return false;
+				if (item.count() != 3) return false;
+				return true;
+			}
+		);
+		
+		return filter;
+	}
+	
+	
+	
+	/**
+	 * Extend search filter
+	 */
+	Collection<list> extendSearchFilter(Collection<list> filter) => filter;
 	
 	
 	
@@ -480,13 +503,6 @@ class CrudApi extends BaseObject
 			}
 		}
 	}
-	
-	
-	
-	/**
-	 * Extend search filter
-	 */
-	Collection<list> extendSearchFilter(Collection<list> filter) => filter;
 
 	
 	
@@ -612,6 +628,7 @@ class CrudApi extends BaseObject
 		api.answer = answer;
 		api.request = request;
 		api.page = request.data["page"] |> default int 0;
+		api.filter = request.data["filter"] |> default Collection null;
 		api.limit = request.data["limit"] |> default int api.getDefaultLimit();
 		if (api.limit > api.getMaxLimit()) api.limit = api.getMaxLimit();
 		

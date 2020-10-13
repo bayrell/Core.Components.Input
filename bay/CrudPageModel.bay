@@ -25,9 +25,9 @@ use Runtime.Core.RemoteCallRequest;
 use Runtime.Web.RenderContainer;
 use Runtime.Web.RenderDriver;
 use Runtime.Web.Request;
+use Runtime.Web.CRUD.FormModel;
 use Runtime.Web.CRUD.TableModel;
 use Runtime.Web.Dialog.DialogModel;
-use Runtime.Web.CRUD.FormModel;
 
 
 struct CrudPageModel extends BaseStruct
@@ -39,8 +39,8 @@ struct CrudPageModel extends BaseStruct
 	static const string ACTION_DELETE = "delete";
 	
 	string action = "";
-	FormModel form_add = new FormModel();
-	FormModel form_edit = new FormModel();
+	FormModel form_add = new FormModel{ "action": "create" };
+	FormModel form_edit = new FormModel{ "action": "update" };
 	FormModel filter = new FormModel();
 	TableModel table = new TableModel();
 	DialogModel dialog_add = new DialogModel();
@@ -59,19 +59,13 @@ struct CrudPageModel extends BaseStruct
 	{
 		/* Remote call */
 		Dict search_params = static::getCrudSearchParams(container.request);
-		RemoteCallAnswer answer = await RenderDriver::remoteBusCall
-		(
-			{
-				"object_name": object_name,
-				"interface_name": "core.crud",
-				"method_name": "search",
-				"data":
-				{
-					"search": search_params,
-				}
-			},
-			container
-		);
+		RemoteCallAnswer answer = await container.externalBusCall
+		{
+			"object_name": object_name,
+			"interface_name": "core.crud",
+			"method_name": "search",
+			"data": search_params,
+		};
 		
 		/* Throw exception */
 		if (not answer.isSuccess())
@@ -100,19 +94,16 @@ struct CrudPageModel extends BaseStruct
 	static async CrudPageModel crudView(string object_name, Dict pk, RenderContainer container)
 	{
 		/* Remote call */
-		RemoteCallAnswer answer = await RenderDriver::remoteBusCall
-		(
+		RemoteCallAnswer answer = await container.externalBusCall
+		{
+			"object_name": object_name,
+			"interface_name": "core.crud",
+			"method_name": "getItem",
+			"data":
 			{
-				"object_name": object_name,
-				"interface_name": "core.crud",
-				"method_name": "getItem",
-				"data":
-				{
-					"pk": pk,
-				}
-			},
-			container
-		);
+				"pk": pk,
+			}
+		};
 		
 		/* Throw exception */
 		if (not answer.isSuccess())
@@ -145,6 +136,7 @@ struct CrudPageModel extends BaseStruct
 			if (page < 0) page = 0;
 			data.set("page", page);
 			data.set("limit", 20);
+			data.set("filter", []);
 		}
 		
 		return data.toDict();
