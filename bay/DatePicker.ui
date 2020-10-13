@@ -42,10 +42,12 @@
 <template name="render">
 	%var string text = "";
 	%var string value = (params != null) ? params.get("value", "") : "";
+	%var string def_value = (params != null) ? params.get("default", "") : "";
 	%var string name = (params != null) ? params.get("name", "") : "";
 	%var string type = (params != null) ? params.get("type", "input") : "";
 	%var primitive tag = (params != null) ? params.get("@tag", "") : "";
 	%var value = rtl::isEmpty(value) ? model : value;
+	%if (rtl::isEmpty(value) and value !== 0 and value !== "0"){ %var value = def_value; }
 	%if (not rtl::isEmpty(value)) { %var text = value.getDate( layout.tz ); }
 	
 	<input class='input' @tag={ tag } @event:ChangeEvent="onChange"

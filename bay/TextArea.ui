@@ -44,8 +44,7 @@
 	%var string value = (params != null) ? params.get("value", "") : "";
 	%var string def_value = (params != null) ? params.get("default", "") : "";
 	%var value = rtl::isEmpty(value) ? model : value;
-	%if (rtl::isEmpty(value)){ %var value = def_value; }
-	%if (rtl::isEmpty(value)){ %var value = ""; }
+	%if (rtl::isEmpty(value) and value !== 0 and value !== "0"){ %var value = def_value; }
 	%var string type = (params != null) ? params.get("type", "input") : "";
 	%var primitive tag = (params != null) ? params.get("@tag", "") : "";
 	<textarea class='input' @tag={ tag } @event:ChangeEvent="onChange"
