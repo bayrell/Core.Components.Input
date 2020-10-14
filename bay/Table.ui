@@ -37,6 +37,7 @@
 .td, .th{
 	border: 1px ${ vars["colors", "default", "border"] } solid;
 	padding: 5px;
+	text-align: center;
 }
 .row:hover td{
 	background-color: ${ vars["colors", "default", "hover-background"] };
@@ -99,11 +100,13 @@
 	{
 		%var string field_name = fields[i];
 		%var FieldInfo field = FieldInfo::getFieldInfo(params["struct"], field_name);
-		%var string text_align = field["table", "text-align"] |> default string "left";
+		%var string text_align = field["info", "table", "text-align"] |> default string "left";
+		%var string td_width = field["info", "table", "width"] |> default string "";
 		<td class="td" class={ "td-" ~ field_name } data-name={ field_name } @key={ "td-" ~ field_name }
 			style=
 			{
-				text_align != "left" ? ("text-align: " ~ text_align ~ ";") : ""
+				text_align != "left" ? ("text-align: " ~ text_align ~ ";") : "" ~
+				td_width != "" ? ("width: " ~ td_width ~ ";") : ""
 			}
 		>
 			{ static::renderCell(layout, model, params, row, field_name, index) }
