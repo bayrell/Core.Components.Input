@@ -47,18 +47,20 @@
 	%if (rtl::isEmpty(value) and value !== 0 and value !== "0"){ %var value = def_value; }
 	
 	<select class='select' @event:ChangeEvent="onChange" name={ name } value={ value }>
+	
+	%var Dict selected = {};
+	%if (params["show_select_value"] == true)
+	{
+		%if (value === "" or value === null)
+		{
+			%var selected = { "selected": "selected" };
+		}
+		<option value="" ...selected>{ _("Runtime.Web.Input", "Select value") }</option>
+	}
+	
 	%var Collection options = params["options"];
 	%if (rtl::exists(options))
 	{
-		%var Dict selected = {};
-		%if (params["show_select_value"] == true)
-		{
-			%if (value === "" or value === null)
-			{
-				%var selected = { "selected": "selected" };
-			}
-			<option value="" ...selected>{ _("Runtime.Web.Input", "Select value") }</option>
-		}
 		%for (int i=0; i<options.count(); i++)
 		{
 			%var Dict item = options[i];
