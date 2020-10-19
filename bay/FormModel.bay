@@ -123,12 +123,14 @@ struct FormModel extends BaseStruct
 	/**
 	 * Clear
 	 */
-	pure FormModel clear(FormModel model) => new FormModel
+	pure FormModel clear(FormModel model) => model.copy
 	{
 		"item": new Dict(),
+		"old_item": null,
 		"fields_errors": null,
 		"message": "",
 		"success_message": "",
 		"error_message": "",
+		"data": "",
 	};
 }

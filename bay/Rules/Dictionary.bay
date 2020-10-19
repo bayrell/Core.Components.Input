@@ -36,8 +36,8 @@ use Runtime.Web.CRUD.Rules.Rule;
 
 struct Dictionary extends Rule
 {
+	string name = "";
 	string class_name = "";
-	string field_name = "";
 	string key_name = "";
 	fn buildSearchQuery = null;
 	
@@ -58,12 +58,12 @@ struct Dictionary extends Rule
 	 */
 	static async Foreign foreignLoadDictionary(Dictionary rule, Foreign foreign, Dict db_settings = null)
 	{
-		string field_name = rule.field_name;
+		string name = rule.name;
 		string class_name = rule.class_name;
 		fn buildSearchQuery = rule.buildSearchQuery;
 		if (buildSearchQuery == null) buildSearchQuery = QueryBuilder (QueryBuilder q) => q;
 		
-		if (class_name == "" or field_name == "")
+		if (class_name == "" or name == "")
 		{
 			return foreign;
 		}
@@ -78,7 +78,7 @@ struct Dictionary extends Rule
 			|> lib::map( Dict (Record item) => item.convertToDict() )
 		;
 		
-		foreign <= fields <= { field_name } <= options <= options;
+		foreign <= fields <= { name } <= options <= options;
 		
 		return foreign;
 	}

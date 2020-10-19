@@ -1078,11 +1078,14 @@ class CrudApi extends BaseObject
 		}
 		else
 		{
+			Dict old_item = this.old_item;
+			old_item <= is_deleted <= true;
+			old_item = await this.patchItem(old_item);
+			
+			/* Save item */
 			string class_name = static::getORM();
-			fn getPrimaryKey = rtl::method(class_name, "getPrimaryKey");
-			fn update = rtl::method(class_name, "update");
-			Dict pk = getPrimaryKey(this.old_item);
-			update(pk, { "is_deleted": true });
+			fn save = rtl::method(class_name, "save");
+			await save(old_item);
 		}
 	}
 	

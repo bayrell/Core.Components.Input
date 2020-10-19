@@ -167,7 +167,7 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 		%if (rtl::exists(filter_fields))
 		{
 			<div class='filter'>
-				<CrudFilter @name="filter" struct={ struct } fields={ filter_fields } />
+				<CrudFilter @name="filter" struct={ struct } fields={ filter_fields } extends_name="filter" />
 			</div>
 		}
 		
@@ -373,7 +373,7 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 </template>
 
 
-<template name="renderButtons" args="LayoutModel layout, Dict settings">
+<template name="renderButtons" args="LayoutModel layout, var value, Dict settings">
 	{ static::renderButton(layout, settings, "edit") }
 	{ static::renderButton(layout, settings, "delete") }
 </template>
@@ -403,7 +403,7 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 			</Button>
 		</a>
 	}
-	%if (button_type == "delete")
+	%else if (button_type == "delete")
 	{
 		%var TableModel table_model = settings["crud_table_model"];
 		%var Dict item = settings["crud_item"];

@@ -55,7 +55,7 @@
 
 
 <template name="render">
-	<table class='table'>
+	<table class="table" @key="table">
 		{ static::renderHeader(layout, model, params, content) }
 		{ static::renderRows(layout, model, params, content) }
 	</table>
@@ -76,6 +76,7 @@
 <template name="renderHeader" args="LayoutModel layout, TableModel model, Dict params">
 	
 	%var Collection<string> fields = params["fields"];
+	%var string extends_name = params["extends_name"] |> default string "table";
 	
 	<tr class="header">
 	%for (int i=0; i<fields.count(); i++)
@@ -83,7 +84,7 @@
 		%var string field_name = fields[i];
 		%var FieldInfo field = FieldInfo::getFieldInfo(params["struct"], field_name);
 		<th class="th" class={ "th--" ~ field_name } data-name={ field_name } @key={ "th-" ~ field_name }>
-			{ field["info", "table", "label"] ? field["info", "table", "label"] : field["label"] }
+			{ field["info", extends_name, "label"] ? field["info", extends_name, "label"] : field["label"] }
 		</th>
 	}
 	</tr>
@@ -94,14 +95,15 @@
 <template name="renderRow" args="LayoutModel layout, TableModel model, Dict params, int index">
 	%var Dict row = model.rows[index];
 	%var Collection<string> fields = params["fields"];
+	%var string extends_name = params["extends_name"] |> default string "table";
 	
 	<tr class="row" data-index={ index } @key={ "tr-" ~ index }>
 	%for (int i=0; i<fields.count(); i++)
 	{
 		%var string field_name = fields[i];
 		%var FieldInfo field = FieldInfo::getFieldInfo(params["struct"], field_name);
-		%var string text_align = field["info", "table", "text-align"] |> default string "left";
-		%var string td_width = field["info", "table", "width"] |> default string "";
+		%var string text_align = field["info", extends_name, "text-align"] |> default string "left";
+		%var string td_width = field["info", extends_name, "width"] |> default string "";
 		<td class="td" class={ "td-" ~ field_name } data-name={ field_name } @key={ "td-" ~ field_name }
 			style=
 			{
@@ -123,6 +125,7 @@
 	%var Dict row = model.rows[index];
 	%var Collection<FieldInfo> struct = params["struct"];
 	%var FieldInfo field = FieldInfo::getFieldInfo(params["struct"], field_name);
+	%var string extends_name = params["extends_name"] |> default string "table";
 	
 	%if (field != null)
 	{
@@ -131,19 +134,18 @@
 		
 		<!-- Get class name -->
 		%var string class_name = field["class_name"] |> default string "";
-		%var string class_name_table = field["info", "table", "class_name"] |> default string "";
+		%var string class_name_table = field["info", extends_name, "class_name"] |> default string "";
 		%if (not rtl::isEmpty(class_name_table)){ %var class_name = class_name_table; }
 		
 		<!-- Class settings -->
 		%var Dict class_settings = field["class_settings"] |> default Dict {};
-		%var Dict class_settings_table = field["info", "table", "class_settings"] |> default Dict null;
+		%var Dict class_settings_table = field["info", extends_name, "class_settings"] |> default Dict null;
 		%if (not rtl::isEmpty(class_settings_table))
 		{
 			%var class_settings = class_settings.concat( class_settings_table );
 		}
 		%var class_settings = class_settings
 			.setIm("name", field_name)
-			.setIm("crud_class_name", class_name)
 			.setIm("crud_kind", "table")
 			.setIm("crud_struct", struct)
 			.setIm("crud_field_name", field_name)
@@ -153,12 +155,20 @@
 			.setIm("crud_table_model", model)
 		;
 		
+		<!-- Calc class name -->
+		%if (not rtl::isString(class_name) and rtl::isFn(class_name))
+		{
+			%var class_name = class_name(layout, model, class_settings);
+		}
+		%var class_name = class_name |> default string "";
+		%var class_settings = class_settings.setIm("crud_class_name", class_name);
+		
 		<!-- Get value -->
 		%var var value = model["rows", index, field_name];
 		
 		<!-- Calculate new value -->
 		%var fn calc = field["calc"];
-		%var fn calc_table = field["info", "table", "calc"];
+		%var fn calc_table = field["info", extends_name, "calc"];
 		%if (calc_table != null){ %var calc = calc_table; }
 		%if (rtl::exists(calc)){ %var value = calc(layout, value, class_settings); }
 		%var class_settings = class_settings.setIm("value", value);
@@ -168,11 +178,11 @@
 		
 		<!-- Render value -->
 		%var fn render = field["render"];
-		%var fn render_table = field["info", "table", "render"];
+		%var fn render_table = field["info", extends_name, "render"];
 		%if (not rtl::isEmpty(render_table)){ %var render = render_table; }
 		
 		%var fn can_render = field["can_render"];
-		%var fn can_render_table = field["info", "table", "can_render"];
+		%var fn can_render_table = field["info", extends_name, "can_render"];
 		%if (not rtl::isEmpty(can_render_table)){ %var can_render = can_render_table; }
 		
 		%if
