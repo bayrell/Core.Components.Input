@@ -155,14 +155,6 @@
 			.setIm("crud_table_model", model)
 		;
 		
-		<!-- Calc class name -->
-		%if (not rtl::isString(class_name) and rtl::isFn(class_name))
-		{
-			%var class_name = class_name(layout, model, class_settings);
-		}
-		%var class_name = class_name |> default string "";
-		%var class_settings = class_settings.setIm("crud_class_name", class_name);
-		
 		<!-- Get value -->
 		%var var value = model["rows", index, field_name];
 		
@@ -172,6 +164,14 @@
 		%if (calc_table != null){ %var calc = calc_table; }
 		%if (rtl::exists(calc)){ %var value = calc(layout, value, class_settings); }
 		%var class_settings = class_settings.setIm("value", value);
+		
+		<!-- Calc class name -->
+		%if (not rtl::isString(class_name) and rtl::isFn(class_name))
+		{
+			%var class_name = class_name(layout, value, class_settings);
+		}
+		%var class_name = class_name |> default string "";
+		%var class_settings = class_settings.setIm("crud_class_name", class_name);
 		
 		<!-- Patch settings -->
 		%var class_settings = static::patchSettings(layout, field, class_settings, model, params);
@@ -190,7 +190,7 @@
 			rtl::exists(render) and
 			(
 				not rtl::exists(can_render) or
-				( rtl::exists(can_render) and can_render(layout, model, class_settings) )
+				( rtl::exists(can_render) and can_render(layout, value, class_settings) )
 			)
 		)
 		{

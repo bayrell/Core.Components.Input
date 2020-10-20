@@ -394,12 +394,15 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 	}
 	%else if (button_type == "view")
 	{
+		%var Dict target = {};
 		%var string url = layout.route_prefix ~ options["url"];
 		%var Dict pk = static::getPrimaryKey(struct, item);
 		%var url = Route::replace(url, pk);
-		<a href={ url } class='nolink' @key="view">
+		%var string label = not rtl::isEmpty(options["label"]) ? options["label"] : _("Runtime.Web.CRUD", "View");
+		%if (not rtl::isEmpty(options["target"])) { %var target = { "target": options["target"] }; }
+		<a href={ url } class='nolink' @key="view" ...target>
 			<Button type='small'>
-				{ _("Runtime.Web.CRUD", "View") }
+				{ label }
 			</Button>
 		</a>
 	}

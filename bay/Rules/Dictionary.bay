@@ -40,6 +40,7 @@ struct Dictionary extends Rule
 	string class_name = "";
 	string key_name = "";
 	fn buildSearchQuery = null;
+	Collection fields = null;
 	
 	
 	
@@ -75,7 +76,7 @@ struct Dictionary extends Rule
 			|> lib::apply()
 			|> buildSearchQuery
 			|> await .all(db_settings)
-			|> lib::map( Dict (Record item) => item.convertToDict() )
+			|> lib::map( Dict (Record item) use (rule) => item.convertToDict(rule.fields) )
 		;
 		
 		foreign <= fields <= { name } <= options <= options;

@@ -19,6 +19,7 @@
 namespace Runtime.Web.CRUD.Rules;
 
 use Runtime.BaseStruct;
+use Runtime.ORM.Record;
 use Runtime.Web.CRUD.Rules.Rule;
 
 
@@ -42,5 +43,9 @@ struct AllowFields extends Rule
 		
 		return item;
 	}
-	pure Dict processItem(Rule rule, Dict item, string action) => static::convertItem(rule, item, action);
+	pure Dict processItem(Rule rule, Dict item, string action)
+	{
+		if (item instanceof Record) item = item.convertToDict(rule.fields);
+		return  static::convertItem(rule, item, action);
+	}
 }

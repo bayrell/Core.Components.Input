@@ -119,6 +119,17 @@ class CrudApi extends BaseObject
 	
 	
 	/**
+	 * Returns true if request is create, update or delete
+	 */
+	bool isModify() =>
+		this.action == "create" or
+		this.action == "update" or
+		this.action == "delete"
+	;
+	
+	
+	
+	/**
 	 * Is crud request
 	 */
 	bool isCRUD() =>
@@ -272,7 +283,6 @@ class CrudApi extends BaseObject
 			for (int i=0; i<this.items.count(); i++)
 			{
 				Dict row = this.items[i];
-				if (row instanceof Record) row = row.convertToDict();
 				row = await this.processItem(row);
 				new_items.push(row);
 			}
@@ -693,9 +703,6 @@ class CrudApi extends BaseObject
 		
 		Dict new_item = this.new_item;
 		
-		/* Convert to Dict */
-		if (new_item instanceof Record) new_item = new_item.convertToDict();
-		
 		/* Process item */
 		if (new_item)
 		{
@@ -854,9 +861,6 @@ class CrudApi extends BaseObject
 		
 		Dict new_item = this.new_item;
 		
-		/* Convert to Dict */
-		if (new_item instanceof Record) new_item = new_item.convertToDict();
-		
 		/* Process item */
 		if (new_item)
 		{
@@ -987,10 +991,6 @@ class CrudApi extends BaseObject
 		}
 		
 		Dict new_item = this.new_item, old_item = this.old_item;
-		
-		/* Convert to Dict */
-		if (new_item instanceof Record) new_item = new_item.convertToDict();
-		if (old_item instanceof Record) old_item = old_item.convertToDict();
 		
 		/* Process item */
 		old_item = await this.processItem(old_item);
@@ -1123,9 +1123,6 @@ class CrudApi extends BaseObject
 		}
 		
 		Dict old_item = this.old_item;
-		
-		/* Convert to Dict */
-		if (old_item instanceof Record) old_item = old_item.convertToDict();
 		
 		/* Process item */
 		Dict old_item = await this.processItem(old_item);
