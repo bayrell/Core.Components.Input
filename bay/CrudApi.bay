@@ -216,13 +216,6 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Extend search filter
-	 */
-	Collection<list> extendSearchFilter(Collection<list> filter) => filter;
-	
-	
-	
-	/**
 	 * Returns maximum limit
 	 */
 	Collection<Collection<string>> getMaxLimit() => 1000;
@@ -513,18 +506,57 @@ class CrudApi extends BaseObject
 			}
 		}
 	}
+	
+	
 
+	/**
+	 * Extend search filter
+	 */
+	Collection<list> extendSearchFilter(Collection<list> filter) => filter;
+	
 	
 	
 	/**
 	 * Build query
 	 */
-	QueryBuilder buildSearchQuery(QueryBuilder q) =>
-		q
-		.page( this.page, this.limit )
-		.filter( this.getSearchFilter() |> this.extendSearchFilter )
-		.order( this.getSearchOrder() )
-	;	
+	QueryBuilder buildSearchQuery(QueryBuilder q)
+	{
+		if (this.isSearch())
+		{
+			q = q
+				.filter( this.getSearchFilter() |> this.extendSearchFilter )
+				.page( this.page, this.limit )
+				.order( this.getSearchOrder() );
+		}
+		return q;
+	}	
+	
+	
+	
+	/**
+	 * Find existing item for create
+	 */
+	async Record findItemByKey(Dict pk)
+	{
+		/* Get ORM class name */
+		string class_name = static::getORM();
+		fn select = rtl::method(class_name, "select");
+		fn getFilterByPrimaryKey = rtl::method(class_name, "getFilterByPrimaryKey");
+		
+		Collection<list> filter = getFilterByPrimaryKey(pk) |> this.extendSearchFilter;
+		if (filter == null) return null;
+		
+		/* Execute query */
+		Record res = select()
+			|> .filter(filter)
+			|> this.buildSearchQuery
+			|> .asRecord(true)
+			|> .limit(1)
+			|> await .one()
+		;
+		
+		return res;
+	}
 	
 	
 	
@@ -756,32 +788,6 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Find existing item for create
-	 */
-	async Record findItemByKey(Dict pk)
-	{
-		/* Get ORM class name */
-		string class_name = static::getORM();
-		fn select = rtl::method(class_name, "select");
-		fn getFilterByPrimaryKey = rtl::method(class_name, "getFilterByPrimaryKey");
-		
-		Collection<list> filter = getFilterByPrimaryKey(pk) |> this.extendSearchFilter;
-		if (filter == null) return null;
-		
-		/* Execute query */
-		Record res = select()
-			|> .filter(filter)
-			|> .asRecord(true)
-			|> .limit(1)
-			|> await .one()
-		;
-		
-		return res;
-	}
-	
-	
-	
-	/**
 	 * Returns true if can Query
 	 */
 	async bool canCreateQuery()
@@ -808,14 +814,14 @@ class CrudApi extends BaseObject
 		/* Save item */
 		this.new_item = createInstance(update_item);
 		this.new_item = await this.patchItem(this.new_item);
-		this.new_item = await save(this.new_item);
-		
-		/* Set new item */
-		this.pk = getPrimaryKey(this.new_item);
+		this.pk = await save(this.new_item);
 		
 		/* Save foreign items */
 		Dict item = this.item.concat(this.pk);
 		await this.saveManyToManyItem(item);
+		
+		/* Find new item */
+		this.new_item = await this.findItemByKey(this.pk);
 	}
 	
 	
@@ -942,14 +948,14 @@ class CrudApi extends BaseObject
 		/* Save item */
 		this.new_item = change(this.old_item, update_item);
 		this.new_item = await this.patchItem(this.new_item);
-		this.new_item = await save(this.new_item);
-		
-		/* Set new item */
-		this.pk = getPrimaryKey(this.new_item);
+		this.pk = await save(this.new_item);
 		
 		/* Save foreign items */
 		item = this.item.concat(this.pk);
 		await this.saveManyToManyItem(item);
+		
+		/* Find new item */
+		this.new_item = await this.findItemByKey(this.pk);
 	}
 	
 	
