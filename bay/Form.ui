@@ -354,7 +354,8 @@ async void onItemChange(Message<ChangeEvent> msg)
 	FormModel model = this.model();
 	Dict params = msg.sender.params;
 	string field_name = params["name"];
-	string value = msg.data.value;
+	string new_value = msg.data.value;
+	string old_value = msg.data.old_value;
 	var model_path = params["crud_form_model_path"];
 	
 	FormEvent event = new FormEvent
@@ -362,11 +363,11 @@ async void onItemChange(Message<ChangeEvent> msg)
 		"event": FormEvent::ACTION_CHANGE,
 		"item": model.item,
 		"field_name": field_name,
-		"old_value": rtl::attr(model, model_path, null),
-		"value": value,
+		"old_value": old_value,
+		"value": new_value,
 	};
 	
-	this.update("setAttr", model_path, value);
+	if (model_path != null) this.update("setAttr", model_path, new_value);
 	await this.signal(event);
 }
 
