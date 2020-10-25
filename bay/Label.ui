@@ -36,7 +36,11 @@
 	%var string def_value = (params != null) ? params.get("default", "") : "";
 	%var value = rtl::isEmpty(value) ? model : value;
 	%if (rtl::isEmpty(value) and value !== 0 and value !== "0"){ %var value = def_value; }
-	{ value }
+	%var value = rtl::isString(value) ? rs::split("\n", value) : [ value ];
+	%for (int i=0; i<value.count(); i++)
+	{
+		{ value[i] }<br/>
+	}
 </template>
 
 
