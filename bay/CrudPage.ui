@@ -457,7 +457,7 @@ async void onShowAddClick(Message<MouseClickEvent> msg)
 /**
  * On row edit
  */
-async void  onViewEditClick(Message<MouseClickEvent> msg)
+async void onViewEditClick(Message<MouseClickEvent> msg)
 {
 	this.dialog_edit.update("show");
 	this.form_edit.update("clear");
@@ -470,7 +470,7 @@ async void  onViewEditClick(Message<MouseClickEvent> msg)
 /**
  * On row delete
  */
-async void  onViewDeleteClick(Message<MouseClickEvent> msg)
+async void onViewDeleteClick(Message<MouseClickEvent> msg)
 {
 	Dict item = this.model("item");
 	
@@ -512,11 +512,14 @@ async void  onViewDeleteClick(Message<MouseClickEvent> msg)
 async void onRowEditClick(Message<MouseClickEvent> msg)
 {
 	Dict pk = msg.sender.params["data-pk"];
-	Dict item = this.table.call("getFirstItem", pk);
-	this.dialog_edit.update("show");
-	this.form_edit.update("clear");
-	this.form_edit.update("setItem", item);
-	this.form_edit.update("setKind", "table");
+	Dict item = this.call("getFirstItem", pk);
+	if (item)
+	{
+		this.dialog_edit.update("show");
+		this.form_edit.update("clear");
+		this.form_edit.update("setItem", item);
+		this.form_edit.update("setKind", "table");
+	}
 }
 
 
@@ -527,7 +530,7 @@ async void onRowEditClick(Message<MouseClickEvent> msg)
 async void onRowDeleteClick(Message<MouseClickEvent> msg)
 {
 	Dict pk = msg.sender.params["data-pk"];
-	Dict item = this.table.call("getFirstItem", pk);
+	Dict item = this.call("getFirstItem", pk);
 	
 	string message = "";
 	Dict<string> messages = static::getMessages(this.constructor.layout, this.model(), this.params);
@@ -643,14 +646,24 @@ async void onItemCreate()
 	
 	if (answer.isSuccess())
 	{
-		if (kind == "table") this.table.update("prependItem", answer.response["new_item"]);
+		if (kind == "table") this.update("prependItem", answer.response["new_item"]);
 		this.dialog_add.update("hide");
+		await this.onItemCreated(answer);
 	}
 	else
 	{
 		this.form_add.update("setAnswer", answer);
 	}
 	
+}
+
+
+
+/**
+ * Updated item
+ */
+async void onItemCreated(RemoteCallAnswer answer)
+{
 }
 
 
@@ -681,15 +694,25 @@ async void onItemUpdate()
 	
 	if (answer.isSuccess())
 	{
-		if (kind == "table") this.table.update("setItem", pk, answer.response["new_item"]);
+		if (kind == "table") this.update("setItem", pk, answer.response["new_item"]);
 		else if (kind == "view") this.update("setAttr", "item", answer.response["new_item"]);
 		this.dialog_edit.update("hide");
+		await this.onItemUpdated(answer);
 	}
 	else
 	{
 		this.form_edit.update("setAnswer", answer);
 	}
 	
+}
+
+
+
+/**
+ * Updated item
+ */
+async void onItemUpdated(RemoteCallAnswer answer)
+{
 }
 
 
@@ -716,14 +739,24 @@ async void onItemDelete(Dict item, string kind)
 	
 	if (answer.isSuccess())
 	{
-		if (kind == "table") this.table.update("removeItem", pk);
+		if (kind == "table") this.update("removeItem", pk);
 		else if (kind == "view") this.update("setAttr", "item", null);
 		this.dialog_delete.update("hide");
+		await this.onItemDeleted(answer);
 	}
 	else
 	{
 		this.dialog_delete.update("setAnswer", answer);
 	}
+}
+
+
+
+/**
+ * Deleted item
+ */
+async void onItemDeleted(RemoteCallAnswer answer)
+{
 }
 
 

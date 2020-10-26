@@ -58,7 +58,7 @@ struct TableModel extends BaseStruct
 	/**
 	 * Find first item
 	 */
-	pure TableModel getFirstItem(TableModel model, Dict find)
+	pure Dict getFirstItem(TableModel model, Dict find)
 	{
 		if (model.rows == null)
 		{

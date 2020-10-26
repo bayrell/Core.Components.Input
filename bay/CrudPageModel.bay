@@ -143,4 +143,67 @@ struct CrudPageModel extends BaseStruct
 	}
 	
 	
+	
+	
+	/**
+	 * Returns position of item
+	 */
+	pure int findPos(CrudPageModel model, Dict find)
+	{
+		return model.table::findPos(model.table, find)
+	}
+	
+	
+	
+	/**
+	 * Find first item
+	 */
+	pure Dict getFirstItem(CrudPageModel model, Dict find)
+	{
+		return model.table::getFirstItem(model.table, find)
+	}
+	
+	
+	
+	/**
+	 * Add item
+	 */
+	pure CrudPageModel addItem(CrudPageModel model, Dict item)
+	{
+		model <= table <= model.table::addItem(model.table, item)
+		return model;
+	}
+	
+	
+	
+	/**
+	 * Prepend item
+	 */
+	pure CrudPageModel prependItem(CrudPageModel model, Dict item)
+	{
+		model <= table <= model.table::prependItem(model.table, item)
+		return model;
+	}
+	
+	
+	
+	/**
+	 * Set item
+	 */
+	pure CrudPageModel setItem(CrudPageModel model, Dict find, Dict item)
+	{
+		model <= table <= model.table::setItem(model.table, find, item)
+		return model;
+	}
+	
+	
+	
+	/**
+	 * Remove item by id
+	 */
+	pure CrudPageModel removeItem(CrudPageModel model, Dict find)
+	{
+		model <= table <= model.table::removeItem(model.table, find)
+		return model;
+	}
 }
