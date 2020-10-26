@@ -168,7 +168,9 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 		%if (rtl::exists(filter_fields))
 		{
 			<div class='filter'>
-				<CrudFilter @name="filter" struct={ struct } fields={ filter_fields } extends_name="filter" />
+				<CrudFilter @name="filter" struct={ struct } fields={ filter_fields } extends_name="filter"
+					@event:FormEvent="onFormEvent"
+				/>
 			</div>
 		}
 		
@@ -594,7 +596,44 @@ async void onDialogEvent(Message<DialogEvent> msg)
 async void onFormEvent(Message<FormEvent> msg)
 {
 	FormEvent e = msg.data;
-	if (msg.sender == this.form_add)
+	
+	if (e.event == FormEvent::ACTION_SEARCH)
+	{
+		LayoutModel layout = this.controller.layout;
+		CrudPageModel model = this.model();
+		Dict params = this.params;
+		Collection fields = static::getFilterFields(layout, model, params);
+		string uri = layout.route_prefix ~ layout.uri;
+		
+		/* Clear filter fields */
+		for (int i=0; i<fields.count(); i++)
+		{
+			string key = fields[i];
+			uri = rs::url_get_add(uri, "filter["~key~"]", "");
+		}
+		
+		/* Add filter fields */
+		Dict item = e.item;
+		if (item != null)
+		{
+			Collection keys = item.keys();
+			for (int i=0; i<keys.count(); i++)
+			{
+				string key = keys[i];
+				string value = item[key];
+				uri = rs::url_get_add(uri, "filter["~key~"]", value);
+			}
+		}
+		
+		/* Clear page */
+		uri = rs::url_get_add(uri, "page", "");
+		
+		log(uri);
+		
+		await this.pageOpen(uri);
+	}
+	
+	else if (msg.sender == this.form_add)
 	{
 		if (e.event == FormEvent::ACTION_CANCEL)
 		{

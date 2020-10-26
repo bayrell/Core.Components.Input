@@ -82,7 +82,7 @@
 				%var active = false;
 				%if (page == 1) { %var active = true; }
 				<li class="btn page first" class={ active ? "active" : "" } @key="first">
-                    <a href={ rs::url_get_add(layout.uri, "page", 1) }>1</a>
+                    <a href={ rs::url_get_add(layout.route_prefix ~ layout.uri, "page", 1) }>1</a>
                 </li>
 				
 				%if (pages - delta > 1)
@@ -99,7 +99,7 @@
 						%var active = false;
 						%if (page == i) { %var active = true; }
 						<li class="btn page" class={ active ? "active" : "" } @key={ "page" ~ i }>
-							<a href={ rs::url_get_add(layout.uri, "page", i) }>{ i }</a>
+							<a href={ rs::url_get_add(layout.route_prefix ~ layout.uri, "page", i) }>{ i }</a>
 						</li>
 					}
 				}
@@ -116,7 +116,7 @@
 					%var active = false;
 					%if (page == pages) { %var active = true; }
 					<li class="btn page last" class={ active ? "active" : "" } @key="last">
-						<a href={ rs::url_get_add(layout.uri, "page", pages) }>{ pages }</a>
+						<a href={ rs::url_get_add(layout.route_prefix ~ layout.uri, "page", pages) }>{ pages }</a>
 					</li>
 				}
 			</ul>

@@ -26,6 +26,22 @@ use Runtime.Web.CRUD.Rules.Rule;
 struct AllowFields extends Rule
 {
 	Collection<string> fields = null;
+	
+	pure Collection convertFilter(Rule rule, Collection filter)
+	{
+		filter = filter |> .filter
+			(
+				bool (Collection item) use (rule)
+				{
+					string field_name = item[0];
+					int pos = rule.fields.indexOf(field_name);
+					return pos != -1;
+				}
+			)
+		;
+		return filter;
+	}
+	
 	pure Dict convertItem(AllowFields rule, Dict item, string action)
 	{
 		if (rule.fields == null) return item;

@@ -25,6 +25,7 @@ struct Rule extends BaseStruct
 {
 	string api_name = "";
 	pure string validate(Rule rule, Dict item) => "";
+	pure Collection convertFilter(Rule rule, Collection filter) => filter;
 	pure Dict convertItem(Rule rule, Dict item, string action) => item;
 	pure Dict processItem(Rule rule, Dict item, string action) => item;
 }

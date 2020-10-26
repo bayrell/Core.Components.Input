@@ -102,12 +102,12 @@
 	{
 		%var string field_name = fields[i];
 		%var FieldInfo field = FieldInfo::getFieldInfo(params["struct"], field_name);
-		%var string text_align = field["info", extends_name, "text-align"] |> default string "left";
+		%var string text_align = field["info", extends_name, "text-align"] |> default string "";
 		%var string td_width = field["info", extends_name, "width"] |> default string "";
 		<td class="td" class={ "td-" ~ field_name } data-name={ field_name } @key={ "td-" ~ field_name }
 			style=
 			{
-				text_align != "left" ? ("text-align: " ~ text_align ~ ";") : "" ~
+				text_align != "" ? ("text-align: " ~ text_align ~ ";") : "" ~
 				td_width != "" ? ("width: " ~ td_width ~ ";") : ""
 			}
 		>
