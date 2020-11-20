@@ -150,13 +150,13 @@ struct CrudPageModel extends BaseStruct
 					string key_name = keys[i];
 					search_filter.push([key_name, "=", filter[key_name]]);
 				}
-				data.set("filter", search_filter.toCollection());
+				data.setValue("filter", search_filter.toCollection());
 			}
 			
 			string page = request.query.get("page", 1) - 1;
 			if (page < 0) page = 0;
-			data.set("page", page);
-			data.set("limit", 20);
+			data.setValue("page", page);
+			data.setValue("limit", 20);
 		}
 		
 		return data.toDict();

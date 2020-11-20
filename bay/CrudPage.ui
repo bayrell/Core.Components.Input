@@ -437,7 +437,7 @@ pure Dict getPrimaryKey(Collection<FieldInfo> struct, Dict item)
 	{
 		FieldInfo field = struct[i];
 		var value = item[field.api_name];
-		pk.set(field.api_name, value);
+		pk.setValue(field.api_name, value);
 	}
 	return pk.toDict();
 }
