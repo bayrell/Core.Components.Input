@@ -55,7 +55,7 @@ struct CrudPageModel extends BaseStruct
 	/**
 	 * Crud Search
 	 */
-	static async CrudPageModel crudSearch(string object_name, RenderContainer container)
+	static async CrudPageModel crudSearch(string object_name, RenderContainer container, fn f = null)
 	{
 		/* Remote call */
 		Dict search_params = static::getCrudSearchParams(container.request);
@@ -91,6 +91,11 @@ struct CrudPageModel extends BaseStruct
 			page_model <= filter <= item <= filter;
 		}
 		
+		if (f)
+		{
+			page_model = f(page_model, answer);
+		}
+		
 		return page_model;
 	}
 	
@@ -99,7 +104,7 @@ struct CrudPageModel extends BaseStruct
 	/**
 	 * Crud View
 	 */
-	static async CrudPageModel crudView(string object_name, Dict pk, RenderContainer container)
+	static async CrudPageModel crudView(string object_name, Dict pk, RenderContainer container, fn f = null)
 	{
 		/* Remote call */
 		RemoteCallAnswer answer = await container.externalBusCall
@@ -126,6 +131,12 @@ struct CrudPageModel extends BaseStruct
 			page_model <= item <= answer.response["item"];
 			page_model <= foreigns <= answer.response["foreigns"];
 		}
+		
+		if (f)
+		{
+			page_model = f(page_model, answer);
+		}
+		
 		return page_model;
 	}
 	
