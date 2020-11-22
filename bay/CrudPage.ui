@@ -23,9 +23,12 @@
 
 <use name="Runtime.lib" />
 <use name="Runtime.DateTime" />
+<use name="Runtime.Exceptions.RuntimeException" />
 <use name="Runtime.Core.Message" />
 <use name="Runtime.Core.RemoteCallAnswer" />
+<use name="Runtime.Core.Request" />
 <use name="Runtime.Web.LayoutModel" />
+<use name="Runtime.Web.RenderContainer" />
 <use name="Runtime.Web.RenderDriver" />
 <use name="Runtime.Web.Route" />
 <use name="Runtime.Web.Events.MouseClickEvent" />
@@ -57,58 +60,223 @@
 pure string getCrudObjectName() => "";
 
 
+
 /**
  * Returns options
  */
-pure Collection getOptions(LayoutModel layout, CrudPageModel model, Dict params, string name = "") => null;
+pure Collection getOptions(RenderContainer container, string name = "") => null;
+
 
 
 /**
  * Returns crud struct
  */
-pure Collection<FieldInfo> getStruct(LayoutModel layout, CrudPageModel model, Dict params) => [];
+pure Collection<FieldInfo> getStruct(RenderContainer container) => [];
+
 
 
 /**
  * Returns filter fields
  */
-pure Collection<string> getFilterFields(LayoutModel layout, CrudPageModel model, Dict params) => [];
+pure Collection<string> getFilterFields(RenderContainer container) => [];
+
 
 
 /**
  * Returns form fields
  */
-pure Collection<string> getFormFields(LayoutModel layout, CrudPageModel model, Dict params) => [];
+pure Collection<string> getFormFields(RenderContainer container) => [];
+
 
 
 /**
  * Returns table fields
  */
-pure Collection<string> getTableFields(LayoutModel layout, CrudPageModel model, Dict params) => [];
+pure Collection<string> getTableFields(RenderContainer container) => [];
+
 
 
 /**
  * Returns view fields
  */
-pure Collection<string> getViewFields(LayoutModel layout, CrudPageModel model, Dict params) => [];
+pure Collection<string> getViewFields(RenderContainer container) => [];
+
 
 
 /**
  * Returns messages
  */
-pure Dict<string> getMessages(LayoutModel layout, CrudPageModel model, Dict params) => {};
+pure Dict<string> getMessages() => {};
+
 
 
 /**
  * Dialog settings
  */
-pure Dict getDialogSettings(LayoutModel layout, CrudPageModel model, Dict params) => {};
+pure Dict getDialogSettings() => {};
+
 
 
 /**
  * Form settings
  */
-pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) => {};
+pure Dict getFormSettings() => {};
+
+
+
+/**
+ * Crud Search
+ */
+static async RenderContainer crudSearch(RenderContainer container)
+{
+	/* Get crud object name */
+	string object_name = static::getCrudObjectName();
+	
+	/* Get search params */
+	Dict search_params = static::getCrudSearchParams(container.request);
+	
+	/* Remote call */
+	RemoteCallAnswer answer = await container.externalBusCall
+	{
+		"object_name": object_name,
+		"interface_name": "core.crud",
+		"method_name": "search",
+		"data": search_params,
+	};
+	
+	/* Throw exception */
+	if (not answer.isSuccess())
+	{
+		throw new RuntimeException(answer.error_message, answer.error_code);
+	}
+	
+	/* Get page model */
+	CrudPageModel page_model = container.layout.page_model;
+	page_model <= action <= "search";
+	
+	/* Answer */
+	if (answer.isSuccess())
+	{
+		page_model <= table <= rows <= answer.response["items"];
+		page_model <= table <= page <= answer.response["page"];
+		page_model <= table <= pages <= answer.response["pages"];
+		page_model <= table <= limit <= answer.response["limit"];
+		page_model <= foreigns <= answer.response["foreigns"];
+	}
+	
+	/* Set filter items */
+	Dict filter = container.request.query["filter"] |> default Dict null;
+	if (filter)
+	{
+		page_model <= filter <= item <= filter;
+	}
+	
+	/* Set page model */
+	container <= layout <= page_model <= page_model;
+	
+	/* Extend RenderContainer */
+	container = await static::extendRenderContainer(container, answer);
+	
+	return container;
+}
+
+
+
+/**
+ * Crud View
+ */
+static async RenderContainer crudView(RenderContainer container)
+{
+	/* Get crud object name */
+	string object_name = static::getCrudObjectName();
+	Dict pk = null;
+	
+	/* Remote call */
+	RemoteCallAnswer answer = await container.externalBusCall
+	{
+		"object_name": object_name,
+		"interface_name": "core.crud",
+		"method_name": "getItem",
+		"data":
+		{
+			"pk": pk,
+		}
+	};
+	
+	/* Throw exception */
+	if (not answer.isSuccess())
+	{
+		throw new RuntimeException(answer.error_message, answer.error_code);
+	}
+	
+	/* Get page model */
+	CrudPageModel page_model = container.layout.page_model;
+	page_model <= action <= "view";
+	
+	/* Answer */
+	if (answer.isSuccess())
+	{
+		page_model <= item <= answer.response["item"];
+		page_model <= foreigns <= answer.response["foreigns"];
+	}
+	
+	/* Set page model */
+	container <= layout <= page_model <= page_model;
+	
+	/* Extend RenderContainer */
+	container = await static::extendRenderContainer(container, answer);
+	
+	return container;
+}
+
+
+
+/**
+ * Extend crud container
+ */
+static async RenderContainer extendRenderContainer(RenderContainer container, RemoteCallAnswer answer)
+{
+	container <= layout <= page_model <= struct <= static::getStruct(container);
+	container <= layout <= page_model <= filter_fields <= static::getFilterFields(container);
+	container <= layout <= page_model <= form_fields <= static::getFormFields(container);
+	container <= layout <= page_model <= table_fields <= static::getTableFields(container);
+	container <= layout <= page_model <= view_fields <= static::getViewFields(container);
+	return container;
+}
+
+
+
+/**
+ * Crud search
+ */
+pure RemoteCallAnswer getCrudSearchParams(Request request)
+{
+	Map data = new Map();
+	
+	if (rtl::exists(request.query))
+	{
+		Vector search_filter = new Vector();
+		Dict filter = request.query["filter"] |> default Dict null;
+		if (filter)
+		{
+			Collection keys = filter.keys();
+			for (int i=0; i<keys.count(); i++)
+			{
+				string key_name = keys[i];
+				search_filter.pushValue([key_name, "=", filter[key_name]]);
+			}
+			data.setValue("filter", search_filter.toCollection());
+		}
+		
+		string page = request.query.get("page", 1) - 1;
+		if (page < 0) page = 0;
+		data.setValue("page", page);
+		data.setValue("limit", 20);
+	}
+	
+	return data.toDict();
+}
+
 
 
 </script>
@@ -154,11 +322,11 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 
 
 <template name="renderSearch" args="LayoutModel layout, CrudPageModel model, Dict params">
-	%var Collection<FieldInfo> struct = static::getStruct(layout, model, params);
-	%var Collection<string> form_fields = static::getFormFields(layout, model, params);
-	%var Collection<string> filter_fields = static::getFilterFields(layout, model, params);
-	%var Collection<string> table_fields = static::getTableFields(layout, model, params);
-	%var Dict messages = static::getMessages(layout, model, params);
+	%var Collection<FieldInfo> struct = model.struct;
+	%var Collection<string> form_fields = model.form_fields;
+	%var Collection<string> filter_fields = model.filter_fields;
+	%var Collection<string> table_fields = model.table_fields;
+	%var Dict messages = static::getMessages();
 	
 	<div class='search' @key='search'>
 		<div class='buttons'>
@@ -175,137 +343,26 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 		}
 		
 		<div class='table_wrap'>
-			<Table @name="table" struct={ struct } fields={ table_fields } />
+			<Table @name="table" struct={ struct } fields={ table_fields }
+				crud={ static::getCurrentClassName() }
+			/>
 			<Pagination
 				page={ model.table.page + 1 }
 				pages={ model.table.pages }
 				delta={ model.table.delta }
+				crud={ static::getCurrentClassName() }
 			/>
 		</div>
 	</div>
 </template>
 
 
-<template name="renderView" args="LayoutModel layout, CrudPageModel model, Dict params">
-	%var Collection<FieldInfo> struct = static::getStruct(layout, model, params);
-	%var Collection<string> view_fields = static::getViewFields(layout, model, params);
-	
-	<div class='view' @key='view'>
-		<table class='table'>
-			%for (int i=0; i<view_fields.count(); i++)
-			{
-				%var string field_name = view_fields[i];
-				%var FieldInfo field = FieldInfo::getFieldInfo(struct, field_name);
-				%if (field != null)
-				{
-					<tr class='view_row' class={ "view_row--" ~ field_name }
-						data-name={ field_name } @key={ "view_row-" ~ field_name }
-					>
-						<td class='view_row_label'>
-							{ field["info", "view", "label"] ? field["info", "view", "label"] : field["label"] }:
-						</td>
-						<td class='view_row_content'>
-							{ static::renderViewContent(layout, model, params, field) }
-						</td>
-					</tr>
-				}
-			}
-			
-			<tr @key='buttons'><td colspan='2'>
-				<div class='buttons'>
-					<Button type='' @event:MouseClickEvent="onViewEditClick" @key="edit"
-					>
-						{ _("Runtime.Web.CRUD", "Edit") }
-					</Button>
-					<Button type='danger' @event:MouseClickEvent="onViewDeleteClick" @key="delete"
-					>
-						{ _("Runtime.Web.CRUD", "Delete") }
-					</Button>
-				</div>
-			</td></tr>
-			
-		</table>
-	</div>
-	
-</template>
-
-
-
-<template name="renderViewContent" args="LayoutModel layout, TableModel model, Dict params, FieldInfo field">
-	%if (field != null)
-	{
-		%var Collection<FieldInfo> struct = static::getStruct(layout, model, params);
-		%var string field_name = field.api_name;
-		
-		<!-- Get class name -->
-		%var string class_name = field["class_name"] |> default string "";
-		%var string class_name_view = field["info", "view", "class_name"] |> default string "";
-		%if (not rtl::isEmpty(class_name_view)){ %var class_name = class_name_view; }
-		
-		<!-- Class settings -->
-		%var Dict class_settings = field["class_settings"] |> default Dict {};
-		%var Dict class_settings_view = field["info", "view", "class_settings"] |> default Dict null;
-		%if (not rtl::isEmpty(class_settings_view))
-		{
-			%var class_settings = class_settings.concat( class_settings_view );
-		}
-		%var class_settings = class_settings
-			.setIm("name", field_name)
-			.setIm("crud_struct", struct)
-			.setIm("crud_class_name", class_name)
-			.setIm("crud_kind", "view")
-			.setIm("crud_field_name", field_name)
-			.setIm("crud_field_info", field)
-			.setIm("crud_item", model.item)
-		;
-		
-		<!-- Get value -->
-		%var var value = model["item", field_name];
-		
-		<!-- Calculate new value -->
-		%var fn calc = field["calc"];
-		%var fn calc_view = field["info", "view", "calc"];
-		%if (calc_view != null){ %var calc = calc_view; }
-		%if (rtl::exists(calc)){ %var value = calc(layout, value, class_settings); }
-		%var class_settings = class_settings.setIm("value", value);
-		
-		<!-- Render value -->
-		%var fn render = field["render"];
-		%var fn render_view = field["info", "view", "render"];
-		%if (not rtl::isEmpty(render_view)){ %var render = render_view; }
-		
-		%var fn can_render = field["can_render"];
-		%var fn can_render_view = field["info", "view", "can_render"];
-		%if (not rtl::isEmpty(can_render_view)){ %var can_render = can_render_view; }
-		
-		%if
-		(
-			rtl::exists(render) and
-			(
-				not rtl::exists(can_render) or
-				( rtl::exists(can_render) and can_render(layout, model, class_settings) )
-			)
-		)
-		{
-			{ render(layout, value, class_settings) }
-		}
-		%else
-		{
-			%if (not rtl::isEmpty(class_name))
-			{
-				<{class_name} @key={ field_name } ...class_settings />
-			}
-		}
-	}
-</template>
-
-
 
 <template name="renderDialog" args="LayoutModel layout, CrudPageModel model, Dict params">
 	
-	%var Collection<FieldInfo> struct = static::getStruct(layout, model, params);
-	%var Collection<string> form_fields = static::getFormFields(layout, model, params);
-	%var Dict form_settings = static::getFormSettings(layout, model, params);
+	%var Collection<FieldInfo> struct = model.struct;
+	%var Collection<string> form_fields = model.form_fields;
+	%var Dict form_settings = static::getFormSettings();
 	%var Collection<string> form_add_fields = form_fields.filter
 	(
 		curry FieldInfo::filterForm(struct, "create", ?)
@@ -315,13 +372,14 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 		curry FieldInfo::filterForm(struct, "update", ?)
 	);
 	%var string form_class_name = form_settings["class_name"] |> default string classof Form;
-	%var Dict dialog_form_settings = static::getDialogSettings(layout, model, params);
+	%var Dict dialog_form_settings = static::getDialogSettings();
 	
 	<div class='dialogs'>
 		<Dialog @name="dialog_add" style={ DialogModel::STYLE_CONTENT } show_buttons={ false }
 			...dialog_form_settings
 		>
 			<{form_class_name} @name="form_add" action="add" struct={ struct } fields={ form_add_fields }
+				crud={ static::getCurrentClassName() }
 				@event:FormEvent="onFormEvent" ...form_settings
 			/>
 		</Dialog>
@@ -329,6 +387,7 @@ pure Dict getFormSettings(LayoutModel layout, CrudPageModel model, Dict params) 
 			...dialog_form_settings
 		>
 			<{form_class_name} @name="form_edit" action="edit" struct={ struct } fields={ form_edit_fields }
+				crud={ static::getCurrentClassName() }
 				@event:FormEvent="onFormEvent" ...form_settings
 			/>
 		</Dialog>
@@ -477,7 +536,7 @@ async void onViewDeleteClick(Message<MouseClickEvent> msg)
 	Dict item = this.model("item");
 	
 	string message = "";
-	Dict<string> messages = static::getMessages(this.constructor.layout, this.model(), this.params);
+	Dict<string> messages = static::getMessages();
 	fn f = messages["delete"];
 	if (rtl::exists(f))
 	{
@@ -535,7 +594,7 @@ async void onRowDeleteClick(Message<MouseClickEvent> msg)
 	Dict item = this.call("getFirstItem", pk);
 	
 	string message = "";
-	Dict<string> messages = static::getMessages(this.constructor.layout, this.model(), this.params);
+	Dict<string> messages = static::getMessages();
 	fn f = messages["delete"];
 	if (rtl::exists(f))
 	{
@@ -602,7 +661,7 @@ async void onFormEvent(Message<FormEvent> msg)
 		LayoutModel layout = this.controller.layout;
 		CrudPageModel model = this.model();
 		Dict params = this.params;
-		Collection fields = static::getFilterFields(layout, model, params);
+		Collection fields = model.filter_fields;
 		string uri = layout.route_prefix ~ layout.uri;
 		
 		/* Clear filter fields */
@@ -627,8 +686,6 @@ async void onFormEvent(Message<FormEvent> msg)
 		
 		/* Clear page */
 		uri = rs::url_get_add(uri, "page", "");
-		
-		log(uri);
 		
 		await this.pageOpen(uri);
 	}
@@ -715,7 +772,8 @@ async void onItemUpdate()
 	string kind = this.form_edit.model("kind");
 	Dict old_item = this.form_edit.model("old_item");
 	Dict item = this.form_edit.model("item");
-	Dict pk = static::getPrimaryKey(static::getStruct(this.constructor.layout, this.model(), this.params), old_item);
+	Collection<FieldInfo> struct = this.model("struct");
+	Dict pk = static::getPrimaryKey(struct, old_item);
 	this.form_edit.update("setWaitMessage");
 	
 	/* Send api */
@@ -762,7 +820,8 @@ async void onItemUpdated(RemoteCallAnswer answer)
 async void onItemDelete(Dict item, string kind)
 {
 	this.dialog_delete.update("setWaitMessage");
-	Dict pk = static::getPrimaryKey(static::getStruct(this.constructor.layout, this.model(), this.params), item);
+	Collection<FieldInfo> struct = this.model("struct");
+	Dict pk = static::getPrimaryKey(struct, item);
 	
 	/* Send api */
 	RemoteCallAnswer answer = await RenderDriver::externalBusCall

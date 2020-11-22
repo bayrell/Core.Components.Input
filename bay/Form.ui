@@ -115,7 +115,9 @@
 </template>
 
 <template name="renderRow" args="LayoutModel layout, FormModel model, Dict params, string field_name">
+	
 	%var Collection<FieldInfo> struct = params["struct"];
+	%var string crud_class_name = params["crud"];
 	%var FieldInfo field = FieldInfo::getFieldInfo(struct, field_name);
 	%var string extends_name = params["extends_name"] |> default string "form";
 	
@@ -146,22 +148,27 @@
 			.setIm("crud_item", model["item"])
 			.setIm("crud_form_model_path", model_path)
 			.setIm("crud_form_model", model)
+			.setIm("crud_class_name", class_name)
 		;
 		
 		<!-- Get value -->
 		%var var value = rtl::attr(model, model_path);
 		
 		<!-- Calculate new value -->
-		%var fn calc = field["calc"];
-		%var fn calc_form = field["info", extends_name, "calc"];
-		%if (calc_form != null){ %var calc = calc_form; }
-		%if (rtl::exists(calc)){ %var value = calc(layout, value, class_settings); }
+		%var fn calcField = (rtl::isEmpty(crud_class_name)) ? "" : rtl::method(crud_class_name, "calcField");
+		%if (not rtl::isEmpty(calcField))
+		{
+			%var value = calcField(layout, extends_name, field_name, value, class_settings);
+		}
 		%var class_settings = class_settings.setIm("value", value);
 		
 		<!-- Calc class name -->
-		%if (not rtl::isString(class_name) and rtl::isFn(class_name))
+		%var fn customClassName = (rtl::isEmpty(crud_class_name)) ? "" :
+			rtl::method(crud_class_name, "customClassName")
+		;
+		%if (not rtl::isEmpty(customClassName))
 		{
-			%var class_name = class_name(layout, value, class_settings);
+			%var class_name = customClassName(layout, extends_name, field_name, value, class_settings);
 		}
 		%var class_name = class_name |> default string "";
 		%var class_settings = class_settings.setIm("crud_class_name", class_name);
@@ -170,29 +177,20 @@
 		%var class_settings = static::patchSettings(layout, field, class_settings, model, params);
 		
 		<!-- Render value -->
-		%var fn render = field["render"];
-		%var fn render_form = field["info", extends_name, "render"];
-		%if (not rtl::isEmpty(render_form)){ %var render = render_form; }
-		
-		%var fn can_render = field["can_render"];
-		%var fn can_render_form = field["info", extends_name, "can_render"];
-		%if (not rtl::isEmpty(can_render_form)){ %var can_render = can_render_form; }
-		
+		%var html renderValue = null;
+		%var fn renderField = (rtl::isEmpty(crud_class_name)) ? "" : rtl::method(crud_class_name, "renderField");
+		%if (not rtl::isEmpty(renderField))
+		{
+			%var renderValue = renderField(layout, extends_name, field_name, value, class_settings);
+		}
 		<div class='form_row' @key={ field_name }>
 			<div class='form_label'>
 				{ field["info", extends_name, "label"] ? field["info", extends_name, "label"] : field["label"] }:
 			</div>
 			<div class='form_value'>
-				%if
-				(
-					rtl::exists(render) and
-					(
-						not rtl::exists(can_render) or
-						( rtl::exists(can_render) and can_render(layout, value, class_settings) )
-					)
-				)
+				%if (renderValue !== null)
 				{
-					{ render(layout, rtl::attr(model, model_path), class_settings) }
+					{ renderValue }
 				}
 				%else
 				{

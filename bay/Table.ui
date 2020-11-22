@@ -123,6 +123,7 @@
 	args="LayoutModel layout, TableModel model, Dict params, Dict row, string field_name, int index"
 >
 	%var Dict row = model.rows[index];
+	%var string crud_class_name = params["crud"];
 	%var Collection<FieldInfo> struct = params["struct"];
 	%var FieldInfo field = FieldInfo::getFieldInfo(params["struct"], field_name);
 	%var string extends_name = params["extends_name"] |> default string "table";
@@ -146,29 +147,34 @@
 		}
 		%var class_settings = class_settings
 			.setIm("name", field_name)
-			.setIm("crud_kind", "table")
+			.setIm("crud_kind", extends_name)
 			.setIm("crud_struct", struct)
 			.setIm("crud_field_name", field_name)
 			.setIm("crud_field_info", field)
 			.setIm("crud_index", index)
 			.setIm("crud_item", row)
 			.setIm("crud_table_model", model)
+			.setIm("crud_class_name", class_name)
 		;
 		
 		<!-- Get value -->
 		%var var value = model["rows", index, field_name];
 		
 		<!-- Calculate new value -->
-		%var fn calc = field["calc"];
-		%var fn calc_table = field["info", extends_name, "calc"];
-		%if (calc_table != null){ %var calc = calc_table; }
-		%if (rtl::exists(calc)){ %var value = calc(layout, value, class_settings); }
+		%var fn calcField = (rtl::isEmpty(crud_class_name)) ? "" : rtl::method(crud_class_name, "calcField");
+		%if (not rtl::isEmpty(calcField))
+		{
+			%var value = calcField(layout, extends_name, field_name, value, class_settings);
+		}
 		%var class_settings = class_settings.setIm("value", value);
 		
 		<!-- Calc class name -->
-		%if (not rtl::isString(class_name) and rtl::isFn(class_name))
+		%var fn customClassName = (rtl::isEmpty(crud_class_name)) ? "" :
+			rtl::method(crud_class_name, "customClassName")
+		;
+		%if (not rtl::isEmpty(customClassName))
 		{
-			%var class_name = class_name(layout, value, class_settings);
+			%var class_name = customClassName(layout, extends_name, field_name, value, class_settings);
 		}
 		%var class_name = class_name |> default string "";
 		%var class_settings = class_settings.setIm("crud_class_name", class_name);
@@ -177,24 +183,16 @@
 		%var class_settings = static::patchSettings(layout, field, class_settings, model, params);
 		
 		<!-- Render value -->
-		%var fn render = field["render"];
-		%var fn render_table = field["info", extends_name, "render"];
-		%if (not rtl::isEmpty(render_table)){ %var render = render_table; }
-		
-		%var fn can_render = field["can_render"];
-		%var fn can_render_table = field["info", extends_name, "can_render"];
-		%if (not rtl::isEmpty(can_render_table)){ %var can_render = can_render_table; }
-		
-		%if
-		(
-			rtl::exists(render) and
-			(
-				not rtl::exists(can_render) or
-				( rtl::exists(can_render) and can_render(layout, value, class_settings) )
-			)
-		)
+		%var html renderValue = null;
+		%var fn renderField = (rtl::isEmpty(crud_class_name)) ? "" : rtl::method(crud_class_name, "renderField");
+		%if (not rtl::isEmpty(renderField))
 		{
-			{ render(layout, value, class_settings) }
+			%var renderValue = renderField(layout, extends_name, field_name, value, class_settings);
+		}
+		
+		%if (renderValue !== null)
+		{
+			{ renderValue }
 		}
 		%else
 		{

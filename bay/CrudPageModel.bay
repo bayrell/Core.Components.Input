@@ -25,6 +25,7 @@ use Runtime.Core.RemoteCallRequest;
 use Runtime.Web.RenderContainer;
 use Runtime.Web.RenderDriver;
 use Runtime.Web.Request;
+use Runtime.Web.CRUD.FieldInfo;
 use Runtime.Web.CRUD.FormModel;
 use Runtime.Web.CRUD.TableModel;
 use Runtime.Web.Dialog.DialogModel;
@@ -46,134 +47,18 @@ struct CrudPageModel extends BaseStruct
 	DialogModel dialog_add = new DialogModel();
 	DialogModel dialog_edit = new DialogModel();
 	DialogModel dialog_delete = new DialogModel();
+	
+	/* Crud settings */
+	Collection<FieldInfo> struct = [];
+	Collection<string> filter_fields = [];
+	Collection<string> form_fields = [];
+	Collection<string> table_fields = [];
+	Collection<string> view_fields = [];
+	
+	/* Crud data */
 	Dict item = {};
 	Dict foreigns = {};
 	Dict data = {};
-	
-	
-	
-	/**
-	 * Crud Search
-	 */
-	static async CrudPageModel crudSearch(string object_name, RenderContainer container, fn f = null)
-	{
-		/* Remote call */
-		Dict search_params = static::getCrudSearchParams(container.request);
-		RemoteCallAnswer answer = await container.externalBusCall
-		{
-			"object_name": object_name,
-			"interface_name": "core.crud",
-			"method_name": "search",
-			"data": search_params,
-		};
-		
-		/* Throw exception */
-		if (not answer.isSuccess())
-		{
-			throw new RuntimeException(answer.error_message, answer.error_code);
-		}
-		
-		/* Answer */
-		CrudPageModel page_model = static::newInstance{ "action": "search" };
-		if (answer.isSuccess())
-		{
-			page_model <= table <= rows <= answer.response["items"];
-			page_model <= table <= page <= answer.response["page"];
-			page_model <= table <= pages <= answer.response["pages"];
-			page_model <= table <= limit <= answer.response["limit"];
-			page_model <= foreigns <= answer.response["foreigns"];
-		}
-		
-		/* Set filter items */
-		Dict filter = container.request.query["filter"] |> default Dict null;
-		if (filter)
-		{
-			page_model <= filter <= item <= filter;
-		}
-		
-		if (f)
-		{
-			page_model = f(page_model, answer);
-		}
-		
-		return page_model;
-	}
-	
-	
-	
-	/**
-	 * Crud View
-	 */
-	static async CrudPageModel crudView(string object_name, Dict pk, RenderContainer container, fn f = null)
-	{
-		/* Remote call */
-		RemoteCallAnswer answer = await container.externalBusCall
-		{
-			"object_name": object_name,
-			"interface_name": "core.crud",
-			"method_name": "getItem",
-			"data":
-			{
-				"pk": pk,
-			}
-		};
-		
-		/* Throw exception */
-		if (not answer.isSuccess())
-		{
-			throw new RuntimeException(answer.error_message, answer.error_code);
-		}
-		
-		/* Answer */
-		CrudPageModel page_model = static::newInstance{ "action": "view" };
-		if (answer.isSuccess())
-		{
-			page_model <= item <= answer.response["item"];
-			page_model <= foreigns <= answer.response["foreigns"];
-		}
-		
-		if (f)
-		{
-			page_model = f(page_model, answer);
-		}
-		
-		return page_model;
-	}
-	
-	
-	
-	/**
-	 * Crud search
-	 */
-	pure RemoteCallAnswer getCrudSearchParams(Request request)
-	{
-		Map data = new Map();
-		
-		if (rtl::exists(request.query))
-		{
-			Vector search_filter = new Vector();
-			Dict filter = request.query["filter"] |> default Dict null;
-			if (filter)
-			{
-				Collection keys = filter.keys();
-				for (int i=0; i<keys.count(); i++)
-				{
-					string key_name = keys[i];
-					search_filter.push([key_name, "=", filter[key_name]]);
-				}
-				data.setValue("filter", search_filter.toCollection());
-			}
-			
-			string page = request.query.get("page", 1) - 1;
-			if (page < 0) page = 0;
-			data.setValue("page", page);
-			data.setValue("limit", 20);
-		}
-		
-		return data.toDict();
-	}
-	
-	
 	
 	
 	/**
