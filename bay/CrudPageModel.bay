@@ -60,6 +60,11 @@ struct CrudPageModel extends BaseStruct
 	Dict foreigns = {};
 	Dict data = {};
 	
+	/* Crud error */
+	int error_code = 1;
+	string error_message = "";
+	string error_name = "";
+	
 	
 	/**
 	 * Returns position of item

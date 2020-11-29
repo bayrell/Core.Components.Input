@@ -129,6 +129,10 @@ pure Dict getFormSettings() => {};
  */
 static async RenderContainer crudSearch(RenderContainer container)
 {
+	/* Get page model */
+	CrudPageModel page_model = container.layout.page_model;
+	page_model <= action <= "search";
+	
 	/* Get crud object name */
 	string object_name = static::getCrudObjectName();
 	
@@ -147,12 +151,18 @@ static async RenderContainer crudSearch(RenderContainer container)
 	/* Throw exception */
 	if (not answer.isSuccess())
 	{
-		throw new RuntimeException(answer.error_message, answer.error_code);
+		/* Set error */
+		page_model <= error_code <= answer.code;
+		page_model <= error_message <= answer.error_message;
+		page_model <= error_name <= answer.error_name;
+		
+		/* Set page model */
+		container <= layout <= page_model <= page_model;
+		return container;
 	}
 	
-	/* Get page model */
-	CrudPageModel page_model = container.layout.page_model;
-	page_model <= action <= "search";
+	/* Set error ok */
+	page_model <= error_code <= rtl::ERROR_OK;
 	
 	/* Answer */
 	if (answer.isSuccess())
