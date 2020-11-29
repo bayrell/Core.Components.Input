@@ -72,8 +72,7 @@ struct Dictionary extends Rule
 		/* Get all options */
 		Collection<Dict> options =
 			class_name
-			|> lib::method("select")
-			|> lib::apply()
+			|> lib::applyMethod("select")
 			|> buildSearchQuery
 			|> await .all(db_settings)
 			|> lib::map( Dict (Record item) use (rule) => item.convertToDict(rule.fields) )
