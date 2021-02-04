@@ -123,85 +123,59 @@
 	args="LayoutModel layout, TableModel model, Dict params, Dict row, string field_name, int index"
 >
 	%var Dict row = model.rows[index];
-	%var string crud_class_name = params["crud"];
-	%var Collection<FieldInfo> struct = params["struct"];
 	%var FieldInfo field = FieldInfo::getFieldInfo(params["struct"], field_name);
 	%var string extends_name = params["extends_name"] |> default string "table";
-	
+	%var string crud_class_name = params["crud"] |> default string "";
+
 	%if (field != null)
 	{
-		<!-- Patch field settings -->
-		%var field = static::patchField(layout, field, model, params);
-		
-		<!-- Get class name -->
-		%var string class_name = field["class_name"] |> default string "";
-		%var string class_name_table = field["info", extends_name, "class_name"] |> default string "";
-		%if (not rtl::isEmpty(class_name_table)){ %var class_name = class_name_table; }
-		
-		<!-- Class settings -->
-		%var Dict class_settings = field["class_settings"] |> default Dict {};
-		%var Dict class_settings_table = field["info", extends_name, "class_settings"] |> default Dict null;
-		%if (not rtl::isEmpty(class_settings_table))
+		%var string field_class_name = field["class_name"] |> default string "";
+		%var Dict class_settings =
 		{
-			%var class_settings = class_settings.concat( class_settings_table );
-		}
-		%var class_settings = class_settings
-			.setIm("name", field_name)
-			.setIm("crud_kind", extends_name)
-			.setIm("crud_struct", struct)
-			.setIm("crud_field_name", field_name)
-			.setIm("crud_field_info", field)
-			.setIm("crud_index", index)
-			.setIm("crud_item", row)
-			.setIm("crud_table_model", model)
-			.setIm("crud_class_name", class_name)
-		;
+			"crud_kind": extends_name,
+			"crud_index": index,
+			"crud_item": row,
+			"crud_params": params,
+			"crud_field": field,
+			"crud_field_name": field_name,
+			"crud_table_model": model,
+			"crud_field_class_name": field_class_name,
+			"crud_show": true,
+			"value": model["rows", index, field_name],
+		};
 		
-		<!-- Get value -->
-		%var var value = model["rows", index, field_name];
+		<!-- Extend class settings -->
+		%var class_settings = class_settings.concat(field.class_settings);
 		
-		<!-- Calculate new value -->
-		%var fn calcField = (rtl::isEmpty(crud_class_name)) ? "" : rtl::method(crud_class_name, "calcField");
-		%if (not rtl::isEmpty(calcField))
+		<!-- Custom settings -->
+		%var fn customSettings = (rtl::isEmpty(crud_class_name)) ? "" : rtl::method(crud_class_name, "customSettings");
+		%if (not rtl::isEmpty(customSettings))
 		{
-			%var value = calcField(layout, extends_name, field_name, value, class_settings);
+			%var class_settings = customSettings(layout, class_settings);
 		}
-		%var class_settings = class_settings.setIm("value", value);
-		
-		<!-- Calc class name -->
-		%var fn customClassName = (rtl::isEmpty(crud_class_name)) ? "" :
-			rtl::method(crud_class_name, "customClassName")
-		;
-		%if (not rtl::isEmpty(customClassName))
-		{
-			%var class_name = customClassName(layout, extends_name, field_name, value, class_settings);
-		}
-		%var class_name = class_name |> default string "";
-		%var class_settings = class_settings.setIm("crud_class_name", class_name);
-		
-		<!-- Patch settings -->
-		%var class_settings = static::patchSettings(layout, field, class_settings, model, params);
 		
 		<!-- Render value -->
 		%var html renderValue = null;
 		%var fn renderField = (rtl::isEmpty(crud_class_name)) ? "" : rtl::method(crud_class_name, "renderField");
 		%if (not rtl::isEmpty(renderField))
 		{
-			%var renderValue = renderField(layout, extends_name, field_name, value, class_settings);
+			%var renderValue = renderField(layout, class_settings);
 		}
 		
-		%if (renderValue !== null)
+		<!-- Render Field -->
+		%var bool crud_show = class_settings["crud_show"];
+		%var field_class_name = class_settings["crud_field_class_name"];
+		%if (crud_show)
 		{
-			{ renderValue }
-		}
-		%else
-		{
-			%if (not rtl::isEmpty(class_name))
+			%if (renderValue !== null)
 			{
-				<{class_name} @bind=["rows", index, field_name] @key={ field_name } ...class_settings />
+				{ renderValue }
+			}
+			%else if (not rtl::isEmpty(field_class_name))
+			{
+				<{field_class_name} @bind=["rows", index, field_name] @key={ field_name } ...class_settings />
 			}
 		}
-		
 	}
 </template>
 

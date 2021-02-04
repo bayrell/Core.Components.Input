@@ -24,14 +24,15 @@
 <use name="Runtime.lib" />
 <use name="Runtime.DateTime" />
 <use name="Runtime.Exceptions.RuntimeException" />
-<use name="Runtime.Core.Message" />
-<use name="Runtime.Core.RemoteCallAnswer" />
-<use name="Runtime.Core.Request" />
-<use name="Runtime.Web.LayoutModel" />
-<use name="Runtime.Web.RenderContainer" />
-<use name="Runtime.Web.RenderDriver" />
-<use name="Runtime.Web.Route" />
-<use name="Runtime.Web.Events.MouseClickEvent" />
+<use name="Runtime.Web.Message" />
+<use name="Runtime.Web.App.LayoutModel" />
+<use name="Runtime.Web.App.RemoteCallAnswer" />
+<use name="Runtime.Web.App.RenderContainer" />
+<use name="Runtime.Web.App.Request" />
+<use name="Runtime.Web.App.Route" />
+<use name="Runtime.Web.App.RouteList" />
+<use name="Runtime.Web.App.RouteMiddleware" />
+<use name="Runtime.Web.App.WebApp" />
 <use name="Runtime.Web.CRUD.CrudFilter" component="true" />
 <use name="Runtime.Web.CRUD.CrudPageModel" />
 <use name="Runtime.Web.CRUD.FieldInfo" />
@@ -41,6 +42,7 @@
 <use name="Runtime.Web.CRUD.Pagination" component="true" />
 <use name="Runtime.Web.CRUD.Table" component="true" />
 <use name="Runtime.Web.CRUD.TableModel" />
+<use name="Runtime.Web.Events.MouseClickEvent" />
 <use name="Runtime.Web.Dialog.Dialog" component="true" />
 <use name="Runtime.Web.Dialog.DialogEvent" />
 <use name="Runtime.Web.Dialog.DialogModel" />
@@ -130,7 +132,9 @@ pure Dict getFormSettings() => {};
 static async RenderContainer crudSearch(RenderContainer container)
 {
 	/* Get page model */
-	CrudPageModel page_model = container.layout.page_model;
+	CrudPageModel page_model = container.layout.model[container.layout.page_class]
+		|> default CrudPageModel new CrudPageModel
+	;
 	page_model <= action <= "search";
 	
 	/* Get crud object name */
@@ -148,22 +152,6 @@ static async RenderContainer crudSearch(RenderContainer container)
 		"data": search_params,
 	};
 	
-	/* Throw exception */
-	if (not answer.isSuccess())
-	{
-		/* Set error */
-		page_model <= error_code <= answer.code;
-		page_model <= error_message <= answer.error_message;
-		page_model <= error_name <= answer.error_name;
-		
-		/* Set page model */
-		container <= layout <= page_model <= page_model;
-		return container;
-	}
-	
-	/* Set error ok */
-	page_model <= error_code <= rtl::ERROR_OK;
-	
 	/* Answer */
 	if (answer.isSuccess())
 	{
@@ -174,6 +162,15 @@ static async RenderContainer crudSearch(RenderContainer container)
 		page_model <= foreigns <= answer.response["foreigns"];
 	}
 	
+	/* Exception */
+	else
+	{
+		page_model <= error_code <= answer.code;
+		page_model <= error_message <= answer.error_message;
+		page_model <= error_name <= answer.error_name;
+		page_model <= error_code <= rtl::ERROR_OK;
+	}
+	
 	/* Set filter items */
 	Dict filter = container.request.query["filter"] |> default Dict null;
 	if (filter)
@@ -182,7 +179,7 @@ static async RenderContainer crudSearch(RenderContainer container)
 	}
 	
 	/* Set page model */
-	container <= layout <= page_model <= page_model;
+	container = container.setPage(container.layout.page_class, page_model);
 	
 	/* Extend RenderContainer */
 	container = await static::extendRenderContainer(container, answer);
@@ -197,6 +194,12 @@ static async RenderContainer crudSearch(RenderContainer container)
  */
 static async RenderContainer crudView(RenderContainer container)
 {
+	/* Get page model */
+	CrudPageModel page_model = container.layout.model[container.layout.page_class]
+		|> default CrudPageModel new CrudPageModel
+	;
+	page_model <= action <= "view";
+	
 	/* Get crud object name */
 	string object_name = static::getCrudObjectName();
 	Dict pk = null;
@@ -213,25 +216,24 @@ static async RenderContainer crudView(RenderContainer container)
 		}
 	};
 	
-	/* Throw exception */
-	if (not answer.isSuccess())
-	{
-		throw new RuntimeException(answer.error_message, answer.error_code);
-	}
-	
-	/* Get page model */
-	CrudPageModel page_model = container.layout.page_model;
-	page_model <= action <= "view";
-	
 	/* Answer */
 	if (answer.isSuccess())
 	{
 		page_model <= item <= answer.response["item"];
 		page_model <= foreigns <= answer.response["foreigns"];
+		page_model <= error_code <= rtl::ERROR_OK;
+	}
+	
+	/* Exception */
+	else
+	{
+		page_model <= error_code <= answer.error_code;
+		page_model <= error_message <= answer.error_message;
+		page_model <= error_name <= answer.error_name;
 	}
 	
 	/* Set page model */
-	container <= layout <= page_model <= page_model;
+	container = container.setPage(container.layout.page_class, page_model);
 	
 	/* Extend RenderContainer */
 	container = await static::extendRenderContainer(container, answer);
@@ -246,11 +248,20 @@ static async RenderContainer crudView(RenderContainer container)
  */
 static async RenderContainer extendRenderContainer(RenderContainer container, RemoteCallAnswer answer)
 {
-	container <= layout <= page_model <= struct <= static::getStruct(container);
-	container <= layout <= page_model <= filter_fields <= static::getFilterFields(container);
-	container <= layout <= page_model <= form_fields <= static::getFormFields(container);
-	container <= layout <= page_model <= table_fields <= static::getTableFields(container);
-	container <= layout <= page_model <= view_fields <= static::getViewFields(container);
+	CrudPageModel page_model = container.layout.model[container.layout.page_class]
+		|> default CrudPageModel new CrudPageModel
+	;
+	
+	/* Change page model */
+	page_model <= struct <= static::getStruct(container);
+	page_model <= filter_fields <= static::getFilterFields(container);
+	page_model <= form_fields <= static::getFormFields(container);
+	page_model <= table_fields <= static::getTableFields(container);
+	page_model <= view_fields <= static::getViewFields(container);
+	
+	/* Set page model */
+	container = container.setPage(container.layout.page_class, page_model);
+	
 	return container;
 }
 
@@ -347,6 +358,7 @@ pure RemoteCallAnswer getCrudSearchParams(Request request)
 		{
 			<div class='filter'>
 				<CrudFilter @name="filter" struct={ struct } fields={ filter_fields } extends_name="filter"
+					crud={ static::getCurrentClassName() }
 					@event:FormEvent="onFormEvent"
 				/>
 			</div>
@@ -421,23 +433,25 @@ pure RemoteCallAnswer getCrudSearchParams(Request request)
 </template>
 
 
-<template name="renderDate" args="LayoutModel layout, DateTime value, Dict settings">
-	%var string crud_kind = settings["crud_kind"] |> default string "";
-	%var string class_name = settings["crud_class_name"] |> default string "";
+<template name="renderDate" args="LayoutModel layout, Dict crud_settings">
+	%var string crud_kind = crud_settings["crud_kind"] |> default string "";
+	%var string class_name = crud_settings["crud_class_name"] |> default string "";
+	%var var value = crud_settings["value"];
 	{ value != null ? value.getDate( layout.tz ) : "" }
 </template>
 
 
-<template name="renderDateTime" args="LayoutModel layout, DateTime value, Dict settings">
-	%var string crud_kind = settings["crud_kind"] |> default string "";
-	%var string class_name = settings["crud_class_name"] |> default string "";
+<template name="renderDateTime" args="LayoutModel layout, Dict crud_settings">
+	%var string crud_kind = crud_settings["crud_kind"] |> default string "";
+	%var string class_name = crud_settings["crud_class_name"] |> default string "";
+	%var var value = crud_settings["value"];
 	{ value != null ? value.getDBTime( layout.tz ) : "" }
 </template>
 
 
-<template name="renderNumber" args="LayoutModel layout, var value, Dict settings">
-	%var TableModel table_model = settings["crud_table_model"];
-	%var int index = settings["crud_index"];
+<template name="renderNumber" args="LayoutModel layout, Dict crud_settings">
+	%var TableModel table_model = crud_settings["crud_table_model"];
+	%var int index = crud_settings["crud_index"];
 	%if (table_model)
 	{
 		{ table_model.page * table_model.limit + index + 1 }
@@ -445,17 +459,17 @@ pure RemoteCallAnswer getCrudSearchParams(Request request)
 </template>
 
 
-<template name="renderButtons" args="LayoutModel layout, var value, Dict settings">
-	{ static::renderButton(layout, settings, "edit") }
-	{ static::renderButton(layout, settings, "delete") }
+<template name="renderButtons" args="LayoutModel layout, Dict crud_settings">
+	{ static::renderButton(layout, crud_settings, "edit") }
+	{ static::renderButton(layout, crud_settings, "delete") }
 </template>
 
 
-<template name="renderButton" args="LayoutModel layout, Dict settings, string button_type, Dict options = null">
-	%var Collection<FieldInfo> struct = settings["crud_struct"];
-	%var TableModel table_model = settings["crud_table_model"];
-	%var Dict item = settings["crud_item"];
-	%var int index = settings["crud_index"];
+<template name="renderButton" args="LayoutModel layout, Dict crud_settings, string button_type, Dict options = null">
+	%var Collection<FieldInfo> struct = crud_settings["crud_params", "struct"];
+	%var TableModel table_model = crud_settings["crud_table_model"];
+	%var Dict item = crud_settings["crud_item"];
+	%var int index = crud_settings["crud_index"];
 	%if (button_type == "edit")
 	{
 		<Button type='small' data-index={ index } data-pk={ static::getPrimaryKey(struct, item) }
@@ -480,9 +494,9 @@ pure RemoteCallAnswer getCrudSearchParams(Request request)
 	}
 	%else if (button_type == "delete")
 	{
-		%var TableModel table_model = settings["crud_table_model"];
-		%var Dict item = settings["crud_item"];
-		%var int index = settings["crud_index"];
+		%var TableModel table_model = crud_settings["crud_table_model"];
+		%var Dict item = crud_settings["crud_item"];
+		%var int index = crud_settings["crud_index"];
 		<Button type='small danger' data-index={ index } data-pk={ static::getPrimaryKey(struct, item) }
 			@event:MouseClickEvent="onRowDeleteClick" @key="delete"
 		>
@@ -668,7 +682,7 @@ async void onFormEvent(Message<FormEvent> msg)
 	
 	if (e.event == FormEvent::ACTION_SEARCH)
 	{
-		LayoutModel layout = this.controller.layout;
+		LayoutModel layout = this.driver.layout;
 		CrudPageModel model = this.model();
 		Dict params = this.params;
 		Collection fields = model.filter_fields;
@@ -697,7 +711,7 @@ async void onFormEvent(Message<FormEvent> msg)
 		/* Clear page */
 		uri = rs::url_get_add(uri, "page", "");
 		
-		await this.pageOpen(uri);
+		await this.openUrl(uri);
 	}
 	
 	else if (msg.sender == this.form_add)
@@ -739,7 +753,7 @@ async void onItemCreate()
 	this.form_add.update("setWaitMessage");
 	
 	/* Send api */
-	RemoteCallAnswer answer = await RenderDriver::externalBusCall
+	RemoteCallAnswer answer = await WebApp::externalBusCall
 	{
 		"object_name": static::getCrudObjectName(),
 		"interface_name": "core.crud",
@@ -787,7 +801,7 @@ async void onItemUpdate()
 	this.form_edit.update("setWaitMessage");
 	
 	/* Send api */
-	RemoteCallAnswer answer = await RenderDriver::externalBusCall
+	RemoteCallAnswer answer = await WebApp::externalBusCall
 	{
 		"object_name": static::getCrudObjectName(),
 		"interface_name": "core.crud",
@@ -834,7 +848,7 @@ async void onItemDelete(Dict item, string kind)
 	Dict pk = static::getPrimaryKey(struct, item);
 	
 	/* Send api */
-	RemoteCallAnswer answer = await RenderDriver::externalBusCall
+	RemoteCallAnswer answer = await WebApp::externalBusCall
 	{
 		"object_name": static::getCrudObjectName(),
 		"interface_name": "core.crud",

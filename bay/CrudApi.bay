@@ -462,7 +462,7 @@ class CrudApi extends BaseObject
 	{
 		if (not this.fields_errors.has(field_name))
 		{
-			this.fields_errors.set(field_name, new Vector());
+			this.fields_errors.setValue(field_name, new Vector());
 		}
 		Vector<string> errors = this.fields_errors[field_name];
 		errors.pushValue(error);
@@ -549,14 +549,14 @@ class CrudApi extends BaseObject
 	{
 		/* Get ORM class name */
 		string class_name = static::getORM();
-		fn select = rtl::method(class_name, "select");
-		fn getFilterByPrimaryKey = rtl::method(class_name, "getFilterByPrimaryKey");
 		
-		Collection<list> filter = getFilterByPrimaryKey(pk) |> this.extendSearchFilter;
+		Collection<list> filter = rtl::methodApply(class_name, "getFilterByPrimaryKey", [pk])
+			|> this.extendSearchFilter
+		;
 		if (filter == null) return null;
 		
 		/* Execute query */
-		Record res = select()
+		Record res = rtl::methodApply(class_name, "select")
 			|> .filter(filter)
 			|> this.buildSearchQuery
 			|> .asRecord(true)
@@ -588,8 +588,7 @@ class CrudApi extends BaseObject
 		string class_name = static::getORM();
 		
 		/* Execute query */
-		QueryBuilder q = class_name
-			|> lib::applyMethod("select")
+		QueryBuilder q = rtl::applyMethod(class_name, "select")
 			|> this.buildSearchQuery
 			|> .calcFoundRows(true)
 		;
@@ -814,17 +813,14 @@ class CrudApi extends BaseObject
 	{
 		/* Get ORM class name */
 		string class_name = static::getORM();
-		fn createInstance = rtl::method(class_name, "createInstance");
-		fn getPrimaryKey = rtl::method(class_name, "getPrimaryKey");
-		fn save = rtl::method(class_name, "save");
 		
 		/* Convert item */
 		Dict update_item = await this.convertItem(this.item);
 		
 		/* Save item */
-		this.new_item = createInstance(update_item);
+		this.new_item = rtl::methodApply(class_name, "createInstance", [update_item]);
 		this.new_item = await this.patchItem(this.new_item);
-		this.pk = await save(this.new_item);
+		this.pk = await rtl::methodApplyAsync(class_name, "save", [this.new_item]);
 		
 		/* Save foreign items */
 		Dict item = this.item.concat(this.pk);
@@ -846,8 +842,7 @@ class CrudApi extends BaseObject
 		if (this.old_item)
 		{
 			string class_name = static::getORM();
-			fn getPrimaryKey = rtl::method(class_name, "getPrimaryKey");
-			this.pk = getPrimaryKey(this.old_item);
+			this.pk = rtl::methodApply(class_name, "getPrimaryKey", [this.old_item]);
 			this.action = "update";
 			
 			/* Update existing item */
@@ -951,14 +946,11 @@ class CrudApi extends BaseObject
 		
 		/* Get ORM class name */
 		string class_name = static::getORM();
-		fn getPrimaryKey = rtl::method(class_name, "getPrimaryKey");
-		fn change = rtl::method(class_name, "change");
-		fn save = rtl::method(class_name, "save");
 		
 		/* Save item */
-		this.new_item = change(this.old_item, update_item);
+		this.new_item = rtl::methodApply(class_name, "change", [this.old_item, update_item]);
 		this.new_item = await this.patchItem(this.new_item);
-		this.pk = await save(this.new_item);
+		this.pk = await rtl::methodApplyAsync(class_name, "save", [this.new_item]);
 		
 		/* Save foreign items */
 		item = this.item.concat(this.pk);
@@ -1087,10 +1079,8 @@ class CrudApi extends BaseObject
 		string class_name = static::getORM();
 		if (this.isForceDelete())
 		{
-			fn delete = rtl::method(class_name, "delete");
-			
 			/* Delete */
-			await delete(this.old_item);
+			this.pk = await rtl::methodApplyAsync(class_name, "delete", [this.old_item]);
 		}
 		else
 		{
@@ -1100,8 +1090,7 @@ class CrudApi extends BaseObject
 			
 			/* Save item */
 			string class_name = static::getORM();
-			fn save = rtl::method(class_name, "save");
-			await save(old_item);
+			await rtl::methodApplyAsync(class_name, "save", [old_item]);
 		}
 	}
 	

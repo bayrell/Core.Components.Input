@@ -21,7 +21,7 @@
 	module="Runtime.Web.CRUD" model="Runtime.Web.CRUD.ViewModel"
 >
 
-
+<use name="Runtime.Web.CRUD.FieldInfo" />
 
 <template name="renderView" args="LayoutModel layout, CrudPageModel model, Dict params">
 	%var Collection<FieldInfo> struct = static::getStruct(layout, model, params);

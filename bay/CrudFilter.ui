@@ -76,7 +76,7 @@
 
 
 <template name="renderButtons">
-	<div class='form_buttons'>
+	<div class="form_buttons">
 		<Button @event:MouseClickEvent="onSearchButtonClick">{ _("Runtime.Web.CRUD", "Search") }</Button>
 	</div>
 </template>

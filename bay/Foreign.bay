@@ -42,7 +42,7 @@ struct Foreign extends BaseStruct
 	{
 		Foreign foreign = new Foreign();
 		foreign <= class_name <= class_name;
-		foreign <= class_info <= RuntimeUtils::getClassIntrospectionWithParents(class_name);
+		/*foreign <= class_info <= RuntimeUtils::getClassIntrospectionWithParents(class_name);*/
 		return foreign;
 	}
 	

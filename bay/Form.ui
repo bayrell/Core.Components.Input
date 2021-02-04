@@ -114,7 +114,82 @@
 	</div>
 </template>
 
+
 <template name="renderRow" args="LayoutModel layout, FormModel model, Dict params, string field_name">
+
+	%var FieldInfo field = FieldInfo::getFieldInfo(params["struct"], field_name);
+	%var string extends_name = params["extends_name"] |> default string "form";
+	%var string crud_class_name = params["crud"] |> default string "";
+
+	%if (field != null)
+	{
+		%var Collection<string> model_path = static::getBindPath(field);
+		%var string field_class_name = field["class_name"] |> default string "";
+		%var Dict class_settings =
+		{
+			"crud_kind": extends_name,
+			"crud_item": model["item"],
+			"crud_params": params,
+			"crud_field": field,
+			"crud_field_name": field_name,
+			"crud_form_model": model,
+			"crud_model_path": model_path,
+			"crud_field_class_name": field_class_name,
+			"crud_show": true,
+			"value": model["item", field_name],
+		};
+		
+		<!-- Extend class settings -->
+		%var class_settings = class_settings.concat(field.class_settings);
+		
+		<!-- Custom settings -->
+		%var fn customSettings = (rtl::isEmpty(crud_class_name)) ? "" : rtl::method(crud_class_name, "customSettings");
+		%if (not rtl::isEmpty(customSettings))
+		{
+			%var class_settings = customSettings(layout, class_settings);
+		}
+		
+		<!-- Render value -->
+		%var html renderValue = null;
+		%var fn renderField = (rtl::isEmpty(crud_class_name)) ? "" : rtl::method(crud_class_name, "renderField");
+		%if (not rtl::isEmpty(renderField))
+		{
+			%var renderValue = renderField(layout, class_settings);
+		}
+		
+		<!-- Render Field -->
+		%var bool crud_show = class_settings["crud_show"];
+		%var model_path = class_settings["crud_model_path"];
+		%var field_class_name = class_settings["crud_field_class_name"];
+		%if (crud_show)
+		{
+			<div class='form_row' @key={ field_name }>
+				<div class='form_label'>
+					{ field["info", extends_name, "label"] ? field["info", extends_name, "label"] : field["label"] }:
+				</div>
+				<div class='form_value'>
+					%if (renderValue !== null)
+					{
+						{ renderValue }
+					}
+					%else if (not rtl::isEmpty(field_class_name))
+					{
+						<{field_class_name} @bind={ model_path } @key={ field_name } name={ field_name }
+							@event:ChangeEvent="onItemChange" ...class_settings />
+					}
+				</div>
+				{ static::renderFieldError(layout, model, field_name) }
+			</div>
+		}
+	}
+
+</template>
+
+
+
+
+
+<template name="renderRowOld" args="LayoutModel layout, FormModel model, Dict params, string field_name">
 	
 	%var Collection<FieldInfo> struct = params["struct"];
 	%var string crud_class_name = params["crud"];
@@ -210,7 +285,7 @@
 <template name="renderField" args="LayoutModel layout, TableModel model, Dict class_settings">
 	%var string class_name = class_settings["crud_class_name"];
 	%var string field_name = class_settings["crud_field_name"];
-	%var Collection<string> model_path = class_settings["crud_form_model_path"];
+	%var Collection<string> model_path = class_settings["crud_model_path"];
 	%if (not rtl::isEmpty(class_name))
 	{
 		<{class_name} @bind={ model_path } @key={ field_name }
@@ -354,7 +429,7 @@ async void onItemChange(Message<ChangeEvent> msg)
 	string field_name = params["name"];
 	string new_value = msg.data.value;
 	string old_value = msg.data.old_value;
-	var model_path = params["crud_form_model_path"];
+	var model_path = params["crud_model_path"];
 	
 	FormEvent event = new FormEvent
 	{
