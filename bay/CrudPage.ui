@@ -398,7 +398,7 @@ pure RemoteCallAnswer getCrudSearchParams(Request request)
 	
 	<div class='dialogs'>
 		<Dialog @name="dialog_add" style={ DialogModel::STYLE_CONTENT } show_buttons={ false }
-			...dialog_form_settings
+			@watch="form_add" ...dialog_form_settings
 		>
 			<{form_class_name} @name="form_add" action="add" struct={ struct } fields={ form_add_fields }
 				crud={ static::getCurrentClassName() }
@@ -406,7 +406,7 @@ pure RemoteCallAnswer getCrudSearchParams(Request request)
 			/>
 		</Dialog>
 		<Dialog @name="dialog_edit" style={ DialogModel::STYLE_CONTENT } show_buttons={ false }
-			...dialog_form_settings
+			@watch="form_edit" ...dialog_form_settings
 		>
 			<{form_class_name} @name="form_edit" action="edit" struct={ struct } fields={ form_edit_fields }
 				crud={ static::getCurrentClassName() }

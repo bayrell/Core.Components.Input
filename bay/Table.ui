@@ -148,18 +148,16 @@
 		%var class_settings = class_settings.concat(field.class_settings);
 		
 		<!-- Custom settings -->
-		%var fn customSettings = (rtl::isEmpty(crud_class_name)) ? "" : rtl::method(crud_class_name, "customSettings");
-		%if (not rtl::isEmpty(customSettings))
+		%if (rtl::method_exists(crud_class_name, "customSettings"))
 		{
-			%var class_settings = customSettings(layout, class_settings);
+			%var class_settings = rtl::methodApply(crud_class_name, "customSettings", [layout, class_settings]);
 		}
 		
 		<!-- Render value -->
 		%var html renderValue = null;
-		%var fn renderField = (rtl::isEmpty(crud_class_name)) ? "" : rtl::method(crud_class_name, "renderField");
-		%if (not rtl::isEmpty(renderField))
+		%if (rtl::method_exists(crud_class_name, "renderField"))
 		{
-			%var renderValue = renderField(layout, class_settings);
+			%var renderValue = rtl::methodApply(crud_class_name, "renderField", [layout, class_settings]);
 		}
 		
 		<!-- Render Field -->
