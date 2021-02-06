@@ -18,6 +18,7 @@
 
 namespace Runtime.Web.CRUD;
 
+use Runtime.lib;
 use Runtime.BaseStruct;
 use Runtime.Exceptions.RuntimeException;
 use Runtime.Core.RemoteCallAnswer;
@@ -58,6 +59,9 @@ struct CrudPageModel extends BaseStruct
 	/* Crud data */
 	Dict item = {};
 	Dict foreigns = {};
+	Dict selected = null;
+	
+	/* Additional data */
 	Dict data = {};
 	
 	/* Crud error */
@@ -126,5 +130,67 @@ struct CrudPageModel extends BaseStruct
 	{
 		model <= table <= model.table::removeItem(model.table, find)
 		return model;
+	}
+	
+	
+	
+	/**
+	 * Select item
+	 */
+	pure CrudPageModel select(CrudPageModel model, Dict pk)
+	{
+		model <= selected <= pk;
+		return model;
+	}
+	
+	
+	
+	/**
+	 * Returns true if selected
+	 */
+	bool isSelected(Dict item)
+	{
+		Dict pk = this.getPrimaryKey(item);
+		if (pk.equal(this.selected)) return true;
+		return false;
+	}
+	
+	
+	
+	/**
+	 * Returns position of selected item
+	 */
+	int getSelectedPos()
+	{
+		return this.table::findPos(this.table, this.selected);
+	}
+	
+	
+	
+	/**
+	 * Returns selected item
+	 */
+	Dict getSelectedItem()
+	{
+		int index = this.table::findPos(this.table, this.selected);
+		return this.table.rows[index];
+	}
+	
+	
+	/**
+	 * Returns primary key by item
+	 */
+	Dict getPrimaryKey(Dict item)
+	{
+		Collection<FieldInfo> st = this.struct;
+		Map pk = new Map();
+		st = st.filter( lib::equalAttr("primary", true) );
+		for (int i=0; i < st.count(); i++)
+		{
+			FieldInfo field = st[i];
+			var value = item[field.api_name];
+			pk.setValue(field.api_name, value);
+		}
+		return pk.toDict();
 	}
 }

@@ -36,6 +36,7 @@ struct TableModel extends BaseStruct
 	 */
 	pure int findPos(TableModel model, Dict find)
 	{
+		if (find == null) return -1;
 		Collection<string> keys = find.keys();
 		return model.rows.find
 		(
