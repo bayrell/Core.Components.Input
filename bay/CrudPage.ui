@@ -347,12 +347,9 @@ pure RemoteCallAnswer getCrudSearchParams(Request request)
 	%var Collection<string> form_fields = model.form_fields;
 	%var Collection<string> filter_fields = model.filter_fields;
 	%var Collection<string> table_fields = model.table_fields;
-	%var Dict messages = static::getMessages();
 	
 	<div class='search' @key='search'>
-		<div class='buttons'>
-			<Button @event:MouseClickEvent="onShowAddClick" type="primary">{ messages["add"] }</Button>
-		</div>
+		{ static::renderTopButtons(layout, model, params) }
 		
 		%if (rtl::exists(filter_fields))
 		{
@@ -378,7 +375,12 @@ pure RemoteCallAnswer getCrudSearchParams(Request request)
 	</div>
 </template>
 
-
+<template name="renderTopButtons" args="LayoutModel layout, CrudPageModel model, Dict params">
+	%var Dict messages = static::getMessages();
+	<div class='top_buttons'>
+		<Button @event:MouseClickEvent="onShowAddClick" type="primary">{ messages["add"] }</Button>
+	</div>
+</template>
 
 <template name="renderDialog" args="LayoutModel layout, CrudPageModel model, Dict params">
 	
