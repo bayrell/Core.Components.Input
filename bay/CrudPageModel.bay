@@ -50,11 +50,11 @@ struct CrudPageModel extends BaseStruct
 	DialogModel dialog_delete = new DialogModel();
 	
 	/* Crud settings */
-	Collection<FieldInfo> struct = [];
-	Collection<string> filter_fields = [];
-	Collection<string> form_fields = [];
-	Collection<string> table_fields = [];
-	Collection<string> view_fields = [];
+	Collection<FieldInfo> struct = null;
+	Collection<string> filter_fields = null;
+	Collection<string> form_fields = null;
+	Collection<string> table_fields = null;
+	Collection<string> view_fields = null;
 	
 	/* Crud data */
 	Dict item = {};
@@ -62,7 +62,7 @@ struct CrudPageModel extends BaseStruct
 	Dict selected = null;
 	
 	/* Additional data */
-	Dict data = {};
+	Dict widget = {};
 	
 	/* Crud error */
 	int error_code = 1;
