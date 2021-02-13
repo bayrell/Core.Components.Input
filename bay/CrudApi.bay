@@ -325,6 +325,7 @@ class CrudApi extends BaseObject
 		{
 			response =
 			{
+				"action": this.action,
 				"filter": this.filter,
 				"page": this.page,
 				"limit": this.limit,
@@ -337,6 +338,7 @@ class CrudApi extends BaseObject
 		{
 			response =
 			{
+				"action": this.action,
 				"pk": this.pk,
 				"options": {},
 			};
@@ -345,6 +347,7 @@ class CrudApi extends BaseObject
 		{
 			response =
 			{
+				"action": this.action,
 				"pk": this.pk,
 				"item": this.item,
 			};
@@ -353,6 +356,7 @@ class CrudApi extends BaseObject
 		{
 			response =
 			{
+				"action": this.action,
 				"pk": this.pk,
 				"item": this.item,
 			};
@@ -361,6 +365,7 @@ class CrudApi extends BaseObject
 		{
 			response =
 			{
+				"action": this.action,
 				"pk": this.pk,
 			};
 		}
