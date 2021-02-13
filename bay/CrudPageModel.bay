@@ -58,7 +58,7 @@ struct CrudPageModel extends BaseStruct
 	
 	/* Crud data */
 	Dict item = {};
-	Dict foreigns = {};
+	Dict options = {};
 	Dict selected = null;
 	
 	/* Additional data */

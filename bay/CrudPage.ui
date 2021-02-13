@@ -159,7 +159,7 @@ static async RenderContainer crudSearch(RenderContainer container)
 		page_model <= table <= page <= answer.response["page"];
 		page_model <= table <= pages <= answer.response["pages"];
 		page_model <= table <= limit <= answer.response["limit"];
-		page_model <= foreigns <= answer.response["foreigns"];
+		page_model <= options <= answer.response["options"];
 	}
 	
 	/* Exception */
@@ -220,7 +220,7 @@ static async RenderContainer crudView(RenderContainer container)
 	if (answer.isSuccess())
 	{
 		page_model <= item <= answer.response["item"];
-		page_model <= foreigns <= answer.response["foreigns"];
+		page_model <= options <= answer.response["options"];
 		page_model <= error_code <= rtl::ERROR_OK;
 	}
 	

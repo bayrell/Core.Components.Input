@@ -34,10 +34,6 @@ use Runtime.Backend.ApiList;
 use Runtime.Backend.ApiMethod;
 use Runtime.Web.CRUD.CrudApi;
 use Runtime.Web.CRUD.FieldInfo;
-use Runtime.Web.CRUD.Foreign;
-use Runtime.Web.CRUD.ForeignField;
-use Runtime.Web.CRUD.Rules.Dictionary;
-use Runtime.Web.CRUD.Rules.ManyToMany;
 use Runtime.Web.CRUD.Rules.Rule;
 
 
@@ -46,8 +42,6 @@ class CrudApi extends BaseObject
 	string action = "";
 	RemoteCallAnswer answer = null;
 	RemoteCallRequest request = null;
-	Collection<FieldInfo> struct = null;
-	Foreign foreign = null;
 	
 	/* Search */
 	Dict find = null;
@@ -70,9 +64,16 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Returns crud table name
+	 * Returns orm class name
 	 */
-	pure string getTableName() => "";
+	pure string getORM() => "";
+	
+	
+	
+	/**
+	 * Returns current rules
+	 */
+	Collection<Rule> rules() => [];
 	
 	
 	
@@ -142,24 +143,6 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Returns table field value
-	 */
-	Collection<FieldInfo> settings() => [];
-	
-	
-	
-	/**
-	 * Returns struct
-	 */
-	Collection<FieldInfo> getStruct()
-	{
-		if (this.struct == null) this.struct = this.settings();
-		return this.struct;
-	}
-	
-	
-	
-	/**
 	 * Returns default order
 	 */
 	Collection<Collection<string>> getDefaultOrder() =>
@@ -216,7 +199,7 @@ class CrudApi extends BaseObject
 		for (int i=0; i<rules.count(); i++)
 		{
 			Rule rule = rules[i];
-			filter = rule::convertFilter(rule, filter);
+			filter = rule.convertSearchFilter(this, filter);
 		}
 		
 		return filter;
@@ -234,15 +217,20 @@ class CrudApi extends BaseObject
 	/**
 	 * Convert item before save to database
 	 */
-	async Dict convertItem(Dict item)
+	async Dict convertItem(Dict old_item)
 	{
+		Dict new_item = old_item;
 		Collection<Rule> rules = this.rules();
 		for (int i=0; i<rules.count(); i++)
 		{
 			Rule rule = rules[i];
-			item = rule::convertItem(rule, item, this.action);
+			new_item = await rule.convertItem(this, new_item, old_item);
 		}
-		return item;
+		if (not this.isForceDelete())
+		{
+			new_item <= is_deleted <= false;
+		}
+		return new_item;
 	}
 	
 	
@@ -257,39 +245,16 @@ class CrudApi extends BaseObject
 	/**
 	 * Process item before response
 	 */
-	async Dict processItem(Dict item)
+	async Dict processItem(Dict old_item)
 	{
+		Dict new_item = old_item;
 		Collection<Rule> rules = this.rules();
 		for (int i=0; i<rules.count(); i++)
 		{
 			Rule rule = rules[i];
-			item = rule::processItem(rule, item, this.action);
-			if (item instanceof ManyToMany)
-			{
-				item = rule::processManyToMany(rule, this.foreign, item);
-			}
+			new_item = await rule.processItem(this, new_item, old_item);
 		}
-		return item;
-	}
-	
-	
-	
-	/**
-	 * Process items
-	 */
-	async void processItems()
-	{
-		if (this.action == "search")
-		{
-			Vector new_items = new Vector();
-			for (int i=0; i<this.items.count(); i++)
-			{
-				Dict row = this.items[i];
-				row = await this.processItem(row);
-				new_items.pushValue(row);
-			}
-			this.items = new_items.toCollection();
-		}
+		return new_item;
 	}
 	
 	
@@ -299,6 +264,22 @@ class CrudApi extends BaseObject
 	 */
 	async void init()
 	{
+		Collection<Rule> rules = this.rules();
+		for (int i=0; i<rules.count(); i++)
+		{
+			Rule rule = rules[i];
+			await rule.init(this);
+		}
+	}
+	
+	
+	
+	/**
+	 * Returns true if can query
+	 */
+	async bool canQuery()
+	{
+		return true;
 	}
 	
 	
@@ -308,21 +289,11 @@ class CrudApi extends BaseObject
 	 */
 	async void beforeQuery()
 	{
-		/* Init foreign */
-		string class_name = static::getORM();
-		this.foreign = Foreign::init(class_name);
-		
-		if (this.action == "search")
+		Collection<Rule> rules = this.rules();
+		for (int i=0; i<rules.count(); i++)
 		{
-		}
-		else if (this.action == "create")
-		{
-		}
-		else if (this.action == "update")
-		{
-		}
-		else if (this.action == "delete")
-		{
+			Rule rule = rules[i];
+			await rule.beforeQuery(this);
 		}
 	}
 	
@@ -333,105 +304,132 @@ class CrudApi extends BaseObject
 	 */
 	async void afterQuery()
 	{
-		/* Get foreign keys */
+		Collection<Rule> rules = this.rules();
+		for (int i=0; i<rules.count(); i++)
+		{
+			Rule rule = rules[i];
+			await rule.afterQuery(this);
+		}
+	}
+	
+	
+	
+	/**
+	 * Create response
+	 */
+	async Dict createResponse()
+	{
+		Dict response = {};
+		
 		if (this.action == "search")
 		{
-			for (int i=0; i<this.items.count(); i++)
+			response =
 			{
-				Dict row = this.items[i];
-				this.addManyToMany(row);
-			}
+				"filter": this.filter,
+				"page": this.page,
+				"limit": this.limit,
+				"total": this.total,
+				"pages": this.pages,
+				"options": {},
+			};
 		}
 		else if (this.action == "getItem")
 		{
-			this.addManyToMany(this.new_item);
+			response =
+			{
+				"pk": this.pk,
+				"options": {},
+			};
 		}
 		else if (this.action == "create")
 		{
-			this.addManyToMany(this.new_item);
+			response =
+			{
+				"pk": this.pk,
+				"item": this.item,
+			};
 		}
 		else if (this.action == "update")
 		{
-			this.addManyToMany(this.old_item);
-			this.addManyToMany(this.new_item);
+			response =
+			{
+				"pk": this.pk,
+				"item": this.item,
+			};
 		}
 		else if (this.action == "delete")
 		{
-			this.addManyToMany(this.old_item);
+			response =
+			{
+				"pk": this.pk,
+			};
 		}
 		
-		/* Load dictionary */
-		if (this.action == "search" or this.action == "getItem")
+		/* Process items */
+		if (this.action == "search")
 		{
-			await this.loadDictionary();
+			Vector new_items = new Vector();
+			for (int i=0; i<this.items.count(); i++)
+			{
+				Dict row = this.items[i];
+				row = await this.processItem(row);
+				new_items.pushValue(row);
+			}
+			response <= items <= new_items.toCollection();
+		}
+		else if (this.action == "getItem")
+		{
+			Dict new_item = this.new_item;
+			
+			/* Process item */
+			if (new_item)
+			{
+				new_item = await this.processItem(new_item);
+			}
+			
+			/* Set response */
+			response <= item <= new_item;
+		}
+		else if (this.action == "create" or this.action == "update" or this.action == "delete")
+		{
+			Dict new_item = this.new_item
+			Dict old_item = this.old_item;
+			
+			/* Process item */
+			if (old_item != null)
+			{
+				old_item = await this.processItem(old_item);
+			}
+			if (new_item != null)
+			{
+				if (new_item != this.old_item)
+				{
+					new_item = await this.processItem(new_item);
+				}
+				else
+				{
+					new_item = old_item;
+				}
+			}
+			
+			/* Set response */
+			response <= old_item <= old_item;
+			response <= new_item <= new_item;
+			if (this.action == "delete")
+			{
+				response <= item <= old_item;
+			}
 		}
 		
-		/* Load many to many */
-		await this.loadManyToMany();
-	}
-	
-	
-	
-	/**
-	 * Add Many To Many
-	 */
-	void addManyToMany(Dict item)
-	{
-		Collection<Dictionary> rules = this.rules().filter
-		(
-			bool (BaseStruct rule) => rule instanceof Dictionary or rule instanceof ManyToMany
-		);
+		/* Rules */
+		Collection<Rule> rules = this.rules();
 		for (int i=0; i<rules.count(); i++)
 		{
-			Dictionary rule = rules[i];
-			this.foreign = rule::foreignAddItem(rule, this.foreign, item);
+			Rule rule = rules[i];
+			response = await rule.createResponse(this, response);
 		}
-	}
-	
-	
-	
-	/**
-	 * Load Dictionary
-	 */
-	async void loadDictionary()
-	{
-		Collection<Dictionary> rules = this.rules().filter( lib::isInstance(classof Dictionary) );
-		for (int i=0; i<rules.count(); i++)
-		{
-			Dictionary rule = rules[i];
-			this.foreign = await rule::foreignLoadDictionary(rule, this.foreign);
-		}
-	}
-	
-	
-	
-	/**
-	 * Load Many To Many
-	 */
-	async void loadManyToMany()
-	{
-		Collection<ManyToMany> rules = this.rules().filter( lib::isInstance(classof ManyToMany) );
-		for (int i=0; i<rules.count(); i++)
-		{
-			ManyToMany rule = rules[i];
-			this.foreign = await rule::foreignLoadManyToMany(rule, this.foreign);
-		}
-	}
-	
-	
-	
-	/**
-	 * Save Many To Many
-	 */
-	async void saveManyToManyItem(Dict item)
-	{
-		Collection<ManyToMany> rules = this.rules().filter( lib::isInstance(classof ManyToMany) );
-		for (int i=0; i<rules.count(); i++)
-		{
-			ManyToMany rule = rules[i];
-			Collection new_values = item[rule.field_name];
-			this.foreign = await rule::foreignSaveManyToMany(rule, this.foreign, item, new_values);
-		}
+		
+		return response;
 	}
 	
 	
@@ -441,15 +439,11 @@ class CrudApi extends BaseObject
 	 */
 	async void after()
 	{
-		if (this.isSuccess())
+		Collection<Rule> rules = this.rules();
+		for (int i=0; i<rules.count(); i++)
 		{
-			/* Add foreign options */
-			this.answer = rtl::setAttr
-			(
-				this.answer,
-				["response", "foreigns"],
-				RuntimeUtils::ObjectToPrimitive(this.foreign.fields, false)
-			);
+			Rule rule = rules[i];
+			await rule.after(this);
 		}
 	}
 	
@@ -481,7 +475,7 @@ class CrudApi extends BaseObject
 		for (int i=0; i<rules.count(); i++)
 		{
 			Rule rule = rules[i];
-			string error = rule::validate(rule, this.item);
+			string error = rule.validate(this, this.item);
 			if (error != "")
 			{
 				this.addFieldError( rule.api_name, _("Runtime.Web.CRUD", error) );
@@ -537,6 +531,10 @@ class CrudApi extends BaseObject
 				.page( this.page, this.limit )
 				.order( this.getSearchOrder() );
 		}
+		if (not this.isForceDelete())
+		{
+			q = q.addFilter(["is_deleted", "=", 0]);
+		}
 		return q;
 	}	
 	
@@ -558,7 +556,6 @@ class CrudApi extends BaseObject
 		/* Execute query */
 		Record res = rtl::methodApply(class_name, "select")
 			|> .filter(filter)
-			|> this.buildSearchQuery
 			|> .asRecord(true)
 			|> .limit(1)
 			|> await .one()
@@ -570,12 +567,34 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Search query before
+	 * Find item by field
 	 */
-	async bool canSearchQuery()
+	async Record findItemByField(string field_name, string value)
 	{
-		return true;
+		/* Get ORM class name */
+		string class_name = static::getORM();
+		
+		/* Find item */
+		Record item = null;
+		value = value |> default string "";
+		if (value != "")
+		{
+			item = rtl::methodApply(class_name, "select")
+				|> .filter([
+					[field_name, "=", value]
+				])
+				|> await .one()
+			;
+		}
+		return item;
 	}
+	
+	
+	
+	/**
+	 * Find existing item for create
+	 */
+	async Record findItemForCreating() => null;
 	
 	
 	
@@ -629,7 +648,7 @@ class CrudApi extends BaseObject
 		await this.validate();
 		
 		/* Can query */
-		bool res = await this.canSearchQuery();
+		bool res = await this.canQuery();
 		if (res)
 		{
 			/* Before query */
@@ -641,26 +660,12 @@ class CrudApi extends BaseObject
 			/* After query */
 			await this.afterQuery();
 			
-			/* Process items */
-			await this.processItems();
-			
 			/* Set success */
 			this.is_success = true;
 		}
 		
 		/* Create response */
-		Dict response =
-		{
-			"filter": this.filter,
-			"items": this.items.map
-			(
-				Dict (Record item) => (item instanceof Record) ? item.convertToDict() : item
-			),
-			"page": this.page,
-			"limit": this.limit,
-			"total": this.total,
-			"pages": this.pages,
-		};
+		Dict response = await this.createResponse();
 		this.answer = this.answer::success(this.answer, response);
 	}
 	
@@ -698,16 +703,6 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Returns true if can Query
-	 */
-	async bool canGetItemQuery()
-	{
-		return true;
-	}
-	
-	
-	
-	/**
 	 * Get item query
 	 */
 	async void getItemQuery()
@@ -726,7 +721,7 @@ class CrudApi extends BaseObject
 		await this.validate();
 		
 		/* Can query */
-		bool res = await this.canGetItemQuery();
+		bool res = await this.canQuery();
 		if (res)
 		{
 			/* Before query */
@@ -751,11 +746,7 @@ class CrudApi extends BaseObject
 		}
 		
 		/* Create response */
-		Dict response =
-		{
-			"pk": this.pk,
-			"item": new_item,
-		};
+		Dict response = await this.createResponse();
 		this.answer = this.answer::success(this.answer, response);
 	}
 	
@@ -790,23 +781,6 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Find existing item for create
-	 */
-	async Record findItemForCreating() => null;
-	
-	
-	
-	/**
-	 * Returns true if can Query
-	 */
-	async bool canCreateQuery()
-	{
-		return true;
-	}
-	
-	
-	
-	/**
 	 * Create query
 	 */
 	async void createQuery()
@@ -821,10 +795,6 @@ class CrudApi extends BaseObject
 		this.new_item = rtl::methodApply(class_name, "createInstance", [update_item]);
 		this.new_item = await this.patchItem(this.new_item);
 		this.pk = await rtl::methodApplyAsync(class_name, "save", [this.new_item]);
-		
-		/* Save foreign items */
-		Dict item = this.item.concat(this.pk);
-		await this.saveManyToManyItem(item);
 		
 		/* Find new item */
 		this.new_item = await this.findItemByKey(this.pk);
@@ -855,7 +825,7 @@ class CrudApi extends BaseObject
 		await this.validate();
 		
 		/* Can query */
-		bool res = await this.canCreateQuery();
+		bool res = await this.canQuery();
 		if (res)
 		{
 			/* Before query */
@@ -870,21 +840,8 @@ class CrudApi extends BaseObject
 			this.is_success = true;
 		}
 		
-		Dict new_item = this.new_item;
-		
-		/* Process item */
-		if (new_item)
-		{
-			new_item = await this.processItem(new_item);
-		}
-		
 		/* Create response */
-		Dict response =
-		{
-			"pk": this.pk,
-			"item": this.item,
-			"new_item": new_item,
-		};
+		Dict response = await this.createResponse();
 		this.answer = this.answer::success(this.answer, response);
 	}
 	
@@ -952,10 +909,6 @@ class CrudApi extends BaseObject
 		this.new_item = await this.patchItem(this.new_item);
 		this.pk = await rtl::methodApplyAsync(class_name, "save", [this.new_item]);
 		
-		/* Save foreign items */
-		item = this.item.concat(this.pk);
-		await this.saveManyToManyItem(item);
-		
 		/* Find new item */
 		this.new_item = await this.findItemByKey(this.pk);
 	}
@@ -983,7 +936,7 @@ class CrudApi extends BaseObject
 		}
 		
 		/* Can query */
-		bool res = await this.canUpdateQuery();
+		bool res = await this.canQuery();
 		if (res)
 		{
 			/* Before query */
@@ -998,27 +951,8 @@ class CrudApi extends BaseObject
 			this.is_success = true;
 		}
 		
-		Dict new_item = this.new_item, old_item = this.old_item;
-		
-		/* Process item */
-		old_item = await this.processItem(old_item);
-		if (this.new_item != this.old_item and this.new_item != null)
-		{
-			new_item = await this.processItem(new_item);
-		}
-		else
-		{
-			new_item = old_item;
-		}
-		
 		/* Create response */
-		Dict response =
-		{
-			"pk": this.pk,
-			"item": this.item,
-			"new_item": new_item,
-			"old_item": old_item,
-		};
+		Dict response = await this.createResponse();
 		this.answer = this.answer::success(this.answer, response);
 	}
 	
@@ -1112,7 +1046,7 @@ class CrudApi extends BaseObject
 		}
 		
 		/* Can query */
-		bool res = await this.canDeleteQuery();
+		bool res = await this.canQuery();
 		if (res)
 		{
 			/* Before query */
@@ -1127,17 +1061,8 @@ class CrudApi extends BaseObject
 			this.is_success = true;
 		}
 		
-		Dict old_item = this.old_item;
-		
-		/* Process item */
-		Dict old_item = await this.processItem(old_item);
-		
 		/* Create response */
-		Dict response =
-		{
-			"pk": this.pk,
-			"item": old_item,
-		};
+		Dict response = await this.createResponse();
 		this.answer = this.answer::success(this.answer, response);
 	}
 	

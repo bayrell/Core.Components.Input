@@ -20,67 +20,54 @@ namespace Runtime.Web.CRUD.Rules;
 
 use Runtime.lib;
 use Runtime.BaseStruct;
-use Runtime.ORM.ConnectionInterface as Connection;
-use Runtime.ORM.CursorInterface as Cursor;
-use Runtime.ORM.DriverInterface as ORMDriver;
 use Runtime.ORM.QueryBuilder;
 use Runtime.ORM.Record;
-use Runtime.ORM.Annotations.AutoIncrement;
-use Runtime.ORM.Annotations.CoreType;
-use Runtime.ORM.Annotations.ForeignKey;
-use Runtime.ORM.Annotations.Primary;
-use Runtime.Web.CRUD.Foreign;
-use Runtime.Web.CRUD.ForeignField;
+use Runtime.Web.CRUD.CrudApi;
 use Runtime.Web.CRUD.Rules.Rule;
 
 
-struct Dictionary extends Rule
+class Dictionary extends Rule
 {
-	string name = "";
-	string class_name = "";
-	string key_name = "";
-	fn buildSearchQuery = null;
-	Collection fields = null;
+	assignable string name = "";
+	assignable string class_name = "";
+	assignable string key_name = "";
+	assignable fn buildSearchQuery = null;
+	assignable Collection fields = null;
 	
 	
 	
 	/**
-	 * Add item
+	 * Create response
 	 */
-	pure Foreign foreignAddItem(Dictionary rule, Foreign foreign, Record item)
+	async Dict createResponse(CrudApi api, Dict response)
 	{
-		return foreign;
-	}
-	
-	
-	
-	/**
-	 * Load full dictionary
-	 */
-	static async Foreign foreignLoadDictionary(Dictionary rule, Foreign foreign, Dict db_settings = null)
-	{
-		string name = rule.name;
-		string class_name = rule.class_name;
-		fn buildSearchQuery = rule.buildSearchQuery;
-		if (buildSearchQuery == null) buildSearchQuery = QueryBuilder (QueryBuilder q) => q;
+		Dict db_settings = null;
 		
+		if (this.fields == null) return response;
+		if (not api.isSuccess()) return response;
+		if (api.action != "search" and api.action != "getItem") return response;
+		
+		string name = this.name;
+		string class_name = this.class_name;
 		if (class_name == "" or name == "")
 		{
-			return foreign;
+			return response;
 		}
 		
+		fn buildSearchQuery = this.buildSearchQuery;
+		if (buildSearchQuery == null) buildSearchQuery = QueryBuilder (QueryBuilder q) => q;
+		
 		/* Get all options */
-		Collection<Dict> options =
-			class_name
-			|> lib::applyMethod("select")
+		Collection<Dict> options = rtl::applyMethod(class_name, "select")
 			|> buildSearchQuery
 			|> await .all(db_settings)
-			|> lib::map( Dict (Record item) use (rule) => item.convertToDict(rule.fields) )
+			|> lib::map( Dict (Record item) => item.convertToDict(this.fields) )
 		;
 		
-		foreign <= fields <= { name } <= options <= options;
+		/* Set response */
+		response <= options <= { name } <= options;
 		
-		return foreign;
+		return response;
 	}
 	
 }

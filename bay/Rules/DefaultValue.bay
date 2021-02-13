@@ -18,21 +18,26 @@
 
 namespace Runtime.Web.CRUD.Rules;
 
-use Runtime.BaseStruct;
+use Runtime.Web.CRUD.CrudApi;
 use Runtime.Web.CRUD.Rules.Rule;
 
 
-struct DefaultValue extends Rule
+class DefaultValue extends Rule
 {
-	string api_name = "";
-	var value = "";
-	pure string validate(DefaultValue rule, Dict item) => "";
-	pure string convertItem(DefaultValue rule, Dict item, string action)
+	assignable string api_name = "";
+	assignable var value = "";
+	
+	
+	
+	/**
+	 * Convert item before save to database
+	 */
+	string convertItem(CrudApi api, Dict item, Dict old_item)
 	{
-		var value = item[rule.api_name];
+		var value = item[this.api_name];
 		if (rtl::isEmpty(value))
 		{
-			item = rtl::setAttr(item, rule.api_name, rule.value);
+			item = rtl::setAttr(item, this.api_name, this.value);
 		}
 		return item;
 	}

@@ -18,14 +18,90 @@
 
 namespace Runtime.Web.CRUD.Rules;
 
+use Runtime.BaseObject;
 use Runtime.BaseStruct;
+use Runtime.Web.CRUD.CrudApi;
 
 
-struct Rule extends BaseStruct
+class Rule extends BaseObject
 {
-	string api_name = "";
-	pure string validate(Rule rule, Dict item) => "";
-	pure Collection convertFilter(Rule rule, Collection filter) => filter;
-	pure Dict convertItem(Rule rule, Dict item, string action) => item;
-	pure Dict processItem(Rule rule, Dict item, string action) => item;
+	
+	/**
+	 * Init struct data
+	 */
+	protected static Dict _initData(BaseStruct old, Dict changed) => changed;
+	
+	
+	
+	/** 
+	 * Constructor
+	 */
+	public void constructor(Dict obj = null)
+	{
+		parent();
+		BaseStruct::_assign(this, null, obj);
+	}
+	
+	
+	
+	/**
+	 * Validate item
+	 */
+	string validate(CrudApi api, Dict item) => "";
+	
+	
+	
+	/**
+	 * Convert search filter
+	 */
+	Collection convertSearchFilter(CrudApi api, Collection filter) => filter;
+	
+	
+	
+	/**
+	 * Convert item before save to database
+	 */
+	async Dict convertItem(CrudApi api, Dict item, Dict old_item) => item;
+	
+	
+	
+	/**
+	 * Process item before response
+	 */
+	async Dict processItem(CrudApi api, Dict item, Dict old_item) => item;
+	
+	
+	
+	/**
+	 * Init api
+	 */
+	async void init(CrudApi api){}
+	
+	
+	
+	/**
+	 * Before query
+	 */
+	async void beforeQuery(CrudApi api){}
+	
+	
+	
+	/**
+	 * After query
+	 */
+	async void afterQuery(CrudApi api){}
+	
+	
+	
+	/**
+	 * Create response
+	 */
+	async Dict createResponse(CrudApi api, Dict response) => response;
+	
+	
+	
+	/**
+	 * After api
+	 */
+	async void after(CrudApi api){}
 }

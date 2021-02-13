@@ -18,16 +18,20 @@
 
 namespace Runtime.Web.CRUD.Rules;
 
-use Runtime.BaseStruct;
+use Runtime.Web.CRUD.CrudApi;
 use Runtime.Web.CRUD.Rules.Rule;
 
 
-struct Required extends Rule
+class Required extends Rule
 {
-	string api_name = "";
-	pure string validate(Rule rule, Dict item)
+	assignable string api_name = "";
+	
+	/**
+	 * Validate item
+	 */
+	string validate(CrudApi api, Dict item)
 	{
-		var value = item[rule.api_name];
+		var value = item[this.api_name];
 		if (rtl::isEmpty(value))
 		{
 			return _("Runtime.Web.CRUD", "This field must be filled");

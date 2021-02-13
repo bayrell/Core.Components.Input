@@ -18,24 +18,29 @@
 
 namespace Runtime.Web.CRUD.Rules;
 
-use Runtime.BaseStruct;
+use Runtime.Web.CRUD.CrudApi;
 use Runtime.Web.CRUD.Rules.Rule;
 
 
-struct ReadOnly extends Rule
+class ReadOnly extends Rule
 {
-	string api_name = "";
-	bool can_create = false;
-	bool can_update = false;
-	pure Dict convertItem(Rule rule, Dict item, string action)
+	assignable string api_name = "";
+	assignable bool can_create = false;
+	assignable bool can_update = false;
+	
+	
+	/**
+	 * Convert item before save to database
+	 */
+	Dict convertItem(CrudApi api, Dict item, Dict old_item)
 	{
-		if (action == "create" and not rule.can_create)
+		if (api.action == "create" and not this.can_create)
 		{
-			item = item.removeIm(rule.api_name);
+			item = item.removeIm(this.api_name);
 		}
-		if (action == "update" and not rule.can_update)
+		else if (api.action == "update" and not this.can_update)
 		{
-			item = item.removeIm(rule.api_name);
+			item = item.removeIm(this.api_name);
 		}
 		return item;
 	}

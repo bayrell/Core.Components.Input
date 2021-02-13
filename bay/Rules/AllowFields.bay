@@ -18,23 +18,28 @@
 
 namespace Runtime.Web.CRUD.Rules;
 
-use Runtime.BaseStruct;
 use Runtime.ORM.Record;
+use Runtime.Web.CRUD.CrudApi;
 use Runtime.Web.CRUD.Rules.Rule;
 
 
-struct AllowFields extends Rule
+class AllowFields extends Rule
 {
-	Collection<string> fields = null;
+	assignable Collection<string> fields = null;
 	
-	pure Collection convertFilter(Rule rule, Collection filter)
+	
+	/**
+	 * Convert search filter
+	 */
+	Collection convertSearchFilter(CrudApi api, Collection filter)
 	{
-		filter = filter |> .filter
+		filter = filter
+			|> .filter
 			(
-				bool (Collection item) use (rule)
+				bool (Collection item)
 				{
 					string field_name = item[0];
-					int pos = rule.fields.indexOf(field_name);
+					int pos = this.fields.indexOf(field_name);
 					return pos != -1;
 				}
 			)
@@ -42,16 +47,21 @@ struct AllowFields extends Rule
 		return filter;
 	}
 	
-	pure Dict convertItem(AllowFields rule, Dict item, string action)
+	
+	
+	/**
+	 * Convert item before save to database
+	 */
+	Dict convertItem(CrudApi api, Dict item, Dict old_item)
 	{
-		if (rule.fields == null) return item;
+		if (this.fields == null) return item;
 		
 		/* Remove not allowed keys */
 		Collection keys = item.keys();
 		for (int i=0; i<keys.count(); i++)
 		{
 			string field_name = keys[i];
-			if (rule.fields.indexOf(field_name) == -1)
+			if (this.fields.indexOf(field_name) == -1)
 			{
 				item = item.removeIm(field_name);
 			}
@@ -59,9 +69,15 @@ struct AllowFields extends Rule
 		
 		return item;
 	}
-	pure Dict processItem(Rule rule, Dict item, string action)
+	
+	
+	
+	/**
+	 * Process item before response
+	 */
+	Dict processItem(CrudApi api, Dict item, Dict old_item)
 	{
-		if (item instanceof Record) item = item.convertToDict(rule.fields);
-		return  static::convertItem(rule, item, action);
+		if (item instanceof Record) item = item.convertToDict(this.fields);
+		return this.convertItem(api, item, old_item);
 	}
 }
