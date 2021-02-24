@@ -2,16 +2,16 @@
 	"name": "Runtime.Web.CRUD",
 	"assets":
 	[
-		"FieldInfo",
-		"Form",
-		"FormEvent",
-		"FormModel",
-		"Pagination",
-		"Table",
-		"TableModel",
-		"CrudFilter",
 		"CrudPage",
-		"CrudPageModel",
+		"DialogWidget",
+		"DialogWidgetModel",
+		"FieldInfo",
+		"SearchWidget",
+		"SearchWidgetModel",
+		"TableWidget",
+		"TableWidgetModel",
+		"TopMenuWidget",
+		"TopMenuWidgetModel",
 		"ModuleDescription"
 	]
 }

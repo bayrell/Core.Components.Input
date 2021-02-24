@@ -1,0 +1,152 @@
+<!--
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2016-2021 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+-->
+
+<class version="1.0"
+	name="Runtime.Web.CRUD.DialogWidget" extends="Runtime.Web.App.Widget" 
+	module="Runtime.Web.CRUD" model="Runtime.Web.App.PageModel"
+>
+
+<use name="Runtime.Web.Message" />
+<use name="Runtime.Web.App.WidgetEvent" />
+<use name="Runtime.Web.CRUD.DialogWidgetModel" />
+<use name="Runtime.Web.Dialog.Dialog" component="true" />
+<use name="Runtime.Web.Dialog.DialogEvent" />
+<use name="Runtime.Web.Dialog.DialogModel" />
+<use name="Runtime.Web.Events.BaseEvent" />
+
+
+<template>
+	%var DialogWidgetModel widget_model = model["widgets", params["widget_key"]];
+	
+	%if (widget_model.dialog_kind == "add")
+	{
+		<Dialog @model=["widgets", params["widget_key"], "dialog"] @ref="dialog" @event:DialogEvent="onDialogEvent"
+			style={ DialogModel::STYLE_CONTENT } auto_hide={ false }
+			buttons=
+			[
+				{
+					"type": "danger",
+					"data-action": "add",
+					"value": "Add",
+				},
+				{
+					"type": "default",
+					"data-action": "cancel",
+					"value": "Cancel",
+				},
+			]
+		>
+			{ params["widget_key"] }
+		</Dialog>
+	}
+	
+	%if (widget_model.dialog_kind == "edit")
+	{
+		<Dialog @model=["widgets", params["widget_key"], "dialog"] @ref="dialog" @event:DialogEvent="onDialogEvent"
+			style={ DialogModel::STYLE_CONTENT } auto_hide={ false }
+			buttons=
+			[
+				{
+					"type": "danger",
+					"data-action": "edit",
+					"value": "Edit",
+				},
+				{
+					"type": "default",
+					"data-action": "cancel",
+					"value": "Cancel",
+				},
+			]
+		>
+			{ params["widget_key"] }
+		</Dialog>
+	}
+	
+	%if (widget_model.dialog_kind == "delete")
+	{
+		<Dialog @model=["widgets", params["widget_key"], "dialog"] @ref="dialog" @event:DialogEvent="onDialogEvent"
+			style={ DialogModel::STYLE_CONTENT } auto_hide={ false }
+			buttons=
+			[
+				{
+					"type": "danger",
+					"data-action": "delete",
+					"value": "Delete",
+				},
+				{
+					"type": "default",
+					"data-action": "cancel",
+					"value": "Cancel",
+				},
+			]
+		>
+			{ params["widget_key"] }
+		</Dialog>
+	}
+</template>
+
+
+<script>
+
+var dialog = null;
+
+/**
+ * On widget event
+ */
+async void widgetEvent(Message<WidgetEvent> msg)
+{
+	if (this.dialog == null) return;
+	
+	string widget_key = this.params["widget_key"];
+	if (widget_key == msg.data.dest)
+	{
+		if (msg.data.action == "open_dialog")
+		{
+			Dict item = msg.data.tag["item"];
+			this.update("setAttr", ["widgets", widget_key, "item"], item);
+			this.dialog.update("show");
+		}
+	}
+}
+
+
+/**
+ * On dialog event
+ */
+async void onDialogEvent(Message<DialogEvent> msg)
+{
+	if (this.dialog == null) return;
+	
+	DialogEvent e = msg.data;
+	if (msg.sender == this.dialog)
+	{
+		if (e.button_result == "cancel")
+		{
+			this.dialog.update("hide");
+		}
+		else
+		{
+		}
+	}
+	
+	/* await this.signal(e); */
+}
+
+</script>
+
+</class>

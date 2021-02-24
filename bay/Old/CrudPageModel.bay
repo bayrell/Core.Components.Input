@@ -1,5 +1,5 @@
 /*!
- *  Bayrell Runtime Library
+ *  Bayrell Runtime Library 
  *
  *  (c) Copyright 2016-2021 "Ildar Bikmamatov" <support@bayrell.org>
  *
@@ -16,26 +16,17 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Web.CRUD.Rules;
+namespace Runtime.Web.CRUD;
 
-use Runtime.Web.CRUD.CrudApi;
-use Runtime.Web.CRUD.Rules.Rule;
+use Runtime.Web.App.PageModel;
 
 
-class Required extends Rule
+struct CrudPageModel extends PageModel
 {
-	assignable string api_name = "";
-	
-	/**
-	 * Validate item
-	 */
-	string validate(CrudApi api, Dict item)
-	{
-		var value = item[this.api_name];
-		if (rtl::isEmpty(value))
-		{
-			return _("Runtime.Web.CRUD", "This field must be filled");
-		}
-		return "";
-	}
+	Dict options = {};
+	Collection<Dict> rows = null;
+	int page = 0;
+	int pages = 0;
+	int delta = 5;
+	int limit = 100;
 }

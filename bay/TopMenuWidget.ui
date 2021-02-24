@@ -1,0 +1,62 @@
+<!--
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2016-2021 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+-->
+
+<class version="1.0"
+	name="Runtime.Web.CRUD.TopMenuWidget" extends="Runtime.Web.App.Widget" 
+	module="Runtime.Web.CRUD" model="Runtime.Web.App.PageModel"
+>
+
+<use name="Runtime.BaseStruct" />
+<use name="Runtime.Web.Message" />
+<use name="Runtime.Web.App.WidgetEvent" />
+<use name="Runtime.Web.CRUD.SearchWidgetModel" />
+<use name="Runtime.Web.Events.BaseEvent" />
+<use name="Runtime.Web.Events.MouseClickEvent" />
+<use name="Runtime.Web.Input.Button" component="true" />
+
+
+<template>
+	<Button type="small" data-widget-dest="dialog_add" data-widget-action="open_dialog"
+		@event:MouseClickEvent="onButtonEvent" @key="add"
+	>
+		{ _("Runtime.Web.CRUD", "Add") }
+	</Button>
+</template>
+
+
+<script>
+
+
+/**
+ * On button event
+ */
+async void onButtonEvent(Message<BaseEvent> msg)
+{
+	string widget_dest = msg.sender.params["data-widget-dest"] |> default string "";
+	string widget_action = msg.sender.params["data-widget-action"] |> default string "";
+	WidgetEvent event = new WidgetEvent
+	{
+		"dest": widget_dest,
+		"action": widget_action,
+	};
+	await this.signal(event);
+}
+
+</script>
+
+</class>

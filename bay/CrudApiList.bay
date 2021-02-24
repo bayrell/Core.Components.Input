@@ -1,0 +1,100 @@
+/*!
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2016-2021 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+namespace Runtime.Web.CRUD;
+
+use Runtime.BaseStruct;
+use Runtime.Web.App.ApiList;
+use Runtime.Web.App.ApiMethod;
+
+
+struct CrudApiList extends ApiList
+{
+	bool search = true;
+	bool create = true;
+	bool update = true;
+	bool delete = true;
+	
+	/* Extend entities */
+	Collection<BaseStruct> extendEntities(Collection<BaseStruct> entities)
+	{
+		Vector arr = new Vector();
+		
+		if (this.search)
+		{
+			arr.pushValue
+			(
+				new ApiMethod
+				{
+					"class_name": this.value ? this.value : this.name,
+					"class_method_name": "searchAction",
+					"object_name": this.object_name,
+					"interface_name": "core.crud",
+					"method_name": "search",
+				}
+			);
+		}
+		
+		if (this.create)
+		{
+			arr.pushValue
+			(
+				new ApiMethod
+				{
+					"class_name": this.value ? this.value : this.name,
+					"class_method_name": "createAction",
+					"object_name": this.object_name,
+					"interface_name": "core.crud",
+					"method_name": "create",
+				}
+			);
+		}
+		
+		if (this.update)
+		{
+			arr.pushValue
+			(
+				new ApiMethod
+				{
+					"class_name": this.value ? this.value : this.name,
+					"class_method_name": "updateAction",
+					"object_name": this.object_name,
+					"interface_name": "core.crud",
+					"method_name": "update",
+				}
+			);
+		}
+		
+		if (this.delete)
+		{
+			arr.pushValue
+			(
+				new ApiMethod
+				{
+					"class_name": this.value ? this.value : this.name,
+					"class_method_name": "deleteAction",
+					"object_name": this.object_name,
+					"interface_name": "core.crud",
+					"method_name": "delete",
+				}
+			);
+		}
+		
+		return entities.concat(arr);
+	}
+}

@@ -1,0 +1,267 @@
+/*!
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2016-2021 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+namespace Runtime.Web.CRUD;
+
+use Runtime.lib;
+use Runtime.BaseStruct;
+use Runtime.Web.App.PageModel;
+use Runtime.Web.App.RemoteCallAnswer;
+use Runtime.Web.App.RenderContainer;
+use Runtime.Web.App.Request;
+use Runtime.Web.App.WidgetModel;
+use Runtime.Web.CRUD.FieldInfo;
+use Runtime.Web.CRUD.SearchWidget;
+
+
+struct SearchWidgetModel extends WidgetModel
+{
+	string action = "search";
+	string class_name = classof SearchWidget;
+	
+	/* Search data */
+	Dict options = {};
+	Collection<Dict> rows = null;
+	int page = 0;
+	int pages = 0;
+	int delta = 5;
+	int limit = 100;
+	
+	/* Crud error */
+	int error_code = 1;
+	string error_message = "";
+	string error_name = "";
+	
+	/* Crud settings */
+	Collection<FieldInfo> struct = null;
+	Collection<string> filter_fields = null;
+	Collection<string> form_fields = null;
+	Collection<string> table_fields = null;
+	Collection<string> view_fields = null;
+	
+	
+	/**
+	 * Returns field info
+	 */
+	FieldInfo getFieldInfo(string field_name) => this.struct.findItem( lib::equalAttr("api_name", field_name) );
+	
+	
+	
+	/**
+	 * Returns primary key by item
+	 */
+	Dict getPrimaryKey(Dict item)
+	{
+		Map pk = new Map();
+		Collection<FieldInfo> struct = this.struct.filter( lib::equalAttr("primary", true) );
+		for (int i=0; i < struct.count(); i++)
+		{
+			FieldInfo field = struct[i];
+			var value = item[field.api_name];
+			pk.setValue(field.api_name, value);
+		}
+		return pk.toDict();
+	}
+	
+	
+	
+	/**
+	 * Find first item
+	 */
+	Dict getFirstItem(Dict item)
+	{
+		if (this.rows == null)
+		{
+			return null;
+		}
+		int pos = this.findPos(item);
+		return this.rows.get(pos, null);
+	}
+	
+	
+	
+	/**
+	 * Returns position of item
+	 */
+	int findPos(Dict find)
+	{
+		if (find == null) return -1;
+		Collection<string> keys = find.keys();
+		return this.rows.find
+		(
+			bool (Dict row) use (find, keys)
+			{
+				for (int i=0; i<keys.count(); i++)
+				{
+					string key = keys[i];
+					var value1 = find[key];
+					var value2 = row[key];
+					if (value1 != value2) return false;
+				}
+				return true;
+			}
+		);
+	}
+	
+	
+	
+	/**
+	 * Returns crud search params
+	 */
+	pure Dict getCrudSearchParams(Request request)
+	{
+		Map data = new Map();
+		
+		if (rtl::exists(request.query))
+		{
+			Vector search_filter = new Vector();
+			Dict filter = request.query["filter"] |> default Dict null;
+			if (filter)
+			{
+				Collection keys = filter.keys();
+				for (int i=0; i<keys.count(); i++)
+				{
+					string key_name = keys[i];
+					search_filter.pushValue([key_name, "=", filter[key_name]]);
+				}
+				data.setValue("filter", search_filter.toCollection());
+			}
+			
+			string page = request.query.get("page", 1) - 1;
+			if (page < 0) page = 0;
+			data.setValue("page", page);
+			data.setValue("limit", 20);
+		}
+		
+		return data.toDict();
+	}
+	
+	
+	
+	/**
+	 * Call route
+	 */
+	static async RenderContainer callRoute(RenderContainer container, string widget_key)
+	{
+		/* Get page model */
+		PageModel page_model = container.getPageModel();
+		if (page_model == null) return container;
+		
+		/* Get widget model */
+		WidgetModel widget_model = page_model.widgets[widget_key] |> default WidgetModel null;
+		if (widget_model == null) return container;
+		
+		/* Check widget model action */
+		if (widget_model.action != page_model.action) return container;
+		
+		/* Page class */
+		string page_class = container.layout.page_class;
+		
+		/* Get search params */
+		Dict crud_search_params = static::getCrudSearchParams(container.request);
+		
+		/* Get crud object name */
+		string object_name = rtl::applyMethod(page_class, "getCrudObjectName");
+		
+		/* Remote call */
+		RemoteCallAnswer answer = await container.externalBusCall
+		{
+			"object_name": object_name,
+			"interface_name": "core.crud",
+			"method_name": "search",
+			"data": crud_search_params,
+		};
+		
+		/* Answer */
+		if (answer.isSuccess())
+		{
+			widget_model <= rows <= answer.response["items"];
+			widget_model <= page <= answer.response["page"];
+			widget_model <= pages <= answer.response["pages"];
+			widget_model <= limit <= answer.response["limit"];
+			widget_model <= options <= answer.response["options"];
+			widget_model <= error_code <= rtl::ERROR_OK;
+		}
+		
+		/* Exception */
+		else
+		{
+			widget_model <= error_code <= answer.code;
+			widget_model <= error_message <= answer.error_message;
+			widget_model <= error_name <= answer.error_name;
+		}
+		
+		/* Set filter items */
+		Dict filter = container.request.query["filter"] |> default Dict null;
+		if (filter)
+		{
+			widget_model <= filter <= item <= filter;
+		}
+		
+		/* Set widget model */
+		page_model <= widgets <= { widget_key } <= widget_model;
+		
+		/* Set page model */
+		container <= layout <= model <= { page_class } <= page_model;
+		
+		return container;
+	}
+	
+	
+	
+	/**
+	 * Extend widget model
+	 */
+	pure SearchWidgetModel extendWidgetModel(BaseStruct layout, PageModel page_model, Dict params, string widget_key)
+	{
+		/* Get page class */
+		string page_class = layout.page_class;
+		
+		/* Get widget model */
+		WidgetModel widget_model = page_model.widgets[widget_key] |> default WidgetModel null;
+		if (widget_model != null)
+		{
+			if (widget_model.struct == null and rtl::method_exists(page_class, "getStruct"))
+			{
+				widget_model <= struct <= rtl::applyMethod(page_class, "getStruct", [layout, page_model, params])
+			}
+			if (widget_model.filter_fields == null and rtl::method_exists(page_class, "getFilterFields"))
+			{
+				widget_model <= filter_fields <= rtl::applyMethod(page_class, "getFilterFields", [layout, page_model, params])
+			}
+			if (widget_model.form_fields == null and rtl::method_exists(page_class, "getFormFields"))
+			{
+				widget_model <= form_fields <= rtl::applyMethod(page_class, "getFormFields", [layout, page_model, params])
+			}
+			if (widget_model.table_fields == null and rtl::method_exists(page_class, "getTableFields"))
+			{
+				widget_model <= table_fields <= rtl::applyMethod(page_class, "getTableFields", [layout, page_model, params])
+			}
+			if (widget_model.view_fields == null and rtl::method_exists(page_class, "getViewFields"))
+			{
+				widget_model <= view_fields <= rtl::applyMethod(page_class, "getViewFields", [layout, page_model, params])
+			}
+			
+			/* Set widget model */
+			page_model <= widgets <= { widget_key } <= widget_model;
+		}
+		
+		return page_model;
+	}
+	
+}

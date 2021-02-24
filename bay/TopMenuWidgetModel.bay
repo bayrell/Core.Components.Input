@@ -16,26 +16,20 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Web.CRUD.Rules;
+namespace Runtime.Web.CRUD;
 
-use Runtime.Web.CRUD.CrudApi;
-use Runtime.Web.CRUD.Rules.Rule;
+use Runtime.lib;
+use Runtime.BaseStruct;
+use Runtime.Web.App.PageModel;
+use Runtime.Web.App.RemoteCallAnswer;
+use Runtime.Web.App.RenderContainer;
+use Runtime.Web.App.Request;
+use Runtime.Web.App.WidgetModel;
+use Runtime.Web.CRUD.FieldInfo;
+use Runtime.Web.CRUD.TopMenuWidget;
 
 
-class Required extends Rule
+struct TopMenuWidgetModel extends WidgetModel
 {
-	assignable string api_name = "";
-	
-	/**
-	 * Validate item
-	 */
-	string validate(CrudApi api, Dict item)
-	{
-		var value = item[this.api_name];
-		if (rtl::isEmpty(value))
-		{
-			return _("Runtime.Web.CRUD", "This field must be filled");
-		}
-		return "";
-	}
+	string class_name = classof TopMenuWidget;
 }

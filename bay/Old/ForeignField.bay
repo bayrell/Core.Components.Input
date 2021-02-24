@@ -16,26 +16,17 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Web.CRUD.Rules;
+namespace Runtime.Web.CRUD;
 
-use Runtime.Web.CRUD.CrudApi;
-use Runtime.Web.CRUD.Rules.Rule;
+use Runtime.BaseStruct;
 
 
-class Required extends Rule
+struct ForeignKey extends BaseStruct
 {
-	assignable string api_name = "";
-	
-	/**
-	 * Validate item
-	 */
-	string validate(CrudApi api, Dict item)
-	{
-		var value = item[this.api_name];
-		if (rtl::isEmpty(value))
-		{
-			return _("Runtime.Web.CRUD", "This field must be filled");
-		}
-		return "";
-	}
+	string api_name = "";
+	Collection<Dict> keys = null;
+	Collection<Dict> options = null;
+	Collection<Dict> many_to_many = null;
+	Collection<Dict> old_values = null;
+	Collection<Dict> new_values = null;
 }

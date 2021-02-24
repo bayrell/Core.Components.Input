@@ -16,26 +16,21 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Web.CRUD.Rules;
+namespace Runtime.Web.CRUD;
 
-use Runtime.Web.CRUD.CrudApi;
-use Runtime.Web.CRUD.Rules.Rule;
+use Runtime.BaseStruct;
 
 
-class Required extends Rule
+struct FormEvent extends BaseStruct
 {
-	assignable string api_name = "";
-	
-	/**
-	 * Validate item
-	 */
-	string validate(CrudApi api, Dict item)
-	{
-		var value = item[this.api_name];
-		if (rtl::isEmpty(value))
-		{
-			return _("Runtime.Web.CRUD", "This field must be filled");
-		}
-		return "";
-	}
+	static const string ACTION_CREATE = "create";
+	static const string ACTION_UPDATE = "update";
+	static const string ACTION_CANCEL = "cancel";
+	static const string ACTION_CHANGE = "change";
+	static const string ACTION_SEARCH = "search";
+	string event = "";
+	Dict item = null;
+	string field_name = "";
+	var value = null;
+	var old_value = null;
 }

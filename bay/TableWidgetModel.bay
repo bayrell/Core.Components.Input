@@ -1,7 +1,7 @@
 /*!
  *  Bayrell Runtime Library
  *
- *  (c) Copyright 2016-2020 "Ildar Bikmamatov" <support@bayrell.org>
+ *  (c) Copyright 2016-2021 "Ildar Bikmamatov" <support@bayrell.org>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,18 +19,18 @@
 namespace Runtime.Web.CRUD;
 
 use Runtime.BaseStruct;
+use Runtime.Web.App.PageModel;
+use Runtime.Web.App.RemoteCallAnswer;
+use Runtime.Web.App.RenderContainer;
+use Runtime.Web.App.Request;
+use Runtime.Web.App.WidgetModel;
+use Runtime.Web.CRUD.TableWidget;
 
 
-struct FormEvent extends BaseStruct
+struct TableWidgetModel extends WidgetModel
 {
-	static const string ACTION_CREATE = "create";
-	static const string ACTION_UPDATE = "update";
-	static const string ACTION_CANCEL = "cancel";
-	static const string ACTION_CHANGE = "change";
-	static const string ACTION_SEARCH = "search";
-	string event = "";
-	Dict item = null;
-	string field_name = "";
-	var value = null;
-	var old_value = null;
+	string action = "search";
+	string class_name = classof TableWidget;
+	string search_widget_key = "search";
+	string kind = "table";
 }

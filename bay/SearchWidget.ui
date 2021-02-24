@@ -1,7 +1,7 @@
-/*!
+<!--
  *  Bayrell Runtime Library
  *
- *  (c) Copyright 2016-2020 "Ildar Bikmamatov" <support@bayrell.org>
+ *  (c) Copyright 2016-2021 "Ildar Bikmamatov" <support@bayrell.org>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,19 +14,25 @@
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
- */
+-->
 
-namespace Runtime.Web.CRUD;
+<class version="1.0"
+	name="Runtime.Web.CRUD.SearchWidget" extends="Runtime.Web.App.Widget" 
+	module="Runtime.Web.CRUD" model="Runtime.Web.App.PageModel"
+>
 
-use Runtime.BaseStruct;
+<use name="Runtime.BaseStruct" />
+<use name="Runtime.Web.CRUD.SearchWidgetModel" />
 
 
-struct ForeignKey extends BaseStruct
+<template>
+%var SearchWidgetModel search_widget_model = model.widgets[ params["widget_key"] ];
+%if (search_widget_model.error_code != 1)
 {
-	string api_name = "";
-	Collection<Dict> keys = null;
-	Collection<Dict> options = null;
-	Collection<Dict> many_to_many = null;
-	Collection<Dict> old_values = null;
-	Collection<Dict> new_values = null;
+	<div class='error'>
+		{ search_widget_model.error_message }
+	</div>
 }
+</template>
+
+</class>
