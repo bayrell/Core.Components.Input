@@ -18,27 +18,22 @@
 
 namespace Runtime.Web.CRUD;
 
-use Runtime.BaseStruct;
-use Runtime.Web.App.PageModel;
-use Runtime.Web.App.RemoteCallAnswer;
-use Runtime.Web.App.RenderContainer;
-use Runtime.Web.App.Request;
-use Runtime.Web.App.WidgetModel;
-use Runtime.Web.CRUD.DialogWidget;
-use Runtime.Web.Dialog.DialogModel;
+use Runtime.Web.App.WidgetEvent;
 
 
-struct DialogWidgetModel extends WidgetModel
+struct CrudWidgetEvent extends WidgetEvent
 {
-	string action = "";
-	string class_name = classof DialogWidget;
-	string kind = "dialog";
-	string current_widget = "";
+	static const string OPEN_DIALOG = "open_dialog";
+	static const string CREATE_ITEM = "create_item";
+	static const string UPDATE_ITEM = "update_item";
+	static const string DELETE_ITEM = "delete_item";
 	
-	DialogModel dialog = new DialogModel();
-	Collection fields_errors = null;
+	string current_widget = "";
+	string from = "";
+	string dest = "";
+	string action = "";
+	Dict pk = null;
 	Dict item = null;
 	Dict old_item = null;
-	Dict data = {};
-	
+	Dict new_item = null;
 }

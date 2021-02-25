@@ -29,8 +29,236 @@ use Runtime.Web.CRUD.TableWidget;
 
 struct TableWidgetModel extends WidgetModel
 {
-	string action = "search";
+	string page_action = "search";
 	string class_name = classof TableWidget;
-	string search_widget_key = "search";
 	string kind = "table";
+	
+	/* Search data */
+	Dict options = {};
+	Collection<Dict> rows = null;
+	int page = 0;
+	int pages = 0;
+	int delta = 5;
+	int limit = 100;
+	
+	/* Crud error */
+	int error_code = 1;
+	string error_message = "";
+	string error_name = "";
+	
+	/* Crud search params */
+	Dict search_params = {};
+	
+	
+	
+	/**
+	 * Find first item
+	 */
+	pure Dict getFirstItem(TableWidgetModel model, Dict item)
+	{
+		if (model.rows == null)
+		{
+			return null;
+		}
+		int pos = static::findPos(model, item);
+		return model.rows.get(pos, null);
+	}
+	
+	
+	
+	/**
+	 * Returns position of item
+	 */
+	pure int findPos(TableWidgetModel model, Dict find)
+	{
+		if (find == null) return -1;
+		Collection<string> keys = find.keys();
+		return model.rows.find
+		(
+			bool (Dict row) use (find, keys)
+			{
+				for (int i=0; i<keys.count(); i++)
+				{
+					string key = keys[i];
+					var value1 = find[key];
+					var value2 = row[key];
+					if (value1 != value2) return false;
+				}
+				return true;
+			}
+		);
+	}
+	
+	
+	
+	/**
+	 * Add item
+	 */
+	pure TableWidgetModel addItem(TableWidgetModel model, Dict item)
+	{
+		if (model.rows == null)
+		{
+			model <= rows <= [];
+		}
+		model <= rows <= model.rows.pushIm(item);
+		return model;
+	}
+	
+	
+	
+	/**
+	 * Prepend item
+	 */
+	pure TableWidgetModel prependItem(TableWidgetModel model, Dict item)
+	{
+		if (model.rows == null)
+		{
+			model <= rows <= [];
+		}
+		model <= rows <= model.rows.prependIm(item);
+		return model;
+	}
+	
+	
+	
+	/**
+	 * Set item
+	 */
+	pure TableWidgetModel setItem(TableWidgetModel model, Dict find, Dict item)
+	{
+		if (model.rows == null)
+		{
+			model <= rows <= [];
+		}
+		
+		int pos = static::findPos(model, find);
+		if (pos != -1)
+		{
+			model <= rows <= model.rows.setIm(pos, item);
+		}
+		
+		return model;
+	}
+	
+	
+	
+	/**
+	 * Remove item by id
+	 */
+	pure TableWidgetModel removeItem(TableWidgetModel model, Dict find)
+	{
+		if (model.rows == null)
+		{
+			return model;
+		}
+		
+		int pos = static::findPos(model, find);
+		if (pos != -1)
+		{
+			model <= rows <= model.rows.removeIm(pos);
+		}
+		
+		return model;
+	}
+	
+	
+	
+	/**
+	 * Returns crud search params
+	 */
+	pure Dict getCrudSearchParams(Request request)
+	{
+		Map data = new Map();
+		
+		if (rtl::exists(request.query))
+		{
+			Vector search_filter = new Vector();
+			Dict filter = request.query["filter"] |> default Dict null;
+			if (filter)
+			{
+				Collection keys = filter.keys();
+				for (int i=0; i<keys.count(); i++)
+				{
+					string key_name = keys[i];
+					search_filter.pushValue([key_name, "=", filter[key_name]]);
+				}
+				data.setValue("filter", search_filter.toCollection());
+			}
+			
+			string page = request.query.get("page", 1) - 1;
+			if (page < 0) page = 0;
+			data.setValue("page", page);
+			data.setValue("limit", 20);
+		}
+		
+		return data.toDict();
+	}
+	
+	
+	
+	/**
+	 * Call route
+	 */
+	static async RenderContainer callRoute(RenderContainer container, string widget_key)
+	{
+		/* Get page model */
+		PageModel page_model = container.getPageModel();
+		if (page_model == null) return container;
+		
+		/* Get widget model */
+		TableWidgetModel widget_model = page_model.widgets[widget_key] |> default TableWidgetModel null;
+		if (widget_model == null) return container;
+		
+		/* Check widget model page action */
+		if (widget_model.page_action != page_model.page_action) return container;
+		
+		/* Page class */
+		string page_class = container.layout.page_class;
+		
+		/* Get crud object name */
+		string object_name = rtl::applyMethod(page_class, "getCrudObjectName");
+		
+		/* Remote call */
+		RemoteCallAnswer answer = await container.externalBusCall
+		{
+			"object_name": object_name,
+			"interface_name": "core.crud",
+			"method_name": "search",
+			"data": widget_model.search_params,
+		};
+		
+		/* Answer */
+		if (answer.isSuccess())
+		{
+			widget_model <= rows <= answer.response["items"];
+			widget_model <= page <= answer.response["page"];
+			widget_model <= pages <= answer.response["pages"];
+			widget_model <= limit <= answer.response["limit"];
+			widget_model <= options <= answer.response["options"];
+			widget_model <= error_code <= rtl::ERROR_OK;
+		}
+		
+		/* Exception */
+		else
+		{
+			widget_model <= error_code <= answer.code;
+			widget_model <= error_message <= answer.error_message;
+			widget_model <= error_name <= answer.error_name;
+		}
+		
+		/* Set filter items */
+		Dict filter = container.request.query["filter"] |> default Dict null;
+		if (filter)
+		{
+			widget_model <= filter <= item <= filter;
+		}
+		
+		/* Set widget model */
+		page_model <= widgets <= { widget_key } <= widget_model;
+		
+		/* Set page model */
+		container <= layout <= model <= { page_class } <= page_model;
+		
+		return container;
+	}
 }

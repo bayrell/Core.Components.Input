@@ -3,11 +3,11 @@
 	"assets":
 	[
 		"CrudPage",
+		"CrudPageModel",
+		"CrudWidgetEvent",
 		"DialogWidget",
 		"DialogWidgetModel",
 		"FieldInfo",
-		"SearchWidget",
-		"SearchWidgetModel",
 		"TableWidget",
 		"TableWidgetModel",
 		"TopMenuWidget",

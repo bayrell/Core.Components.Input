@@ -18,14 +18,15 @@
 
 <class version="1.0"
 	name="Runtime.Web.CRUD.TableWidget" extends="Runtime.Web.App.Widget" 
-	module="Runtime.Web.CRUD" model="Runtime.Web.App.PageModel"
+	module="Runtime.Web.CRUD" model="Runtime.Web.CRUD.CrudPageModel"
 >
 
-<use name="Runtime.Web.CRUD.SearchWidgetModel" />
-<use name="Runtime.Web.CRUD.TableWidgetModel" />
 <use name="Runtime.Core.Message" />
 <use name="Runtime.Web.LayoutModel" />
+<use name="Runtime.Web.CRUD.CrudWidgetEvent" />
 <use name="Runtime.Web.CRUD.FieldInfo" />
+<use name="Runtime.Web.CRUD.TableWidgetModel" />
+<use name="Runtime.Web.Events.BaseEvent" />
 <use name="Runtime.Web.Events.MouseClickEvent" />
 <use name="Runtime.Web.Input.Button" />
 
@@ -39,6 +40,7 @@
 	border: 1px ${ vars["colors", "default", "border"] } solid;
 	padding: 5px;
 	text-align: center;
+	font-size: ${ vars["font", "size"] };
 }
 .row:hover td{
 	background-color: ${ vars["colors", "default", "hover-background"] };
@@ -55,31 +57,28 @@
 </style>
 
 
-<template>
+<template name="render">
 
 	<table class="table" @key="table">
 		%var TableWidgetModel table_widget_model = model.widgets[ params["widget_key"] ];
-		%var SearchWidgetModel search_widget_model = model.widgets[ table_widget_model.search_widget_key ];
 		
-		{ static::renderHeader(layout, model, params, table_widget_model, search_widget_model) }
-		{ static::renderRows(layout, model, params, table_widget_model, search_widget_model) }
+		{ static::renderHeader(layout, model, params, table_widget_model) }
+		{ static::renderRows(layout, model, params, table_widget_model) }
 	</table>
 
 </template>
 
 
 <template name="renderHeader"
-	args="LayoutModel layout, PageModel model, Dict params,
-		TableWidgetModel table_widget_model, SearchWidgetModel search_widget_model"
+	args="LayoutModel layout, CrudPageModel model, Dict params, TableWidgetModel table_widget_model"
 >
-	
-	%var Collection<string> table_fields = search_widget_model.table_fields;
+	%var Collection<string> table_fields = model.table_fields;
 	
 	<tr class="header">
 	%for (int i=0; i<table_fields.count(); i++)
 	{
 		%var string field_name = table_fields[i];
-		%var FieldInfo field = search_widget_model.getFieldInfo(field_name);
+		%var FieldInfo field = model.getFieldInfo(field_name);
 		<th class="th" class={ "th--" ~ field_name } data-name={ field_name } @key={ "th-" ~ field_name }>
 			{ field["label"] }
 		</th>
@@ -90,32 +89,31 @@
 
 
 <template name="renderRows"
-	args="LayoutModel layout, PageModel model, Dict params,
-		TableWidgetModel table_widget_model, SearchWidgetModel search_widget_model"
+	args="LayoutModel layout, CrudPageModel model, Dict params, TableWidgetModel table_widget_model"
 >	
-	%if (search_widget_model != null and search_widget_model.rows != null)
+	%if (table_widget_model != null and table_widget_model.rows != null)
 	{
-		%for (int i=0; i<search_widget_model.rows.count(); i++)
+		%for (int i=0; i<table_widget_model.rows.count(); i++)
 		{
-			{ static::renderRow(layout, model, params, table_widget_model, search_widget_model, i) }
+			{ static::renderRow(layout, model, params, table_widget_model, i) }
 		}
 	}
 </template>
 
 
 <template name="renderRow"
-	args="LayoutModel layout, PageModel model, Dict params,
-		TableWidgetModel table_widget_model, SearchWidgetModel search_widget_model, int index"
+	args="LayoutModel layout, CrudPageModel model, Dict params,
+		TableWidgetModel table_widget_model, int index"
 >
-	%var Collection<string> table_fields = search_widget_model.table_fields;
+	%var Collection<string> table_fields = model.table_fields;
 	
 	<tr class="row" data-index={ index } @key={ "tr-" ~ index }>
 	%for (int i=0; i<table_fields.count(); i++)
 	{
 		%var string field_name = table_fields[i];
-		%var FieldInfo field = search_widget_model.getFieldInfo(field_name);
+		%var FieldInfo field = model.getFieldInfo(field_name);
 		<td class="td" class={ "td-" ~ field_name } data-name={ field_name } @key={ "td-" ~ field_name } >
-			{ static::renderCell(layout, model, params, table_widget_model, search_widget_model, index, field) }
+			{ static::renderCell(layout, model, params, table_widget_model, index, field) }
 		</td>
 	}
 	</tr>
@@ -124,11 +122,10 @@
 
 
 <template name="renderCell"
-	args="LayoutModel layout, PageModel model, Dict params,
-		TableWidgetModel table_widget_model, SearchWidgetModel search_widget_model,
-		int index, FieldInfo field"
+	args="LayoutModel layout, CrudPageModel model, Dict params,
+		TableWidgetModel table_widget_model, int index, FieldInfo field"
 >
-	%var Dict row = search_widget_model.rows[index];
+	%var Dict row = table_widget_model.rows[index];
 	%var string crud_class_name = layout.page_class;
 	
 	%if (field != null)
@@ -141,12 +138,10 @@
 			"crud_item": row,
 			"crud_params": params,
 			"crud_field": field,
-			"crud_field_name": field.api_name,
-			"crud_search_model": search_widget_model,
+			"crud_page_model": model,
 			"crud_table_model": table_widget_model,
-			"crud_field_class_name": field_class_name,
 			"crud_show": true,
-			"value": search_widget_model["rows", index, field.api_name],
+			"value": table_widget_model["rows", index, field.api_name],
 		};
 		
 		<!-- Extend class settings -->
@@ -166,8 +161,9 @@
 		}
 		
 		<!-- Render Field -->
+		%var field = crud_settings["crud_field"];
 		%var bool crud_show = crud_settings["crud_show"];
-		%var field_class_name = crud_settings["crud_field_class_name"];
+		%var string field_class_name = field["class_name"] |> default string "";
 		%if (crud_show)
 		{
 			%if (renderValue !== null)
@@ -182,6 +178,36 @@
 	}
 
 </template>
+
+
+
+<script>
+
+/**
+ * On widget event
+ */
+async void handleEvent(Message<BaseEvent> msg)
+{
+	string widget_key = this.getWidgetKey();
+	if (msg.data instanceof CrudWidgetEvent and widget_key == msg.data.dest)
+	{
+		CrudWidgetEvent event = msg.data;
+		if (event.action == CrudWidgetEvent::CREATE_ITEM)
+		{
+			this.widgetUpdate("prependItem", event.new_item);
+		}
+		else if (event.action == CrudWidgetEvent::UPDATE_ITEM)
+		{
+			this.widgetUpdate("setItem", event.pk, event.new_item);
+		}
+		else if (event.action == CrudWidgetEvent::DELETE_ITEM)
+		{
+			this.widgetUpdate("removeItem", event.pk);
+		}
+	}
+}
+
+</script>
 
 
 </class>
