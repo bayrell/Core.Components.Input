@@ -30,7 +30,6 @@ class Dictionary extends Rule
 {
 	assignable string name = "";
 	assignable string class_name = "";
-	assignable string key_name = "";
 	assignable fn buildSearchQuery = null;
 	assignable Collection fields = null;
 	

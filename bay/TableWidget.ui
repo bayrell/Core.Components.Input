@@ -144,9 +144,6 @@
 			"value": table_widget_model["rows", index, field.api_name],
 		};
 		
-		<!-- Extend class settings -->
-		%var crud_settings = crud_settings.concat(field.class_settings);
-		
 		<!-- Custom settings -->
 		%if (rtl::method_exists(crud_class_name, "customSettings"))
 		{
@@ -160,8 +157,11 @@
 			%var renderValue = rtl::methodApply(crud_class_name, "renderField", [layout, crud_settings]);
 		}
 		
-		<!-- Render Field -->
+		<!-- Extend class settings -->
 		%var field = crud_settings["crud_field"];
+		%var crud_settings = crud_settings.concat(field.class_settings);
+		
+		<!-- Render Field -->
 		%var bool crud_show = crud_settings["crud_show"];
 		%var string field_class_name = field["class_name"] |> default string "";
 		%if (crud_show)
