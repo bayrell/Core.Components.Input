@@ -46,9 +46,6 @@ struct TableWidgetModel extends WidgetModel
 	string error_message = "";
 	string error_name = "";
 	
-	/* Crud search params */
-	Dict search_params = {};
-	
 	
 	
 	/**
@@ -197,20 +194,11 @@ struct TableWidgetModel extends WidgetModel
 	
 	
 	/**
-	 * Call route
+	 * Call route widget model
 	 */
-	static async RenderContainer callRoute(RenderContainer container, string widget_key)
+	static async WidgetModel callRouteWidgetModel(RenderContainer container, string widget_key, WidgetModel widget_model)
 	{
-		/* Get page model */
-		PageModel page_model = container.getPageModel();
-		if (page_model == null) return container;
-		
-		/* Get widget model */
-		TableWidgetModel widget_model = page_model.widgets[widget_key] |> default TableWidgetModel null;
-		if (widget_model == null) return container;
-		
-		/* Check widget model page action */
-		if (widget_model.page_action != page_model.page_action) return container;
+		Dict search_params = static::getCrudSearchParams(container.request);
 		
 		/* Page class */
 		string page_class = container.layout.page_class;
@@ -224,8 +212,22 @@ struct TableWidgetModel extends WidgetModel
 			"object_name": object_name,
 			"interface_name": "core.crud",
 			"method_name": "search",
-			"data": widget_model.search_params,
+			"data": search_params,
 		};
+		
+		widget_model = static::setCrudAnswer(widget_model, answer);
+		
+		return widget_model;
+	}
+	
+	
+	
+	/**
+	 * Set crud answer
+	 */
+	pure WidgetModel setCrudAnswer(WidgetModel widget_model, RemoteCallAnswer answer)
+	{
+		if (answer == null) return widget_model;
 		
 		/* Answer */
 		if (answer.isSuccess())
@@ -246,19 +248,7 @@ struct TableWidgetModel extends WidgetModel
 			widget_model <= error_name <= answer.error_name;
 		}
 		
-		/* Set filter items */
-		Dict filter = container.request.query["filter"] |> default Dict null;
-		if (filter)
-		{
-			widget_model <= filter <= item <= filter;
-		}
-		
-		/* Set widget model */
-		page_model <= widgets <= { widget_key } <= widget_model;
-		
-		/* Set page model */
-		container <= layout <= model <= { page_class } <= page_model;
-		
-		return container;
+		return widget_model;
 	}
+	
 }
