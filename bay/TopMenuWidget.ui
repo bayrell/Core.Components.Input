@@ -22,18 +22,18 @@
 >
 
 <use name="Runtime.BaseStruct" />
+<use name="Runtime.Web.Component" />
 <use name="Runtime.Web.Message" />
 <use name="Runtime.Web.App.WidgetEvent" />
 <use name="Runtime.Web.CRUD.CrudWidgetEvent" />
+<use name="Runtime.Web.CRUD.CrudWidgetSignal" />
 <use name="Runtime.Web.Events.BaseEvent" />
 <use name="Runtime.Web.Events.MouseClickEvent" />
 <use name="Runtime.Web.Input.Button" component="true" />
 
 
 <template>
-	<Button type="small" data-widget="table" data-widget-dest="dialog_add" data-widget-action="open_dialog"
-		@event:MouseClickEvent="onButtonEvent" @key="add"
-	>
+	<Button type="small" @event:MouseClickEvent="onButtonAddEvent" @key="add">
 		{ _("Runtime.Web.CRUD", "Add") }
 	</Button>
 </template>
@@ -41,23 +41,22 @@
 
 <script>
 
-
 /**
  * On button event
  */
-async void onButtonEvent(Message<BaseEvent> msg)
+async void onButtonAddEvent(Message<BaseEvent> msg)
 {
-	string widget = msg.sender.params["data-widget"] |> default string "";
-	string widget_dest = msg.sender.params["data-widget-dest"] |> default string "";
-	string widget_action = msg.sender.params["data-widget-action"] |> default string "";
-	CrudWidgetEvent event = new CrudWidgetEvent
+	string widget_key = this.params["widget_key"] |> default string "";
+	CrudWidgetSignal signal = new CrudWidgetSignal
 	{
-		"from": this.params["widget_key"],
-		"dest": widget_dest,
-		"action": widget_action,
-		"current_widget": widget,
+		"from": widget_key,
+		"command": "open_dialog_add",
 	};
-	await this.signal(event);
+	Component c = this.getParentComponent();
+	if (c != null)
+	{
+		await c.sendEvent(signal);
+	}
 }
 
 </script>

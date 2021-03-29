@@ -21,12 +21,15 @@
 	module="Runtime.Web.CRUD" model="Runtime.Web.App.PageModel"
 >
 
+<use name="Runtime.Web.ListenerCallback" />
 <use name="Runtime.Web.Message" />
 <use name="Runtime.Web.App.RemoteCallAnswer" />
 <use name="Runtime.Web.App.WidgetEvent" />
+<use name="Runtime.Web.App.WidgetSignal" />
 <use name="Runtime.Web.App.WebApp" />
 <use name="Runtime.Web.CRUD.CrudPageModel" />
 <use name="Runtime.Web.CRUD.CrudWidgetEvent" />
+<use name="Runtime.Web.CRUD.CrudWidgetSignal" />
 <use name="Runtime.Web.CRUD.DialogWidgetModel" />
 <use name="Runtime.Web.CRUD.FieldInfo" />
 <use name="Runtime.Web.Dialog.Dialog" component="true" />
@@ -264,7 +267,46 @@
 
 <script>
 
+
 var dialog = null;
+
+
+/**
+ * On signal
+ */
+async void onSignal(Message<WidgetSignal> msg, ListenerCallback item)
+{
+	await parent::onSignal(msg);
+	
+	/* Crud widget signal */
+	CrudWidgetSignal signal = msg.data;
+	if (signal instanceof CrudWidgetSignal)
+	{
+		/* Get widget model */
+		DialogWidgetModel widget_model = this.widgetModel();
+		
+		/* Open dialog */
+		if (signal.command == "open_dialog_add" and widget_model.action == "add")
+		{
+			log("Open dialog");
+			
+			/* this.dialog.instance.update("show"); */
+			
+			/*Dict item = msg.data.item;
+			this.widgetUpdate("setAttr", "item", item);
+			this.widgetUpdate("setAttr", "old_item", item);*/
+			/*this.widgetUpdate("setAttr", "current_widget", event.current_widget);*/
+			/*this.dialog.update("show");*/
+		}
+		
+	}
+	
+}
+
+
+
+
+
 
 /**
  * On widget event

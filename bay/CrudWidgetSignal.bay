@@ -18,20 +18,14 @@
 
 namespace Runtime.Web.CRUD;
 
-use Runtime.Web.App.WidgetEvent;
+use Runtime.Web.App.WidgetSignal;
 
 
-struct CrudWidgetEvent extends WidgetEvent
+struct CrudWidgetSignal extends WidgetSignal
 {
 	static const string OPEN_DIALOG = "open_dialog";
 	static const string CREATE_ITEM = "create_item";
 	static const string UPDATE_ITEM = "update_item";
-	static const string DELETE_ITEM = "delete_item";
-	
+	static const string DELETE_ITEM = "delete_item";	
 	string from = "";
-	string action = "";
-	Dict pk = null;
-	Dict item = null;
-	Dict old_item = null;
-	Dict new_item = null;
 }

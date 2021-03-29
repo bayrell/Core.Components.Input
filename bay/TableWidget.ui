@@ -22,7 +22,12 @@
 >
 
 <use name="Runtime.Core.Message" />
-<use name="Runtime.Web.LayoutModel" />
+<use name="Runtime.Web.App.LayoutModel" />
+<use name="Runtime.Web.App.PageModel" />
+<use name="Runtime.Web.App.RemoteCallAnswer" />
+<use name="Runtime.Web.App.RenderContainer" />
+<use name="Runtime.Web.App.Request" />
+<use name="Runtime.Web.App.WidgetModel" />
 <use name="Runtime.Web.CRUD.CrudWidgetEvent" />
 <use name="Runtime.Web.CRUD.FieldInfo" />
 <use name="Runtime.Web.CRUD.TableWidgetModel" />
@@ -55,6 +60,83 @@
 	margin-right: 2px;
 }
 </style>
+
+
+<script>
+
+
+/**
+ * Returns crud search params
+ */
+pure Dict getCrudSearchParams(Request request)
+{
+	Map data = new Map();
+	
+	if (rtl::exists(request.query))
+	{
+		Vector search_filter = new Vector();
+		Dict filter = request.query["filter"] |> default Dict null;
+		if (filter)
+		{
+			Collection keys = filter.keys();
+			for (int i=0; i<keys.count(); i++)
+			{
+				string key_name = keys[i];
+				search_filter.pushValue([key_name, "=", filter[key_name]]);
+			}
+			data.setValue("filter", search_filter.toCollection());
+		}
+		
+		string page = request.query.get("page", 1) - 1;
+		if (page < 0) page = 0;
+		data.setValue("page", page);
+		data.setValue("limit", 20);
+	}
+	
+	return data.toDict();
+}
+
+
+
+/**
+ * Call route widget model
+ */
+static async WidgetModel callRouteWidgetModel
+(RenderContainer container, PageModel page_model, string widget_key, WidgetModel widget_model)
+{
+	if (page_model.page_action != widget_model.page_action) return widget_model;
+	
+	Dict search_params = static::getCrudSearchParams(container.request);
+		
+	/* Page class */
+	string page_class = container.layout.page_class;
+	
+	/* Get crud object name */
+	string object_name = rtl::applyMethod(page_class, "getCrudObjectName");
+	
+	/* Remote call */
+	RemoteCallAnswer answer = await container.externalBusCall
+	{
+		"object_name": object_name,
+		"interface_name": "core.crud",
+		"method_name": "search",
+		"data": search_params,
+	};
+	
+	widget_model = widget_model::setCrudAnswer(widget_model, answer);
+	
+	return widget_model;
+}
+
+
+
+/**
+ * Extend component model
+ */
+pure PageModel extendWidgetModel(BaseStruct layout, PageModel model, Dict params, string widget_key) => model;
+
+
+</script>
 
 
 <template name="render">
@@ -186,7 +268,7 @@
 /**
  * On widget event
  */
-async void handleEvent(Message<BaseEvent> msg)
+async void handleEventOld(Message<BaseEvent> msg)
 {
 	string widget_key = this.getWidgetKey();
 	if (msg.data instanceof CrudWidgetEvent and widget_key == msg.data.dest)

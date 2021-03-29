@@ -161,68 +161,6 @@ struct TableWidgetModel extends WidgetModel
 	
 	
 	/**
-	 * Returns crud search params
-	 */
-	pure Dict getCrudSearchParams(Request request)
-	{
-		Map data = new Map();
-		
-		if (rtl::exists(request.query))
-		{
-			Vector search_filter = new Vector();
-			Dict filter = request.query["filter"] |> default Dict null;
-			if (filter)
-			{
-				Collection keys = filter.keys();
-				for (int i=0; i<keys.count(); i++)
-				{
-					string key_name = keys[i];
-					search_filter.pushValue([key_name, "=", filter[key_name]]);
-				}
-				data.setValue("filter", search_filter.toCollection());
-			}
-			
-			string page = request.query.get("page", 1) - 1;
-			if (page < 0) page = 0;
-			data.setValue("page", page);
-			data.setValue("limit", 20);
-		}
-		
-		return data.toDict();
-	}
-	
-	
-	
-	/**
-	 * Call route widget model
-	 */
-	static async WidgetModel callRouteWidgetModel(RenderContainer container, string widget_key, WidgetModel widget_model)
-	{
-		Dict search_params = static::getCrudSearchParams(container.request);
-		
-		/* Page class */
-		string page_class = container.layout.page_class;
-		
-		/* Get crud object name */
-		string object_name = rtl::applyMethod(page_class, "getCrudObjectName");
-		
-		/* Remote call */
-		RemoteCallAnswer answer = await container.externalBusCall
-		{
-			"object_name": object_name,
-			"interface_name": "core.crud",
-			"method_name": "search",
-			"data": search_params,
-		};
-		
-		widget_model = static::setCrudAnswer(widget_model, answer);
-		
-		return widget_model;
-	}
-	
-	
-	
-	/**
 	 * Set crud answer
 	 */
 	pure WidgetModel setCrudAnswer(WidgetModel widget_model, RemoteCallAnswer answer)

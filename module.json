@@ -5,6 +5,7 @@
 		"CrudPage",
 		"CrudPageModel",
 		"CrudWidgetEvent",
+		"CrudWidgetSignal",
 		"DialogWidget",
 		"DialogWidgetModel",
 		"FieldInfo",
