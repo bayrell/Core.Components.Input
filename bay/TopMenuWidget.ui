@@ -49,8 +49,8 @@ async void onButtonAddEvent(Message<BaseEvent> msg)
 	string widget_key = this.params["widget_key"] |> default string "";
 	CrudWidgetSignal signal = new CrudWidgetSignal
 	{
-		"from": widget_key,
 		"command": "open_dialog_add",
+		"widget_from": widget_key,
 	};
 	Component c = this.getParentComponent();
 	if (c != null)

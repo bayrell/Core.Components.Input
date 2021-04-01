@@ -18,10 +18,10 @@
 
 namespace Runtime.Web.CRUD;
 
-use Runtime.Web.App.WidgetEvent;
+use Runtime.Web.Events.BaseEvent;
 
 
-struct CrudWidgetEvent extends WidgetEvent
+struct CrudWidgetEvent extends BaseEvent
 {
 	static const string OPEN_DIALOG = "open_dialog";
 	static const string CREATE_ITEM = "create_item";

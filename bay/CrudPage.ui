@@ -91,7 +91,7 @@ pure Collection<string> getTableFields(LayoutModel layout, CrudPageModel model, 
 /**
  * Returns view fields
  */
-pure Collection<string> getViewFields(BaseStruct layout, CrudPageModel model, Dict params) => [];
+pure Collection<string> getViewFields(LayoutModel layout, CrudPageModel model, Dict params) => [];
 
 
 /**
@@ -103,14 +103,15 @@ pure Dict<string> getMessages() => {};
 /**
  * Extend component model
  */
-pure CrudPageModel extendComponentModel(BaseStruct layout, CrudPageModel model, Dict params)
+pure LayoutModel extendComponentModel(LayoutModel layout, string model_path, Dict params)
 {
+	CrudPageModel model = layout.getPageModel();
 	if (model.struct == null) model <= struct <= static::getStruct(layout, model, params);
 	if (model.filter_fields == null) model <= filter_fields <= static::getFilterFields(layout, model, params);
 	if (model.form_fields == null) model <= form_fields <= static::getFormFields(layout, model, params);
 	if (model.table_fields == null) model <= table_fields <= static::getTableFields(layout, model, params);
 	if (model.view_fields == null) model <= view_fields <= static::getViewFields(layout, model, params);
-	return model;
+	return parent::extendComponentModel(layout.setPageModel(model), model_path, params);
 }
 
 </script>

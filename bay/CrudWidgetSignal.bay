@@ -27,5 +27,5 @@ struct CrudWidgetSignal extends WidgetSignal
 	static const string CREATE_ITEM = "create_item";
 	static const string UPDATE_ITEM = "update_item";
 	static const string DELETE_ITEM = "delete_item";	
-	string from = "";
+	string widget_from = "";
 }

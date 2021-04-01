@@ -101,9 +101,12 @@ pure Dict getCrudSearchParams(Request request)
 /**
  * Call route widget model
  */
-static async WidgetModel callRouteWidgetModel
-(RenderContainer container, PageModel page_model, string widget_key, WidgetModel widget_model)
+static async WidgetModel callRouteWidgetModel(RenderContainer container, string widget_key, WidgetModel widget_model)
 {
+	/* Get page model */
+	PageModel page_model = container.getPageModel();
+	
+	/* Check page action */
 	if (page_model.page_action != widget_model.page_action) return widget_model;
 	
 	Dict search_params = static::getCrudSearchParams(container.request);
@@ -129,38 +132,28 @@ static async WidgetModel callRouteWidgetModel
 }
 
 
-
-/**
- * Extend component model
- */
-pure PageModel extendWidgetModel(BaseStruct layout, PageModel model, Dict params, string widget_key) => model;
-
-
 </script>
 
 
 <template name="render">
 
 	<table class="table" @key="table">
-		%var TableWidgetModel table_widget_model = model.widgets[ params["widget_key"] ];
-		
-		{ static::renderHeader(layout, model, params, table_widget_model) }
-		{ static::renderRows(layout, model, params, table_widget_model) }
+		{ static::renderHeader(layout, model_path, params) }
+		{ static::renderRows(layout, model_path, params) }
 	</table>
 
 </template>
 
 
-<template name="renderHeader"
-	args="LayoutModel layout, CrudPageModel model, Dict params, TableWidgetModel table_widget_model"
->
-	%var Collection<string> table_fields = model.table_fields;
+<template name="renderHeader" args="LayoutModel layout, string model_path, Dict params">
+	%var CrudPageModel page_model = layout.getPageModel();
+	%var Collection<string> table_fields = page_model.table_fields;
 	
 	<tr class="header">
 	%for (int i=0; i<table_fields.count(); i++)
 	{
 		%var string field_name = table_fields[i];
-		%var FieldInfo field = model.getFieldInfo(field_name);
+		%var FieldInfo field = page_model.getFieldInfo(field_name);
 		<th class="th" class={ "th--" ~ field_name } data-name={ field_name } @key={ "th-" ~ field_name }>
 			{ field["label"] }
 		</th>
@@ -170,32 +163,32 @@ pure PageModel extendWidgetModel(BaseStruct layout, PageModel model, Dict params
 </template>
 
 
-<template name="renderRows"
-	args="LayoutModel layout, CrudPageModel model, Dict params, TableWidgetModel table_widget_model"
->	
-	%if (table_widget_model != null and table_widget_model.rows != null)
+<template name="renderRows" args="LayoutModel layout, string model_path, Dict params">
+	%var TableWidgetModel model = layout.getModel(model_path);
+	%if (model != null and model.rows != null)
 	{
-		%for (int i=0; i<table_widget_model.rows.count(); i++)
+		%for (int i=0; i<model.rows.count(); i++)
 		{
-			{ static::renderRow(layout, model, params, table_widget_model, i) }
+			{ static::renderRow(layout, model_path, params, i) }
 		}
 	}
 </template>
 
 
 <template name="renderRow"
-	args="LayoutModel layout, CrudPageModel model, Dict params,
-		TableWidgetModel table_widget_model, int index"
+	args="LayoutModel layout, string model_path, Dict params, int index"
 >
-	%var Collection<string> table_fields = model.table_fields;
+	%var TableWidgetModel model = layout.getModel(model_path);
+	%var CrudPageModel page_model = layout.getPageModel();
+	%var Collection<string> table_fields = page_model.table_fields;
 	
 	<tr class="row" data-index={ index } @key={ "tr-" ~ index }>
 	%for (int i=0; i<table_fields.count(); i++)
 	{
 		%var string field_name = table_fields[i];
-		%var FieldInfo field = model.getFieldInfo(field_name);
+		%var FieldInfo field = page_model.getFieldInfo(field_name);
 		<td class="td" class={ "td-" ~ field_name } data-name={ field_name } @key={ "td-" ~ field_name } >
-			{ static::renderCell(layout, model, params, table_widget_model, index, field) }
+			{ static::renderCell(layout, model_path, params, index, field) }
 		</td>
 	}
 	</tr>
@@ -204,10 +197,11 @@ pure PageModel extendWidgetModel(BaseStruct layout, PageModel model, Dict params
 
 
 <template name="renderCell"
-	args="LayoutModel layout, CrudPageModel model, Dict params,
-		TableWidgetModel table_widget_model, int index, FieldInfo field"
+	args="LayoutModel layout, string model_path, Dict params, int index, FieldInfo field"
 >
-	%var Dict row = table_widget_model.rows[index];
+	%var CrudPageModel page_model = layout.getPageModel();
+	%var TableWidgetModel model = layout.getModel(model_path);
+	%var Dict row = model.rows[index];
 	%var string crud_class_name = layout.page_class;
 	
 	%if (field != null)
@@ -215,15 +209,15 @@ pure PageModel extendWidgetModel(BaseStruct layout, PageModel model, Dict params
 		%var string field_class_name = field["class_name"] |> default string "";
 		%var Dict crud_settings =
 		{
-			"crud_kind": table_widget_model.kind,
+			"crud_kind": model.kind,
 			"crud_index": index,
 			"crud_item": row,
 			"crud_params": params,
 			"crud_field": field,
-			"crud_page_model": model,
-			"crud_table_model": table_widget_model,
+			"crud_page_model": page_model,
+			"crud_table_model": model,
 			"crud_show": true,
-			"value": table_widget_model["rows", index, field.api_name],
+			"value": model["rows", index, field.api_name],
 		};
 		
 		<!-- Custom settings -->
@@ -265,29 +259,6 @@ pure PageModel extendWidgetModel(BaseStruct layout, PageModel model, Dict params
 
 <script>
 
-/**
- * On widget event
- */
-async void handleEventOld(Message<BaseEvent> msg)
-{
-	string widget_key = this.getWidgetKey();
-	if (msg.data instanceof CrudWidgetEvent and widget_key == msg.data.dest)
-	{
-		CrudWidgetEvent event = msg.data;
-		if (event.action == CrudWidgetEvent::CREATE_ITEM)
-		{
-			this.widgetUpdate("prependItem", event.new_item);
-		}
-		else if (event.action == CrudWidgetEvent::UPDATE_ITEM)
-		{
-			this.widgetUpdate("setItem", event.pk, event.new_item);
-		}
-		else if (event.action == CrudWidgetEvent::DELETE_ITEM)
-		{
-			this.widgetUpdate("removeItem", event.pk);
-		}
-	}
-}
 
 </script>
 
