@@ -19,15 +19,18 @@
 namespace Runtime.Web.CRUD;
 
 use Runtime.BaseStruct;
-use Runtime.Core.RemoteCallAnswer;
+use Runtime.Web.App.RemoteCallAnswer;
+use Runtime.Web.App.WebApp;
 
 
 struct FormModel extends BaseStruct
 {
 	static const string ACTION_CREATE = "create";
 	static const string ACTION_UPDATE = "update";
+	static const string ACTION_CANCEL = "cancel";
 	
 	Collection fields_errors = null;
+	Dict pk = null;
 	Dict item = null;
 	Dict old_item = null;
 	string action = "";
@@ -36,6 +39,71 @@ struct FormModel extends BaseStruct
 	string success_message = "";
 	string error_message = "";
 	Dict data = {};
+	
+	/* Api object name */
+	string crud_object_name = "";
+	
+	
+	/**
+	 * Send api create
+	 */
+	static async void sendCreate(FormModel model)
+	{
+		RemoteCallAnswer answer = await WebApp::busCall
+		(
+			"api://" ~ @.app_name ~ "/" ~ model.crud_object_name ~ "/core.crud/create/",
+			{
+				"item": model.item,
+			}
+		);
+		
+		return answer;
+	}
+	
+	
+	
+	/**
+	 * Send api update
+	 */
+	static async void sendUpdate(FormModel model)
+	{
+		RemoteCallAnswer answer = await WebApp::busCall
+		(
+			"api://" ~ @.app_name ~ "/" ~ model.crud_object_name ~ "/core.crud/update/",
+			{
+				"pk": model.pk,
+				"item": model.item,
+			}
+		);
+		
+		return answer;
+	}
+	
+	
+	
+	/**
+	 * Send api delete
+	 */
+	static async void sendDelete(FormModel model, string object_name)
+	{
+		RemoteCallAnswer answer = await WebApp::busCall
+		(
+			"api://" ~ @.app_name ~ "/" ~ object_name ~ "/core.crud/update/",
+			{
+				"item": model.item,
+			}
+		);
+		
+		return answer;
+	}
+	
+	
+	
+	/**
+	 * Set primary key
+	 */
+	pure FormModel setPk(FormModel model, Dict pk) => model.copy{ "pk": pk };
+	
 	
 	
 	/**

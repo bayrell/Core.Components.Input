@@ -4,15 +4,13 @@
 	[
 		"CrudPage",
 		"CrudPageModel",
-		"CrudWidgetEvent",
-		"CrudWidgetSignal",
-		"DialogWidget",
-		"DialogWidgetModel",
+		"CrudSettings",
 		"FieldInfo",
-		"TableWidget",
-		"TableWidgetModel",
-		"TopMenuWidget",
-		"TopMenuWidgetModel",
+		"Form",
+		"FormEvent",
+		"FormModel",
+		"Table",
+		"TableModel",
 		"ModuleDescription"
 	]
 }

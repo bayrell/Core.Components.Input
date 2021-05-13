@@ -44,11 +44,8 @@ struct FieldInfo extends BaseStruct
 	string group = "default";
 	var default_value = null;
 	
-	/* Field component settings */
-	Dict class_settings = {};
-	
-	/* Extra info */
-	Dict<FieldInfo> info = {};
+	/* Change crud settings */
+	fn crud_settings = null;
 	
 	
 	/**

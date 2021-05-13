@@ -1,0 +1,424 @@
+<!--
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2016-2021 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+-->
+
+<class version="1.0"
+	name="Runtime.Web.CRUD.Form" extends="Runtime.Web.Component" 
+	module="Runtime.Web.CRUD" model="Runtime.Web.CRUD.FormModel"
+>
+
+<use name="Runtime.Core.Message" />
+<use name="Runtime.Web.ListenerCallback" />
+<use name="Runtime.Web.App.LayoutModel" />
+<use name="Runtime.Web.App.RemoteCallAnswer" />
+<use name="Runtime.Web.Input.Button" component="true" />
+<use name="Runtime.Web.CRUD.CrudPageModel" />
+<use name="Runtime.Web.CRUD.CrudSettings" />
+<use name="Runtime.Web.CRUD.FieldInfo" />
+<use name="Runtime.Web.CRUD.FormEvent" />
+<use name="Runtime.Web.CRUD.FormModel" />
+<use name="Runtime.Web.Events.ChangeEvent" />
+<use name="Runtime.Web.Events.MouseClickEvent" />
+<use name="Runtime.Web.Events.SignalEvent" />
+
+<style>
+.form{
+}
+.form_row{
+	padding-bottom: 15px;
+}
+.form_row:last-child{
+	padding-bottom: 0px;
+}
+.form_label{
+	font-weight: bold;
+	padding-bottom: 5px;
+}
+.form_value{}
+.form_value input, .form_value textarea, .form_value select{
+	width: 100%;
+	padding: 5px 10px;
+}
+.form_value textarea{
+	height: 400px;
+}
+.form_buttons{
+	text-align: center;
+	margin-top: 10px;
+}
+.form_buttons %(Button)button{
+	margin-left: 10px;
+	margin-right: 10px;
+}
+.form_error{
+	text-align: center;
+	padding-top: 5px;
+	color: red;
+}
+.form_result{
+	padding-top: 10px;
+	text-align: center;
+}
+.form_result.success{
+	color: green;
+}
+.form_result.error{
+	color: red;
+}
+</style>
+
+
+<script>
+
+
+/**
+ * Returns crud settings
+ */
+pure CrudSettings getCrudSettings
+(
+	LayoutModel layout, Collection model_path, FieldInfo field
+)
+{
+	FormModel model = layout.getModel(model_path);
+	Dict item = model.item;
+	
+	/* Create object */
+	CrudSettings crud_settings = new CrudSettings
+	{
+		"current_class_name": static::getCurrentClassName(),
+		"field_class_name": field.class_name,
+		"kind": "form",
+		"field": field,
+		"item": item,
+		"attrs":
+		{
+			"name": field.api_name,
+			"value": item[ field.api_name ],
+			"@model": ["item", field.api_name],
+		},
+	};
+	
+	/* Custom crud page settings */
+	if (field.crud_settings != null)
+	{
+		fn f = field.crud_settings;
+		crud_settings = f(layout, crud_settings);
+	}
+	
+	/* Return result */
+	return crud_settings;
+}
+
+</script>
+
+
+
+<template name="render">
+	<div class="form" @key="form">
+		%render
+		[
+			static::renderHeader(layout, model_path),
+			static::renderContent(layout, model_path),
+			static::renderButtons(layout, model_path),
+			static::renderResult(layout, model_path),
+			static::renderFooter(layout, model_path),
+		];
+	</div>
+</template>
+
+
+
+<template name="renderHeader" args="LayoutModel layout, string model_path">
+</template>
+
+
+
+<template name="renderContent" args="LayoutModel layout, string model_path">
+	%render static::renderRows(layout, model_path);
+</template>
+
+
+
+<template name="renderRows" args="LayoutModel layout, string model_path">
+	<div class="form_rows" @key="rows">
+		
+		%set CrudPageModel page_model = layout.getPageModel();
+		%if (page_model.form_fields != null)
+		{
+			%for (int i=0; i<page_model.form_fields.count(); i++)
+			{
+				%var string field_name = page_model.form_fields[i];
+				%set FieldInfo field = page_model.getFieldInfo(field_name);
+				%render static::renderRow(layout, model_path, field);
+			}
+		}
+		
+	</div>
+</template>
+
+
+
+<template name="renderRow" args="LayoutModel layout, string model_path, FieldInfo field">
+	
+	%set FormModel model = layout.getModel(model_path);
+	%set string page_class = layout.page_class;
+	
+	%set CrudSettings crud_settings = static::getCrudSettings(layout, model_path, field);
+	%set string field_class_name = crud_settings.field_class_name;
+	
+	<!-- Render Label -->
+	%set fn render_label = null;
+	%if (rtl::method_exists(page_class, "renderLabel"))
+	{
+		%set render_label = rtl::method(page_class, "renderLabel");
+	}
+	
+	<!-- Render Field -->
+	%set bool crud_show = crud_settings.show;
+	%if (crud_show)
+	{
+		<div class='form_row' @key={ field.api_name }>
+			
+			<div class='form_label'>
+				%if (render_label != null)
+				{
+					%render render_label(layout, field, "table");
+				}
+				%else
+				{
+					{ field["label"] ? field["label"] : field["label"] }
+				}				
+				<span>:</span>
+			</div>
+			
+			<div class='form_value'>
+				%render rtl::methodApply(page_class, "renderField", [layout, crud_settings]);
+			</div>
+			
+			%render static::renderFieldError(layout, model_path, field);
+			
+		</div>
+	}
+	
+</template>
+
+
+
+<template name="renderFieldError" args="LayoutModel layout, string model_path, FieldInfo field">
+	
+	%set FormModel model = layout.getModel(model_path);
+	
+	<div class='form_error'>
+		%var Collection<string> errors = model["fields_errors", field.api_name];
+		%if (errors != null)
+		{
+			%for (int i=0; i<errors.count(); i++)
+			{
+				%var string s = errors[i];
+				<div class='form_error_line'>{ s }</div>
+			}
+		}
+	</div>
+	
+</template>
+
+
+<template name="renderButtons" args="LayoutModel layout, string model_path">
+	
+	%set FormModel model = layout.getModel(model_path);
+	
+	<div class="form_buttons" @key="buttons">
+	%if (model['action'] == FormModel::ACTION_CREATE)
+	{
+		<Button type="success" @event:MouseClickEvent="onButtonClick" data-action={ FormEvent::ACTION_CREATE }>Add</Button>
+		<Button @event:MouseClickEvent="onButtonClick" data-action={ FormEvent::ACTION_CANCEL }>Cancel</Button>
+	}
+	%if (model['action'] == FormModel::ACTION_UPDATE)
+	{
+		<Button type="success" @event:MouseClickEvent="onButtonClick" data-action={ FormEvent::ACTION_UPDATE }>Update</Button>
+		<Button @event:MouseClickEvent="onButtonClick" data-action={ FormEvent::ACTION_CANCEL }>Cancel</Button>
+	}
+	</div>
+	
+</template>
+
+
+<template name="renderResult" args="LayoutModel layout, string model_path">
+	
+	%set FormModel model = layout.getModel(model_path);
+	
+	<div class='form_row form_result' class={ static::getResultClass(model) } @key="result">
+		{ model.message }
+		{ model.success_message }
+		{ model.error_message }
+	</div>
+	
+</template>
+
+
+<template name="renderFooter" args="LayoutModel layout, string model_path">
+</template>
+
+
+
+<script type="frontend">
+
+
+/**
+ * Returns result class
+ */
+pure string getResultClass(FormModel model)
+{
+	if (model.success_message != "") return "success";
+	if (model.error_message != "") return "error";
+	return "";
+}
+
+
+
+/**
+ * Change item
+ */
+async void onChangeItem(Message<ChangeEvent> msg)
+{
+	FormModel model = this.model();
+	Dict params = msg.sender.params;
+	string field_name = params["name"];
+	string new_value = msg.data.value;
+	string old_value = msg.data.old_value;
+	Collection model_path = params["@model"];
+	
+	/* Update model */
+	if (model_path != null) this.update("setAttr", model_path, new_value);
+	
+	/* Create event */
+	FormEvent event = new FormEvent
+	{
+		"form_action": model.action,
+		"event": FormEvent::ACTION_CHANGE,
+		"item": this.model("item"),
+		"field_name": field_name,
+		"old_value": old_value,
+		"value": new_value,
+	};
+	
+	/* Send event */
+	await this.sendEvent(event);
+}
+
+ 
+
+/**
+ * On mouse click
+ */
+async void onButtonClick(Message<MouseClickEvent> msg)
+{
+	FormModel model = this.model();
+	string data_action = msg.sender.params.get("data-action");
+	
+	/* Create */
+	if (data_action == FormEvent::ACTION_CREATE)
+	{
+		/* Set wait message */
+		this.update("setWaitMessage");
+		
+		/* Send create action */
+		RemoteCallAnswer answer = await model::sendCreate(model);
+		
+		/* Create event */
+		FormEvent event = new FormEvent
+		{
+			"form_action": model.action,
+			"event": FormEvent::ACTION_CREATE,
+			"item": model.item,
+			"old_item": model.old_item,
+			"answer": answer,
+		};
+		
+		/* Set answer */
+		this.update("setAnswer", answer);
+		
+		/* Send event */
+		this.sendEvent(event);
+	}
+	
+	/* Update */
+	else if (data_action == FormEvent::ACTION_UPDATE)
+	{
+		/* Set wait message */
+		this.update("setWaitMessage");
+		
+		/* Send update action */
+		RemoteCallAnswer answer = await model::sendUpdate(model);
+		
+		/* Create event */
+		FormEvent event = new FormEvent
+		{
+			"form_action": model.action,
+			"event": FormEvent::ACTION_UPDATE,
+			"pk": model.pk,
+			"item": model.item,
+			"old_item": model.old_item,
+			"answer": answer,
+		};
+		
+		/* Set answer */
+		this.update("setAnswer", answer);
+		
+		/* Send event */
+		this.sendEvent(event);
+	}
+	
+	/* Cancel */
+	else if (data_action == FormEvent::ACTION_CANCEL)
+	{
+		/* Create event */
+		FormEvent event = new FormEvent
+		{
+			"form_action": model.action,
+			"event": FormEvent::ACTION_CANCEL,
+		};
+		
+		/* Send event */
+		this.sendEvent(event);
+	}
+}
+
+
+
+/**
+ * On signal
+ */
+async void onSignal(Message<SignalEvent> msg, ListenerCallback item)
+{
+	SignalEvent signal = msg.data;
+	
+	/* Get model */
+	FormModel model = this.model();
+	
+	/* Clear form */
+	if (signal.command == "clear")
+	{
+		this.update("clear");
+	}
+	
+	await parent::onSignal(msg, item);
+}
+
+</script>
+
+</class>

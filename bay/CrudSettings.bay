@@ -18,33 +18,24 @@
 
 namespace Runtime.Web.CRUD;
 
-use Runtime.lib;
 use Runtime.BaseStruct;
-use Runtime.IntrospectionClass;
-use Runtime.IntrospectionInfo;
-use Runtime.RuntimeUtils;
-use Runtime.ORM.Annotations.Primary;
-use Runtime.Web.CRUD.ForeignField;
+use Runtime.Web.CRUD.FieldInfo;
 
 
-struct Foreign extends BaseStruct
+struct CrudSettings extends BaseStruct
 {
-	string class_name = "";
-	Primary primary_key = null;
-	IntrospectionClass class_info = null;
-	Dict<ForeignField> fields = {};
+	string kind = "";
+	int index = -1;
+	bool show = true;
+	string current_class_name = "";
+	string field_class_name = "";
 	
+	FieldInfo field = null;
+	Dict item = null;
 	
-	/**
-	 * Set class name
-	 */
-	pure Foreign init(string class_name)
+	Dict params = {};
+	Dict attrs =
 	{
-		Foreign foreign = new Foreign();
-		foreign <= class_name <= class_name;
-		/*foreign <= class_info <= RuntimeUtils::getClassIntrospectionWithParents(class_name);*/
-		return foreign;
-	}
-	
-	
+		"value": "",
+	};	
 }

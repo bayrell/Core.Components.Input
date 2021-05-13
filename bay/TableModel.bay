@@ -20,6 +20,10 @@ namespace Runtime.Web.CRUD;
 
 use Runtime.lib;
 use Runtime.BaseStruct;
+use Runtime.Web.App.PageModel;
+use Runtime.Web.App.RemoteCallAnswer;
+use Runtime.Web.App.RenderContainer;
+use Runtime.Web.App.Request;
 
 
 struct TableModel extends BaseStruct
@@ -29,6 +33,72 @@ struct TableModel extends BaseStruct
 	int pages = 0;
 	int delta = 5;
 	int limit = 100;
+	
+	/* Crud error */
+	int error_code = 1;
+	string error_message = "";
+	string error_name = "";
+	
+	
+	
+	/**
+	 * Returns search params
+	 */
+	pure Dict getCrudSearchParams(Request request)
+	{
+		Map data = new Map();
+		
+		if (rtl::exists(request.query))
+		{
+			Vector search_filter = new Vector();
+			Dict filter = request.query["filter"] |> default Dict null;
+			if (filter)
+			{
+				Collection keys = filter.keys();
+				for (int i=0; i<keys.count(); i++)
+				{
+					string key_name = keys[i];
+					search_filter.pushValue([key_name, "=", filter[key_name]]);
+				}
+				data.setValue("filter", search_filter.toCollection());
+			}
+			
+			string page = request.query.get("page", 1) - 1;
+			if (page < 0) page = 0;
+			data.setValue("page", page);
+			data.setValue("limit", 20);
+		}
+		
+		return data.toDict();
+	}
+	
+	
+	
+	/**
+	 * Search action
+	 */
+	static async RenderContainer searchAction(RenderContainer container, string object_name, Collection model_path)
+	{
+		/* Get page model */
+		TableModel table_model = container.getPageModel(model_path);
+		
+		/* Get search params */
+		Dict search_params = static::getCrudSearchParams(container.request);
+		
+		/* Remote call */
+		RemoteCallAnswer answer = await container.busCall
+		(
+			"api://" ~ @.app_name ~ "/" ~ object_name ~ "/core.crud/search/",
+			search_params
+		);
+		
+		/* Set crud answer */
+		table_model = static::setCrudAnswer(table_model, answer);
+		
+		/* Set page model */
+		return container.setPageModelAttr(model_path, table_model);
+	}
+	
 	
 	
 	/**
@@ -136,6 +206,37 @@ struct TableModel extends BaseStruct
 		if (pos != -1)
 		{
 			model <= rows <= model.rows.removeIm(pos);
+		}
+		
+		return model;
+	}
+	
+	
+	
+	/**
+	 * Set crud answer
+	 */
+	pure TableModel setCrudAnswer(TableModel model, RemoteCallAnswer answer)
+	{
+		if (answer == null) return this;
+		
+		/* Answer */
+		if (answer.isSuccess())
+		{
+			model <= rows <= answer.response["items"];
+			model <= page <= answer.response["page"];
+			model <= pages <= answer.response["pages"];
+			model <= limit <= answer.response["limit"];
+			model <= options <= answer.response["options"];
+			model <= error_code <= rtl::ERROR_OK;
+		}
+		
+		/* Exception */
+		else
+		{
+			model <= error_code <= answer.code;
+			model <= error_message <= answer.error_message;
+			model <= error_name <= answer.error_name;
 		}
 		
 		return model;

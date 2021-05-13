@@ -21,77 +21,39 @@
 	module="Runtime.Web.CRUD" model="Runtime.Web.CRUD.CrudPageModel"
 >
 
+<use name="Runtime.lib" />
 <use name="Runtime.BaseStruct" />
 <use name="Runtime.Web.Component" />
 <use name="Runtime.Web.Message" />
 <use name="Runtime.Web.App.LayoutModel" />
+<use name="Runtime.Web.App.PageModel" />
+<use name="Runtime.Web.App.RemoteCallAnswer" />
+<use name="Runtime.Web.App.RenderContainer" />
+<use name="Runtime.Web.App.Request" />
 <use name="Runtime.Web.App.Route" />
 <use name="Runtime.Web.App.Widget" />
-<use name="Runtime.Web.CRUD.CrudWidgetEvent" />
 <use name="Runtime.Web.CRUD.FieldInfo" />
-<use name="Runtime.Web.CRUD.TableWidgetModel" />
+<use name="Runtime.Web.CRUD.Form" component="true" />
+<use name="Runtime.Web.CRUD.FormEvent" />
+<use name="Runtime.Web.CRUD.FormModel" />
+<use name="Runtime.Web.CRUD.Table" component="true" />
+<use name="Runtime.Web.CRUD.TableModel" />
 <use name="Runtime.Web.Events.BaseEvent" />
+<use name="Runtime.Web.Events.ChangeEvent" />
 <use name="Runtime.Web.Events.MouseClickEvent" />
+<use name="Runtime.Web.Events.SignalEvent" />
+<use name="Runtime.Web.Dialog.Dialog" component="true" />
+<use name="Runtime.Web.Dialog.DialogModel" />
 <use name="Runtime.Web.Input.Button" component="true" />
 
 
 <script>
 
+
 /**
  * Returns object name
  */
 pure string getCrudObjectName() => "App.Test";
-
-
-/**
- * Returns options
- */
-pure Collection getOptions(LayoutModel layout, CrudPageModel model, Dict params, string name = "")
-{
-	return parent::getOptions(layout, model, params, name);
-}
-
-
-/**
- * Returns crud struct
- */
-pure Collection<FieldInfo> getStruct(LayoutModel layout, CrudPageModel model, Dict params) => [];
-
-
-/**
- * Custom class name
- */
-pure string customSettings(LayoutModel layout, Dict crud_settings) => crud_settings;
-
-
-/**
- * Custom field render
- */
-pure html renderField(LayoutModel layout, Dict crud_settings) => null;
-
-
-/**
- * Returns filter fields
- */
-pure Collection<string> getFilterFields(LayoutModel layout, CrudPageModel model, Dict params) => [];
-
-
-/**
- * Returns form fields
- */
-pure Collection<string> getFormFields(LayoutModel layout, CrudPageModel model, Dict params) => [];
-
-
-/**
- * Returns table fields
- */
-pure Collection<string> getTableFields(LayoutModel layout, CrudPageModel model, Dict params) => [];
-
-
-/**
- * Returns view fields
- */
-pure Collection<string> getViewFields(LayoutModel layout, CrudPageModel model, Dict params) => [];
 
 
 /**
@@ -101,45 +63,164 @@ pure Dict<string> getMessages() => {};
 
 
 /**
+ * Form name
+ */
+pure Dict<string> getFormName() => classof Form;
+
+
+/**
+ * Table name
+ */
+pure Dict<string> getTableName() => classof Table;
+
+
+/**
  * Extend component model
  */
 pure LayoutModel extendComponentModel(LayoutModel layout, string model_path, Dict params)
 {
 	CrudPageModel model = layout.getPageModel();
-	if (model.struct == null) model <= struct <= static::getStruct(layout, model, params);
-	if (model.filter_fields == null) model <= filter_fields <= static::getFilterFields(layout, model, params);
-	if (model.form_fields == null) model <= form_fields <= static::getFormFields(layout, model, params);
-	if (model.table_fields == null) model <= table_fields <= static::getTableFields(layout, model, params);
-	if (model.view_fields == null) model <= view_fields <= static::getViewFields(layout, model, params);
-	return parent::extendComponentModel(layout.setPageModel(model), model_path, params);
+	
+	/* Add crud object name */
+	model <= form_add <= crud_object_name <= static::getCrudObjectName();
+	model <= form_edit <= crud_object_name <= static::getCrudObjectName();
+	
+	return layout.setPageModel(model);
 }
+
 
 </script>
 
 
-<template name="renderDate" args="LayoutModel layout, Dict crud_settings">
-	%var var value = crud_settings["value"];
-	{ value != null ? value.getDate( layout.tz ) : "" }
+
+<template name="renderLabel" args="LayoutModel layout, FieldInfo field, string kind">
+	
+	{ field["label"] ? field["label"] : field["label"] }
+	
 </template>
 
 
-<template name="renderDateTime" args="LayoutModel layout, Dict crud_settings">
-	%var var value = crud_settings["value"];
-	{ value != null ? value.getDBTime( layout.tz ) : "" }
-</template>
 
-
-<template name="renderNumber" args="LayoutModel layout, Dict crud_settings">
-	%var TableWidgetModel table_widget_model = crud_settings["crud_table_model"];
-	%var int index = crud_settings["crud_index"];
-	%if (table_widget_model)
+<template name="renderField" args="LayoutModel layout, CrudSettings crud_settings">
+	
+	%set FieldInfo field = crud_settings.field;
+	%set string field_class_name = crud_settings.field_class_name;
+	%set Dict attrs = crud_settings.attrs;
+	
+	<!-- Table number -->
+	%if (crud_settings.kind == "table" and crud_settings.field.api_name == "number")
 	{
-		{ table_widget_model.page * table_widget_model.limit + index + 1 }
+		%render static::renderNumber(layout, crud_settings);
+	}
+	
+	<!-- Table edit buttons -->
+	%else if (crud_settings.kind == "table" and crud_settings.field.api_name == "edit-buttons")
+	{
+		%render static::renderEditButtons(layout, crud_settings);
+	}
+	
+	%else
+	{
+		<{field_class_name} @key={ crud_settings.field.api_name }
+			@event:ChangeEvent=[crud_settings.current_class_name, "onChangeItem"]
+			...attrs
+		/>	
+	}
+	
+</template>
+
+
+
+<template name="render">
+	
+	%set CrudPageModel page_model = layout.getPageModel();
+	
+	<div class='crud' class={ "crud--" ~ page_model.action }>
+		%render static::renderTopButtons(layout, model_path, params);
+		%render static::renderFilter(layout, model_path, params);
+		%render static::renderTable(layout, model_path, params);
+	</div>
+	<div class='crud_dialog'>
+		%render static::renderDialog(layout, model_path, params);
+	</div>
+	
+</template>
+
+
+
+<template name="renderTopButtons" args="LayoutModel layout, Collection model_path, Dict params">
+	
+	%set Dict messages = static::getMessages();
+	<div class='top_buttons'>
+		<Button @signal:MouseClickEvent=SignalEvent{ "command": "show_add" } type="primary">{ messages["add"] }</Button>
+	</div>
+	
+</template>
+
+
+
+<template name="renderFilter" args="LayoutModel layout, Collection model_path, Dict params">
+	%set CrudPageModel page_model = layout.getPageModel();
+	%if (page_model.filter_fields != null)
+	{
+		<div class='filter'>
+		</div>
 	}
 </template>
 
 
-<template name="renderButtons" args="LayoutModel layout, Dict crud_settings">
+
+<template name="renderTable" args="LayoutModel layout, Collection model_path, Dict params">
+	%set string table_name = static::getTableName();
+	<{table_name} @name="table" @model=[ "table" ] />
+</template>
+
+
+
+<template name="renderDialog" args="LayoutModel layout, Collection model_path, Dict params">
+	<div class='dialogs'>
+		
+		<!-- Dialog add -->
+		<Dialog @name="dialog_add" style={ DialogModel::STYLE_CONTENT } show_buttons={ false }
+			@watch="form_add"
+		>
+			%set string form_name = static::getFormName();
+			
+			<{form_name} @name="form_add" @event:FormEvent="onFormEvent" />
+			
+		</Dialog>
+		
+		
+		<!-- Dialog edit -->
+		<Dialog @name="dialog_edit" style={ DialogModel::STYLE_CONTENT } show_buttons={ false }
+			@watch="form_edit"
+		>
+			%set string form_name = static::getFormName();
+			
+			<{form_name} @name="form_edit" @event:FormEvent="onFormEvent" />
+			
+		</Dialog>
+		
+		
+		<!-- Dialog delete -->
+		<Dialog @name="dialog_delete" style={ DialogModel::STYLE_CONTENT } show_buttons={ false }>
+			
+			Delete
+			
+		</Dialog>
+		
+		
+	</div>
+</template>
+
+
+
+<template name="renderNumber" args="LayoutModel layout, CrudSettings crud_settings">
+	1
+</template>
+
+
+<template name="renderEditButtons" args="LayoutModel layout, CrudSettings crud_settings">
 	{ static::renderButton(layout, crud_settings, "edit") }
 	{ static::renderButton(layout, crud_settings, "delete") }
 </template>
@@ -147,81 +228,138 @@ pure LayoutModel extendComponentModel(LayoutModel layout, string model_path, Dic
 
 <template name="renderButton" args="LayoutModel layout, Dict crud_settings, string button_type, Dict options = null">
 	
-	%var CrudPageModel page_model = crud_settings["crud_page_model"];
-	%var Dict item = crud_settings["crud_item"];
-	%var int index = crud_settings["crud_index"];
-	%var string widget_key = crud_settings["crud_params", "widget_key"];
-	%var Dict pk = page_model.getPrimaryKey(item);
+	%set CrudPageModel page_model = layout.getPageModel();
+	%set Dict item = crud_settings.item;
+	%set int index = crud_settings.index;
 	
 	%if (button_type == "edit")
 	{
-		<Button type='small' data-index={ index } data-pk={ page_model.getPrimaryKey(item) }
-			data-widget={ widget_key } data-widget-dest="dialog_edit" data-widget-action="open_dialog"
-			@event:MouseClickEvent="onButtonEvent" @key="edit"
+		<Button type='small' data-index={ index } data-pk={ static::getPrimaryKey(page_model, item) }
+			@event:MouseClickEvent="onRowEditClick" @key="edit"
 		>
 			{ _("Runtime.Web.CRUD", "Edit") }
 		</Button>
 	}
 	%else if (button_type == "delete")
 	{
-		<Button type='small danger' data-index={ index } data-pk={ page_model.getPrimaryKey(item) }
-			data-widget={ widget_key } data-widget-dest="dialog_delete" data-widget-action="open_dialog"
-			@event:MouseClickEvent="onButtonEvent" @key="delete"
+		<Button type='small danger' data-index={ index } data-pk={ static::getPrimaryKey(page_model, item) }
+			@event:MouseClickEvent="onRowDeleteClick" @key="delete"
 		>
 			{ _("Runtime.Web.CRUD", "Delete") }
 		</Button>
 	}
+	
+	
 </template>
 
 
 <script>
 
+var table = null;
+var form_add = null;
+var form_edit = null;
+var dialog_add = null;
+var dialog_edit = null;
+var dialog_delete = null;
+
+
 
 /**
- * On button event
+ * Returns primary key by item
  */
-async void onButtonEvent(Message<BaseEvent> msg)
+pure Dict getPrimaryKey(CrudPageModel page_model, Dict item)
 {
-	Dict pk = msg.sender.params["data-pk"];
-	string widget_key = msg.sender.params["data-widget"] |> default string "";
-	string widget_dest = msg.sender.params["data-widget-dest"] |> default string "";
-	string widget_action = msg.sender.params["data-widget-action"] |> default string "";
-	
-	/* Get item */
-	TableWidgetModel table_widget_model = this.model(["widgets", widget_key]);
-	Dict item = table_widget_model::getFirstItem(table_widget_model, pk);
-	
-	CrudWidgetEvent event = new CrudWidgetEvent
+	Map pk = new Map();
+	Collection fields = page_model.fields.filter( lib::equalAttr("primary", true) );
+	for (int i=0; i < fields.count(); i++)
 	{
-		"from": widget_key,
-		"dest": widget_dest,
-		"action": widget_action,
-		"current_widget": widget_key,
-		"item": item,
-	};
-	Message msg = new Message(event);
-	msg.sender = this;
-	
-	await this.onWidgetEvent(msg);
+		FieldInfo field = fields[i];
+		var value = item[field.api_name];
+		pk.setValue(field.api_name, value);
+	}
+	return pk.toDict();
 }
 
 
+
 /**
- * On widget event
+ * Signal
  */
-async void onWidgetEvent(Message<BaseEvent> msg)
+async void onSignal(Message<SignalEvent> msg, var listener)
 {
-	CrudPageModel page_model = this.model();
-	for (int i=0; i<this.childs.count(); i++)
+	SignalEvent signal = msg.data;
+	string crud_object_name = static::getCrudObjectName();
+	
+	/* Show dialog */
+	if (signal.command == "show_add")
 	{
-		Component c = this.childs[i];
-		if (c instanceof Widget)
-		{
-			await c.handleEvent(msg);
-		}
+		this.sendSignal(this.form_add, { "command": "clear" });
+		this.sendSignal(this.dialog_add, { "command": "show" });
+	}
+	
+}
+
+
+
+/**
+ * Form event
+ */
+async void onFormEvent(Message<FormEvent> msg)
+{
+	FormEvent event = msg.data;
+	
+	/* Create item */
+	if (event.event == FormEvent::ACTION_CREATE and event.answer.isSuccess())
+	{
+		this.sendSignal(this.dialog_add, { "command": "hide" });
+		this.sendSignal(this.table, { "command": "reload" });
+	}
+	
+	/* Update item */
+	if (event.event == FormEvent::ACTION_UPDATE and event.answer.isSuccess())
+	{
+		this.sendSignal(this.dialog_edit, { "command": "hide" });		
+		this.sendSignal(this.table, { "command": "update", "method_name": "setItem", "args": [ event.pk, event.item ] });
+	}
+	
+	/* Cancel */
+	if (event.event == FormEvent::ACTION_CANCEL)
+	{
+		if (event.form_action == FormModel::ACTION_CREATE) this.sendSignal(this.dialog_add, { "command": "hide" });
+		if (event.form_action == FormModel::ACTION_UPDATE) this.sendSignal(this.dialog_edit, { "command": "hide" });
 	}
 }
 
+
+
+/**
+ * On row edit
+ */
+async void onRowEditClick(Message<MouseClickEvent> msg)
+{
+	TableModel table_model = this.model("table");
+	Dict pk = msg.sender.params["data-pk"];
+	Dict item = table_model::getFirstItem(table_model, pk);
+	if (item)
+	{
+		this.sendSignal(this.form_edit, { "command": "clear" });
+		this.sendSignal(this.form_edit, { "command": "update", "method_name": "setPk", "args": [ pk ] });
+		this.sendSignal(this.form_edit, { "command": "update", "method_name": "setItem", "args": [ item ] });
+		this.sendSignal(this.dialog_edit, { "command": "show" });	
+	}
+}
+
+
+
+/**
+ * On row delete
+ */
+async void onRowDeleteClick(Message<MouseClickEvent> msg)
+{
+}
+
+
 </script>
+
 
 </class>

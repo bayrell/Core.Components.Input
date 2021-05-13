@@ -21,22 +21,96 @@ namespace Runtime.Web.CRUD;
 use Runtime.lib;
 use Runtime.Web.App.PageModel;
 use Runtime.Web.CRUD.FieldInfo;
+use Runtime.Web.CRUD.TableModel;
+use Runtime.Web.CRUD.FormModel;
+use Runtime.Web.Dialog.DialogModel;
 
 
 struct CrudPageModel extends PageModel
 {
+	
+	static const string ACTION_SEARCH = "search";
+	static const string ACTION_VIEW = "view";
+	
+	
 	/* Crud settings */
-	Collection<FieldInfo> struct = null;
+	Collection<FieldInfo> fields = [];
 	Collection<string> filter_fields = null;
 	Collection<string> form_fields = null;
 	Collection<string> table_fields = null;
-	Collection<string> view_fields = null;
+	
+	
+	/* Components */
+	DialogModel dialog_add = new DialogModel();
+	DialogModel dialog_edit = new DialogModel();
+	DialogModel dialog_delete = new DialogModel();
+	FormModel form_add = new FormModel{ "action": FormModel::ACTION_CREATE };
+	FormModel form_edit = new FormModel{ "action": FormModel::ACTION_UPDATE };
+	TableModel table = new TableModel();
+	
+	
+	
+	/**
+	 * Add field
+	 */
+	CrudPageModel addField(Dict item)
+	{
+		FieldInfo field = null;
+		CrudPageModel model = this;
+		string field_name = item["api_name"];
+		int pos = this.fields.find( lib::equalAttr("api_name", field_name) );
+		
+		if (pos == -1)
+		{
+			field = new FieldInfo(item);
+			model <= fields <= model.fields.pushIm(field);
+		}
+		else
+		{
+			field = this.fields[pos];
+			field = field.copy(item);
+			model <= fields <= model.fields.setIm(pos, field);
+		}
+		
+		return model;
+	}
+	
+	
+	
+	/**
+	 * Setup filter fields
+	 */
+	CrudPageModel setFilterFields(Collection fields)
+	{
+		return this.copy{ "filter_fields": fields };
+	}
+	
+	
+	
+	/**
+	 * Setup form fields
+	 */
+	CrudPageModel setFormFields(Collection fields)
+	{
+		return this.copy{ "form_fields": fields };
+	}
+	
+	
+	
+	/**
+	 * Setup table fields
+	 */
+	CrudPageModel setTableFields(Collection fields)
+	{
+		return this.copy{ "table_fields": fields };
+	}
+	
 	
 	
 	/**
 	 * Returns field info
 	 */
-	FieldInfo getFieldInfo(string field_name) => this.struct.findItem( lib::equalAttr("api_name", field_name) );
+	FieldInfo getFieldInfo(string field_name) => this.fields.findItem( lib::equalAttr("api_name", field_name) );
 	
 	
 	
@@ -46,10 +120,10 @@ struct CrudPageModel extends PageModel
 	Dict getPrimaryKey(Dict item)
 	{
 		Map pk = new Map();
-		Collection<FieldInfo> struct = this.struct.filter( lib::equalAttr("primary", true) );
-		for (int i=0; i < struct.count(); i++)
+		Collection<FieldInfo> fields = this.fields.filter( lib::equalAttr("primary", true) );
+		for (int i=0; i < fields.count(); i++)
 		{
-			FieldInfo field = struct[i];
+			FieldInfo field = fields[i];
 			var value = item[field.api_name];
 			pk.setValue(field.api_name, value);
 		}
