@@ -1,4 +1,4 @@
-<!--
+/*!
  *  Bayrell Runtime Library
  *
  *  (c) Copyright 2016-2021 "Ildar Bikmamatov" <support@bayrell.org>
@@ -14,41 +14,30 @@
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
--->
+ */
 
-<class version="1.0"
-	name="Runtime.Web.Input.Label" extends="Runtime.Web.Component" 
-	module="Runtime.Web.Input"
->
+namespace Runtime.Web.Input;
 
-
-<use name="Runtime.Core.Message" />
-<use name="Runtime.Web.Events.User.ChangeEvent" />
-<use name="Runtime.Web.Input.Helper" />
+use Runtime.Web.App.LayoutModel;
 
 
-<style>
-</style>
-
-
-
-<template name="render">
+class Helper
+{
 	
-	%set var value = Helper::getValue(layout, model_path, params);
-	%set value = rtl::isString(value) ? rs::split("\n", value) : [ value ];
-	
-	%for (int i=0; i<value.count(); i++)
+	pure primitive getValue(LayoutModel layout, Collection model_path, Dict params)
 	{
-		{ value[i] }<br/>
+		primitive model = layout.getModel(model_path);
+		
+		string value = (params != null) ? params.get("value", "") : "";
+		string def_value = (params != null) ? params.get("default", "") : "";
+		value = params.has("value") ? value : model;
+		
+		if (rtl::isEmpty(value) and value !== false and value !== 0 and value !== "0")
+		{
+			value = def_value;
+		}
+		
+		return value;
 	}
 	
-</template>
-
-
-
-<script type="frontend">
-
-</script>
-
-
-</class>
+}

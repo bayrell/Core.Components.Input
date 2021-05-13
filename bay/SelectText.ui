@@ -25,6 +25,7 @@
 <use name="Runtime.lib" />
 <use name="Runtime.Core.Message" />
 <use name="Runtime.Web.Events.User.ChangeEvent" />
+<use name="Runtime.Web.Input.Helper" />
 
 
 <style>
@@ -33,16 +34,14 @@
 
 
 <template name="render">
-	%var string name = (params != null) ? params.get("name", "") : "";
-	%var string value = (params != null) ? params.get("value", "") : "";
-	%var string def_value = (params != null) ? params.get("default", "") : "";
-	%var value = rtl::isEmpty(value) ? model : value;
-	%if (rtl::isEmpty(value) and value !== false and value !== 0 and value !== "0"){ %var value = def_value; }
 	
-	%var Collection options = params["options"];
+	%set string name = (params != null) ? params.get("name", "") : "";
+	%set string value = Helper::getValue(layout, model_path, params);
+	
+	%set Collection options = params["options"];
 	%if (rtl::exists(options))
 	{
-		%var Dict item = options.findItem( lib::equalAttr("id", value) );
+		%set Dict item = options.findItem( lib::equalAttr("id", value) );
 		%if (rtl::exists(item))
 		{
 			{ item["value"] }

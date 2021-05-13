@@ -93,7 +93,7 @@
  */
 async void onClick(Message<MouseClickEvent> msg)
 {
-	await this.signal(msg.data);
+	await this.sendEvent(msg.data);
 }
 
 </script>

@@ -3,6 +3,7 @@
 	"assets":
 	[
 		"Button",
+		"Helper",
 		"Input",
 		"Label",
 		"Select",

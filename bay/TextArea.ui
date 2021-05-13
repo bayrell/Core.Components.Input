@@ -24,6 +24,7 @@
 
 <use name="Runtime.Core.Message" />
 <use name="Runtime.Web.Events.ChangeEvent" />
+<use name="Runtime.Web.Input.Helper" />
 
 
 <style>
@@ -40,15 +41,14 @@
 
 
 <template name="render">
-	%var string name = (params != null) ? params.get("name", "") : "";
-	%var string value = (params != null) ? params.get("value", "") : "";
-	%var string def_value = (params != null) ? params.get("default", "") : "";
-	%var value = rtl::isEmpty(value) ? model : value;
-	%if (rtl::isEmpty(value) and value !== false and value !== 0 and value !== "0"){ %var value = def_value; }
-	%var string type = (params != null) ? params.get("type", "input") : "";
-	%var primitive tag = (params != null) ? params.get("@tag", "") : "";
+
+	%set string name = (params != null) ? params.get("name", "") : "";
+	%set string type = (params != null) ? params.get("type", "input") : "";
+	%set string value = Helper::getValue(layout, model_path, params);
+	%set primitive tag = (params != null) ? params.get("@tag", "") : "";
 	<textarea class='input' @tag={ tag } @event:ChangeEvent="onChange"
 		name={ name } type={ type } value={ value } />
+		
 </template>
 
 
@@ -60,7 +60,7 @@
  */
 public void onChange(Message<ChangeEvent> msg)
 {
-	this.signal(msg.data);
+	this.sendEvent(msg.data);
 }
 
 </script>
