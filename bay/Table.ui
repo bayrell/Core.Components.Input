@@ -24,6 +24,7 @@
 <use name="Runtime.Core.Message" />
 <use name="Runtime.Web.ListenerCallback" />
 <use name="Runtime.Web.App.LayoutModel" />
+<use name="Runtime.Web.App.RemoteCallAnswer" />
 <use name="Runtime.Web.CRUD.CrudPageModel" />
 <use name="Runtime.Web.CRUD.CrudSettings" />
 <use name="Runtime.Web.CRUD.FieldInfo" />
@@ -258,11 +259,18 @@ async void onSignal(Message<SignalEvent> msg, ListenerCallback item)
 	SignalEvent signal = msg.data;
 	
 	/* Get model */
+	CrudPageModel page_model = this.getPageModel();
 	TableModel model = this.model();
 	
 	/* Reload */
 	if (signal.command == "reload")
 	{
+		/* Send update action */
+		RemoteCallAnswer answer = await page_model::sendSearch(page_model, {});
+		
+		/* Set crud answer */
+		this.updateModel("setCrudAnswer", answer);
+		this.repaint();
 	}
 	
 	/* Set item by pk */

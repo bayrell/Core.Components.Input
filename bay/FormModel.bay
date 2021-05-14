@@ -40,9 +40,6 @@ struct FormModel extends BaseStruct
 	string error_message = "";
 	Dict data = {};
 	
-	/* Api object name */
-	string crud_object_name = "";
-	
 	
 	/**
 	 * Set primary key

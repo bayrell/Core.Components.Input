@@ -83,8 +83,7 @@ pure LayoutModel extendComponentModel(LayoutModel layout, string model_path, Dic
 	CrudPageModel model = layout.getPageModel();
 	
 	/* Add crud object name */
-	model <= form_add <= crud_object_name <= static::getCrudObjectName();
-	model <= form_edit <= crud_object_name <= static::getCrudObjectName();
+	model <= crud_object_name <= static::getCrudObjectName();
 	
 	return layout.setPageModel(model);
 }
@@ -446,7 +445,7 @@ async void onDialogEvent(Message<DialogEvent> msg)
 			this.sendSignal(this.dialog_delete, { "command": "setWaitMessage" });
 			
 			/* Send create action */
-			RemoteCallAnswer answer = await page_model::sendDelete(static::getCrudObjectName(), pk);
+			RemoteCallAnswer answer = await page_model::sendDelete(page_model, pk);
 			
 			if (answer.isSuccess())
 			{

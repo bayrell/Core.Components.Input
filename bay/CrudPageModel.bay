@@ -53,6 +53,10 @@ struct CrudPageModel extends PageModel
 	TableModel table = new TableModel();
 	
 	
+	/* Api object name */
+	string crud_object_name = "";
+	
+	
 	
 	/**
 	 * Add field
@@ -197,13 +201,29 @@ struct CrudPageModel extends PageModel
 	
 	
 	/**
-	 * Send api create
+	 * Reload page
 	 */
-	static async void sendCreate(string crud_object_name, Dict item)
+	static async void sendSearch(CrudPageModel model, Dict search_params)
 	{
 		RemoteCallAnswer answer = await WebApp::busCall
 		(
-			"api://" ~ @.app_name ~ "/" ~ crud_object_name ~ "/core.crud/create/",
+			"api://" ~ @.app_name ~ "/" ~ model.crud_object_name ~ "/core.crud/search/",
+			search_params
+		);
+		
+		return answer;
+	}
+	
+	
+	
+	/**
+	 * Send api create
+	 */
+	static async void sendCreate(CrudPageModel model, Dict item)
+	{
+		RemoteCallAnswer answer = await WebApp::busCall
+		(
+			"api://" ~ @.app_name ~ "/" ~ model.crud_object_name ~ "/core.crud/create/",
 			{
 				"item": item,
 			}
@@ -217,11 +237,11 @@ struct CrudPageModel extends PageModel
 	/**
 	 * Send api update
 	 */
-	static async void sendUpdate(string crud_object_name, Dict pk, Dict item)
+	static async void sendUpdate(CrudPageModel model, Dict pk, Dict item)
 	{
 		RemoteCallAnswer answer = await WebApp::busCall
 		(
-			"api://" ~ @.app_name ~ "/" ~ crud_object_name ~ "/core.crud/update/",
+			"api://" ~ @.app_name ~ "/" ~ model.crud_object_name ~ "/core.crud/update/",
 			{
 				"pk": pk,
 				"item": item,
@@ -236,11 +256,11 @@ struct CrudPageModel extends PageModel
 	/**
 	 * Send api delete
 	 */
-	static async void sendDelete(string crud_object_name, Dict pk)
+	static async void sendDelete(CrudPageModel model, Dict pk)
 	{
 		RemoteCallAnswer answer = await WebApp::busCall
 		(
-			"api://" ~ @.app_name ~ "/" ~ crud_object_name ~ "/core.crud/delete/",
+			"api://" ~ @.app_name ~ "/" ~ model.crud_object_name ~ "/core.crud/delete/",
 			{
 				"pk": pk,
 			}
