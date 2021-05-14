@@ -42,66 +42,6 @@ struct TableModel extends BaseStruct
 	
 	
 	/**
-	 * Returns search params
-	 */
-	pure Dict getCrudSearchParams(Request request)
-	{
-		Map data = new Map();
-		
-		if (rtl::exists(request.query))
-		{
-			Vector search_filter = new Vector();
-			Dict filter = request.query["filter"] |> default Dict null;
-			if (filter)
-			{
-				Collection keys = filter.keys();
-				for (int i=0; i<keys.count(); i++)
-				{
-					string key_name = keys[i];
-					search_filter.pushValue([key_name, "=", filter[key_name]]);
-				}
-				data.setValue("filter", search_filter.toCollection());
-			}
-			
-			string page = request.query.get("page", 1) - 1;
-			if (page < 0) page = 0;
-			data.setValue("page", page);
-			data.setValue("limit", 20);
-		}
-		
-		return data.toDict();
-	}
-	
-	
-	
-	/**
-	 * Search action
-	 */
-	static async RenderContainer searchAction(RenderContainer container, string object_name, Collection model_path)
-	{
-		/* Get page model */
-		TableModel table_model = container.getPageModel(model_path);
-		
-		/* Get search params */
-		Dict search_params = static::getCrudSearchParams(container.request);
-		
-		/* Remote call */
-		RemoteCallAnswer answer = await container.busCall
-		(
-			"api://" ~ @.app_name ~ "/" ~ object_name ~ "/core.crud/search/",
-			search_params
-		);
-		
-		/* Set crud answer */
-		table_model = static::setCrudAnswer(table_model, answer);
-		
-		/* Set page model */
-		return container.setPageModelAttr(model_path, table_model);
-	}
-	
-	
-	
-	/**
 	 * Returns position of item
 	 */
 	pure int findPos(TableModel model, Dict find)

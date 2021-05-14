@@ -43,6 +43,7 @@
 <use name="Runtime.Web.Events.MouseClickEvent" />
 <use name="Runtime.Web.Events.SignalEvent" />
 <use name="Runtime.Web.Dialog.Dialog" component="true" />
+<use name="Runtime.Web.Dialog.DialogEvent" />
 <use name="Runtime.Web.Dialog.DialogModel" />
 <use name="Runtime.Web.Input.Button" component="true" />
 
@@ -53,7 +54,7 @@
 /**
  * Returns object name
  */
-pure string getCrudObjectName() => "App.Test";
+pure string getCrudObjectName() => "";
 
 
 /**
@@ -141,7 +142,7 @@ pure LayoutModel extendComponentModel(LayoutModel layout, string model_path, Dic
 		%render static::renderTable(layout, model_path, params);
 	</div>
 	<div class='crud_dialog'>
-		%render static::renderDialog(layout, model_path, params);
+		%render static::renderDialogs(layout, model_path, params);
 	</div>
 	
 </template>
@@ -176,39 +177,61 @@ pure LayoutModel extendComponentModel(LayoutModel layout, string model_path, Dic
 </template>
 
 
+<template name="renderDialogs" args="LayoutModel layout, Collection model_path, Dict params">
+	<div class='dialogs'>
+		
+		%render static::renderDialog(layout, model_path, params, "add");
+		%render static::renderDialog(layout, model_path, params, "edit");
+		%render static::renderDialog(layout, model_path, params, "delete");
+		
+	</div>
+</template>
 
-<template name="renderDialog" args="LayoutModel layout, Collection model_path, Dict params">
+
+<template name="renderDialog" args="LayoutModel layout, Collection model_path, Dict params, string kind">
 	<div class='dialogs'>
 		
 		<!-- Dialog add -->
-		<Dialog @name="dialog_add" style={ DialogModel::STYLE_CONTENT } show_buttons={ false }
-			@watch="form_add"
-		>
-			%set string form_name = static::getFormName();
-			
-			<{form_name} @name="form_add" @event:FormEvent="onFormEvent" />
-			
-		</Dialog>
-		
+		%if (kind == "add")
+		{
+			<Dialog @name="dialog_add" style={ DialogModel::STYLE_CONTENT } show_buttons={ false }
+				@watch="form_add"
+			>
+				%set string form_name = static::getFormName();
+				<{form_name} @name="form_add" @event:FormEvent="onFormEvent" />
+			</Dialog>
+		}
 		
 		<!-- Dialog edit -->
-		<Dialog @name="dialog_edit" style={ DialogModel::STYLE_CONTENT } show_buttons={ false }
-			@watch="form_edit"
-		>
-			%set string form_name = static::getFormName();
-			
-			<{form_name} @name="form_edit" @event:FormEvent="onFormEvent" />
-			
-		</Dialog>
-		
+		%else if (kind == "edit")
+		{
+			<Dialog @name="dialog_edit" style={ DialogModel::STYLE_CONTENT } show_buttons={ false }
+				@watch="form_edit"
+			>
+				%set string form_name = static::getFormName();
+				<{form_name} @name="form_edit" @event:FormEvent="onFormEvent" />
+			</Dialog>
+		}
 		
 		<!-- Dialog delete -->
-		<Dialog @name="dialog_delete" style={ DialogModel::STYLE_CONTENT } show_buttons={ false }>
-			
-			Delete
-			
-		</Dialog>
-		
+		%else if (kind == "delete")
+		{
+			<Dialog @name="dialog_delete" style={ DialogModel::STYLE_CONTENT } auto_hide={ false }
+				@event:DialogEvent="onDialogEvent"
+				buttons=[
+					{
+						"type": "danger",
+						"data-action": "ok",
+						"value": "OK",
+					},
+					{
+						"type": "default",
+						"data-action": "cancel",
+						"value": "Cancel",
+					},
+				]
+			/>
+		}
 		
 	</div>
 </template>
@@ -319,7 +342,7 @@ async void onFormEvent(Message<FormEvent> msg)
 	if (event.event == FormEvent::ACTION_UPDATE and event.answer.isSuccess())
 	{
 		this.sendSignal(this.dialog_edit, { "command": "hide" });		
-		this.sendSignal(this.table, { "command": "update", "method_name": "setItem", "args": [ event.pk, event.item ] });
+		this.sendSignal(this.table, { "command": "setItem", "params": { "pk": event.pk, "item": event.item }});
 	}
 	
 	/* Cancel */
@@ -342,10 +365,8 @@ async void onRowEditClick(Message<MouseClickEvent> msg)
 	Dict item = table_model::getFirstItem(table_model, pk);
 	if (item)
 	{
-		this.sendSignal(this.form_edit, { "command": "clear" });
-		this.sendSignal(this.form_edit, { "command": "update", "method_name": "setPk", "args": [ pk ] });
-		this.sendSignal(this.form_edit, { "command": "update", "method_name": "setItem", "args": [ item ] });
-		this.sendSignal(this.dialog_edit, { "command": "show" });	
+		this.sendSignal(this.form_edit, { "command": "clear", "params": { "pk": pk, "item": item } });
+		this.sendSignal(this.dialog_edit, { "command": "show" });
 	}
 }
 
@@ -356,8 +377,89 @@ async void onRowEditClick(Message<MouseClickEvent> msg)
  */
 async void onRowDeleteClick(Message<MouseClickEvent> msg)
 {
+	TableModel table_model = this.model("table");
+	Dict pk = msg.sender.params["data-pk"];
+	Dict item = table_model::getFirstItem(table_model, pk);
+	
+	string message = "";
+	Dict<string> messages = static::getMessages();
+	
+	/* Build message */
+	fn f = messages["delete"];
+	if (rtl::exists(f))
+	{
+		if (rtl::isFn(f))
+		{
+			message = f(item);
+		}
+		else message = f;
+	}
+	else
+	{
+		message = _("Runtime.Web.CRUD", "Do you realy want to delete '%name%' ?", { "name": item["name"] } );
+	}
+	
+	if (item)
+	{
+		this.sendSignal
+		(
+			this.dialog_delete,
+			{
+				"command": "show",
+				"params":
+				{
+					"text": message,
+					"tag":
+					{
+						"pk": pk,
+						"item": item,
+						"kind": "table",
+					},
+				}
+			}
+		);
+	}
 }
 
+
+
+/**
+ * On dialog event
+ */
+async void onDialogEvent(Message<DialogEvent> msg)
+{
+	CrudPageModel page_model = this.model();
+	DialogEvent e = msg.data;
+	
+	Dict pk = e["tag", "pk"] |> default Dict null;
+	Dict item = e["tag", "item"] |> default Dict null;
+	string kind = e["tag", "kind"] |> default string "";
+	
+	if (msg.sender.getPathId() == this.dialog_delete.getPathId())
+	{
+		if (e.button_result == "cancel")
+		{
+			this.sendSignal(this.dialog_delete, { "command": "hide" });
+		}
+		else
+		{
+			this.sendSignal(this.dialog_delete, { "command": "setWaitMessage" });
+			
+			/* Send create action */
+			RemoteCallAnswer answer = await page_model::sendDelete(static::getCrudObjectName(), pk);
+			
+			if (answer.isSuccess())
+			{
+				this.sendSignal(this.table, { "command": "removeItem", "params": { "pk": pk } });
+				this.sendSignal(this.dialog_delete, { "command": "hide" });
+			}
+			else
+			{
+				this.sendSignal(this.dialog_delete, { "command": "setAnswer", "params": { "answer": answer } });
+			}
+		}
+	}
+}
 
 </script>
 

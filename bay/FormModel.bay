@@ -45,61 +45,6 @@ struct FormModel extends BaseStruct
 	
 	
 	/**
-	 * Send api create
-	 */
-	static async void sendCreate(FormModel model)
-	{
-		RemoteCallAnswer answer = await WebApp::busCall
-		(
-			"api://" ~ @.app_name ~ "/" ~ model.crud_object_name ~ "/core.crud/create/",
-			{
-				"item": model.item,
-			}
-		);
-		
-		return answer;
-	}
-	
-	
-	
-	/**
-	 * Send api update
-	 */
-	static async void sendUpdate(FormModel model)
-	{
-		RemoteCallAnswer answer = await WebApp::busCall
-		(
-			"api://" ~ @.app_name ~ "/" ~ model.crud_object_name ~ "/core.crud/update/",
-			{
-				"pk": model.pk,
-				"item": model.item,
-			}
-		);
-		
-		return answer;
-	}
-	
-	
-	
-	/**
-	 * Send api delete
-	 */
-	static async void sendDelete(FormModel model, string object_name)
-	{
-		RemoteCallAnswer answer = await WebApp::busCall
-		(
-			"api://" ~ @.app_name ~ "/" ~ object_name ~ "/core.crud/update/",
-			{
-				"item": model.item,
-			}
-		);
-		
-		return answer;
-	}
-	
-	
-	
-	/**
 	 * Set primary key
 	 */
 	pure FormModel setPk(FormModel model, Dict pk) => model.copy{ "pk": pk };

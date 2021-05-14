@@ -320,13 +320,14 @@ async void onChangeItem(Message<ChangeEvent> msg)
 	await this.sendEvent(event);
 }
 
- 
+
 
 /**
  * On mouse click
  */
 async void onButtonClick(Message<MouseClickEvent> msg)
 {
+	CrudPageModel page_model = this.getPageModel();
 	FormModel model = this.model();
 	string data_action = msg.sender.params.get("data-action");
 	
@@ -337,7 +338,7 @@ async void onButtonClick(Message<MouseClickEvent> msg)
 		this.update("setWaitMessage");
 		
 		/* Send create action */
-		RemoteCallAnswer answer = await model::sendCreate(model);
+		RemoteCallAnswer answer = await page_model::sendCreate(page_model::getCrudObjectName(), model.item);
 		
 		/* Create event */
 		FormEvent event = new FormEvent
@@ -363,7 +364,7 @@ async void onButtonClick(Message<MouseClickEvent> msg)
 		this.update("setWaitMessage");
 		
 		/* Send update action */
-		RemoteCallAnswer answer = await model::sendUpdate(model);
+		RemoteCallAnswer answer = await page_model::sendUpdate(page_model::getCrudObjectName(), model.pk, model.item);
 		
 		/* Create event */
 		FormEvent event = new FormEvent
@@ -413,7 +414,12 @@ async void onSignal(Message<SignalEvent> msg, ListenerCallback item)
 	/* Clear form */
 	if (signal.command == "clear")
 	{
-		this.update("clear");
+		this.updateModel("clear");
+		Dict pk = signal.params["pk"] |> default Dict null;
+		Dict item = signal.params["item"] |> default Dict null;
+		if (pk) this.updateModel("setPk", pk);
+		if (item) this.updateModel("setItem", item);
+		this.repaint();
 	}
 	
 	await parent::onSignal(msg, item);

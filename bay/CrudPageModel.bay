@@ -20,6 +20,10 @@ namespace Runtime.Web.CRUD;
 
 use Runtime.lib;
 use Runtime.Web.App.PageModel;
+use Runtime.Web.App.RemoteCallAnswer;
+use Runtime.Web.App.RenderContainer;
+use Runtime.Web.App.Request;
+use Runtime.Web.App.WebApp;
 use Runtime.Web.CRUD.FieldInfo;
 use Runtime.Web.CRUD.TableModel;
 use Runtime.Web.CRUD.FormModel;
@@ -128,5 +132,120 @@ struct CrudPageModel extends PageModel
 			pk.setValue(field.api_name, value);
 		}
 		return pk.toDict();
+	}
+	
+	
+	
+	/**
+	 * Returns search params
+	 */
+	pure Dict getCrudSearchParams(Request request)
+	{
+		Map data = new Map();
+		
+		if (rtl::exists(request.query))
+		{
+			Vector search_filter = new Vector();
+			Dict filter = request.query["filter"] |> default Dict null;
+			if (filter)
+			{
+				Collection keys = filter.keys();
+				for (int i=0; i<keys.count(); i++)
+				{
+					string key_name = keys[i];
+					search_filter.pushValue([key_name, "=", filter[key_name]]);
+				}
+				data.setValue("filter", search_filter.toCollection());
+			}
+			
+			string page = request.query.get("page", 1) - 1;
+			if (page < 0) page = 0;
+			data.setValue("page", page);
+			data.setValue("limit", 20);
+		}
+		
+		return data.toDict();
+	}
+	
+	
+	
+	/**
+	 * Search action
+	 */
+	static async RenderContainer searchAction(RenderContainer container, string object_name)
+	{
+		/* Get page model */
+		TableModel table_model = container.getPageModel("table");
+		
+		/* Get search params */
+		Dict search_params = static::getCrudSearchParams(container.request);
+		
+		/* Remote call */
+		RemoteCallAnswer answer = await container.busCall
+		(
+			"api://" ~ @.app_name ~ "/" ~ object_name ~ "/core.crud/search/",
+			search_params
+		);
+		
+		/* Set crud answer */
+		table_model = table_model::setCrudAnswer(table_model, answer);
+		
+		/* Set page model */
+		return container.setPageModelAttr("table", table_model);
+	}
+	
+	
+	
+	/**
+	 * Send api create
+	 */
+	static async void sendCreate(string crud_object_name, Dict item)
+	{
+		RemoteCallAnswer answer = await WebApp::busCall
+		(
+			"api://" ~ @.app_name ~ "/" ~ crud_object_name ~ "/core.crud/create/",
+			{
+				"item": item,
+			}
+		);
+		
+		return answer;
+	}
+	
+	
+	
+	/**
+	 * Send api update
+	 */
+	static async void sendUpdate(string crud_object_name, Dict pk, Dict item)
+	{
+		RemoteCallAnswer answer = await WebApp::busCall
+		(
+			"api://" ~ @.app_name ~ "/" ~ crud_object_name ~ "/core.crud/update/",
+			{
+				"pk": pk,
+				"item": item,
+			}
+		);
+		
+		return answer;
+	}
+	
+	
+	
+	/**
+	 * Send api delete
+	 */
+	static async void sendDelete(string crud_object_name, Dict pk)
+	{
+		RemoteCallAnswer answer = await WebApp::busCall
+		(
+			"api://" ~ @.app_name ~ "/" ~ crud_object_name ~ "/core.crud/delete/",
+			{
+				"pk": pk,
+			}
+		);
+		
+		return answer;
 	}
 }

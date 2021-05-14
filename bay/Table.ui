@@ -263,7 +263,29 @@ async void onSignal(Message<SignalEvent> msg, ListenerCallback item)
 	/* Reload */
 	if (signal.command == "reload")
 	{
-		/* log("reload"); */
+	}
+	
+	/* Set item by pk */
+	else if (signal.command == "setItem")
+	{
+		Dict pk = signal["params", "pk"] |> default Dict null;
+		Dict item = signal["params", "item"] |> default Dict null;
+		if (pk and item)
+		{
+			this.updateModel("setItem", pk, item);
+			this.repaint();
+		}
+	}
+	
+	/* Remove item by pk */
+	else if (signal.command == "removeItem")
+	{
+		Dict pk = signal["params", "pk"] |> default Dict null;
+		if (pk)
+		{
+			this.updateModel("removeItem", pk, item);
+			this.repaint();
+		}
 	}
 	
 	await parent::onSignal(msg, item);
