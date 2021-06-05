@@ -18,6 +18,8 @@
 
 namespace Runtime.Web.CRUD;
 
+use Runtime.Entity;
+
 
 class ModuleDescription
 {
@@ -49,4 +51,12 @@ class ModuleDescription
 		#endif
 	};
 	
+	
+	
+	/**
+	 * Returns enities
+	 */
+	pure Collection<Dict> entities() =>
+	[
+	];
 }

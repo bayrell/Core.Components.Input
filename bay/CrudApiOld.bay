@@ -21,26 +21,31 @@ namespace Runtime.Web.CRUD;
 use Runtime.rtl;
 use Runtime.lib;
 use Runtime.BaseObject;
+use Runtime.BaseStruct;
+use Runtime.RuntimeUtils;
 use Runtime.Exceptions.ApiException;
 use Runtime.Core.RemoteCallAnswer;
 use Runtime.Core.RemoteCallRequest;
-use Runtime.ORM.ConnectionInterface as Connection;
 use Runtime.ORM.CursorInterface as Cursor;
-use Runtime.ORM.Query;
-use Runtime.ORM.QueryFilter;
+use Runtime.ORM.DriverInterface as ORMDriver;
+use Runtime.ORM.QueryBuilder;
+use Runtime.ORM.Record;
+use Runtime.Backend.ApiList;
+use Runtime.Backend.ApiMethod;
+use Runtime.Web.CRUD.CrudApi;
+use Runtime.Web.CRUD.FieldInfo;
 use Runtime.Web.CRUD.Rules.Rule;
 
 
 class CrudApi extends BaseObject
-{	
+{
 	string action = "";
 	RemoteCallAnswer answer = null;
 	RemoteCallRequest request = null;
-	public Collection<Rule> _rules = null;
 	
 	/* Search */
 	Dict find = null;
-	Query q = null;
+	QueryBuilder q = null;
 	int page = 0;
 	int pages = 0;
 	int total = 0;
@@ -57,38 +62,18 @@ class CrudApi extends BaseObject
 	bool is_success = false;
 	
 	
-	/**
-	 * Returns current rules
-	 */
-	Collection<Rule> rules() => [];
-	
-	
 	
 	/**
-	 * Object name
+	 * Returns orm class name
 	 */
-	string getObjectName() => "";
-	
-	
-	
-	/**
-	 * Force delete items
-	 */
-	bool isForceDelete() => true;
+	pure string getORM() => "";
 	
 	
 	
 	/**
 	 * Returns current rules
 	 */
-	Collection<Rule> getRules()
-	{
-		if (this._rules == null)
-		{
-			this._rules = this.rules();
-		}
-		return this._rules;
-	}
+	Collection<Rule> rules() => [];
 	
 	
 	
@@ -158,9 +143,19 @@ class CrudApi extends BaseObject
 	
 	
 	/**
+	 * Returns default order
+	 */
+	Collection<Collection<string>> getDefaultOrder() =>
+	[
+		["id", "desc"]
+	];
+	
+	
+	
+	/**
 	 * Returns default filter
 	 */
-	Collection<QueryFilter> getDefaultFilter() =>
+	Collection<Collection<string>> getDefaultFilter() =>
 	[
 	];
 	
@@ -174,23 +169,6 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Returns maximum limit
-	 */
-	Collection<Collection<string>> getMaxLimit() => 1000;
-	
-	
-	
-	/**
-	 * Returns default order
-	 */
-	Collection<Collection<string>> getDefaultOrder() =>
-	[
-		["id", "desc"]
-	];
-	
-	
-	
-	/**
 	 * Returns search order
 	 */
 	Collection<Collection<string>> getSearchOrder() => this.getDefaultOrder();
@@ -198,63 +176,99 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Init request
+	 * Returns search filter
 	 */
-	async void init(string action, RemoteCallRequest request, RemoteCallAnswer answer)
+	Collection<Collection<string>> getSearchFilter()
 	{
-		if (action == "search")
-		{
-			this.action = "search";
-			this.answer = answer;
-			this.request = request;
-			this.page = request.data["page"] |> default int 0;
-			this.filter = request.data["filter"] |> default Collection null;
-			this.limit = request.data["limit"] |> default int this.getDefaultLimit();
-			if (this.limit > this.getMaxLimit()) this.limit = this.getMaxLimit();
-		}
-		else if (action == "create")
-		{
-			this.action = "create";
-			this.answer = answer;
-			this.request = request;
-			this.item = request.data["item"] |> default Dict {};
-		}
-		else if (action == "update")
-		{
-			this.action = "update";
-			this.answer = answer;
-			this.request = request;
-			this.pk = request.data["pk"] |> default Dict {};
-			this.item = request.data["item"] |> default Dict {};
-		}
-		else if (action == "delete")
-		{
-			this.action = "delete";
-			this.answer = answer;
-			this.request = request;
-			this.pk = request.data["pk"] |> default Dict {};
-		}
+		if (this.filter == null) return this.getDefaultFilter();
+		if (not (this.filter instanceof Collection)) return this.getDefaultFilter();
 		
-		Collection<Rule> rules = this.getRules();
+		Collection filter = this.filter
+			|> .filter
+			(
+				bool (var item)
+				{
+					if (not (item instanceof Collection)) return false;
+					if (item.count() != 3) return false;
+					return true;
+				}
+			)
+		;
+		
+		Collection<Rule> rules = this.rules();
 		for (int i=0; i<rules.count(); i++)
 		{
 			Rule rule = rules[i];
-			await rule.init(this);
+			filter = rule.convertSearchFilter(this, filter);
 		}
+		
+		return filter;
 	}
 	
 	
 	
 	/**
-	 * After
+	 * Returns maximum limit
 	 */
-	async void after()
+	Collection<Collection<string>> getMaxLimit() => 1000;
+	
+	
+	
+	/**
+	 * Convert item before save to database
+	 */
+	async Dict convertItem(Dict old_item)
 	{
-		Collection<Rule> rules = this.getRules();
+		Dict new_item = old_item;
+		Collection<Rule> rules = this.rules();
 		for (int i=0; i<rules.count(); i++)
 		{
 			Rule rule = rules[i];
-			await rule.after(this);
+			new_item = await rule.convertItem(this, new_item, old_item);
+		}
+		if (not this.isForceDelete())
+		{
+			new_item <= is_deleted <= false;
+		}
+		return new_item;
+	}
+	
+	
+	
+	/**
+	 * Patch item before query
+	 */
+	async Record patchItem(Record item) => item;
+	
+	
+	
+	/**
+	 * Process item before response
+	 */
+	async Dict processItem(Dict old_item)
+	{
+		Dict new_item = old_item;
+		Collection<Rule> rules = this.rules();
+		for (int i=0; i<rules.count(); i++)
+		{
+			Rule rule = rules[i];
+			new_item = await rule.processItem(this, new_item, old_item);
+		}
+		return new_item;
+	}
+	
+	
+	
+	/**
+	 * Init request
+	 */
+	async void init()
+	{
+		Collection<Rule> rules = this.rules();
+		for (int i=0; i<rules.count(); i++)
+		{
+			Rule rule = rules[i];
+			await rule.init(this);
 		}
 	}
 	
@@ -275,7 +289,7 @@ class CrudApi extends BaseObject
 	 */
 	async void beforeQuery()
 	{
-		Collection<Rule> rules = this.getRules();
+		Collection<Rule> rules = this.rules();
 		for (int i=0; i<rules.count(); i++)
 		{
 			Rule rule = rules[i];
@@ -290,54 +304,13 @@ class CrudApi extends BaseObject
 	 */
 	async void afterQuery()
 	{
-		Collection<Rule> rules = this.getRules();
+		Collection<Rule> rules = this.rules();
 		for (int i=0; i<rules.count(); i++)
 		{
 			Rule rule = rules[i];
 			await rule.afterQuery(this);
 		}
 	}
-	
-	
-	
-	/**
-	 * Convert item before save to database
-	 */
-	async Dict convertItem(Dict old_item)
-	{
-		Dict new_item = old_item;
-		Collection<Rule> rules = this.rules();
-		for (int i=0; i<rules.count(); i++)
-		{
-			Rule rule = rules[i];
-			new_item = await rule.convertItem(this, new_item, old_item);
-		}
-		return new_item;
-	}
-	
-	
-	
-	/**
-	 * Process item before response
-	 */
-	async Dict processItem(Dict old_item)
-	{
-		Dict new_item = old_item;
-		Collection<Rule> rules = this.getRules();
-		for (int i=0; i<rules.count(); i++)
-		{
-			Rule rule = rules[i];
-			new_item = await rule.processItem(this, new_item, old_item);
-		}
-		return new_item;
-	}
-	
-	
-	
-	/**
-	 * Patch item before database query
-	 */
-	async Dict patchItem(Dict item) => item;
 	
 	
 	
@@ -467,125 +440,32 @@ class CrudApi extends BaseObject
 	
 	
 	/**
-	 * Returns search filter
+	 * After
 	 */
-	Collection<QueryFilter> getSearchFilter()
+	async void after()
 	{
-		if (this.filter == null) return this.getDefaultFilter();
-		if (not (this.filter instanceof Collection)) return this.getDefaultFilter();
-		
-		/* Get search filter */
-		Collection<QueryFilter> filter = this.filter
-			|> .map
-			(
-				QueryFilter (Collection item)
-				{
-					if (not (item instanceof Collection)) return null;
-					if (item.count() != 3) return null;
-					
-					string field_name = item[0] |> default string "";
-					string op = item[1] |> default string "";
-					primitive value = item[2];
-					
-					if (field_name == "") return null;
-					if (op == "") return null;
-					
-					return new QueryFilter
-					{
-						"op": op,
-						"value": value,
-						"field_name": field_name,
-					};
-				}
-				
-			)
-			|> .filter
-			(
-				bool (var item)
-				{
-					if (item == null) return false;
-					return true;
-				}
-			)
-		;
-		
-		/* Extend search filter */
 		Collection<Rule> rules = this.rules();
 		for (int i=0; i<rules.count(); i++)
 		{
 			Rule rule = rules[i];
-			filter = rule.extendSearchFilter(this, filter);
+			await rule.after(this);
 		}
-		
-		return filter;
 	}
 	
 	
 	
 	/**
-	 * Extend search filter
+	 * Add error
 	 */
-	Collection<list> extendSearchFilter(Collection<list> filter) => filter;
-	
-	
-	
-	/**
-	 * Build query
-	 */
-	Query extendSearchQuery(Query q)
+	async bool addFieldError(string field_name, string error)
 	{
-		Collection<Collection<string>> filter = this.getSearchFilter() |> this.extendSearchFilter;
-		
-		q = q
-			.setFilter( filter )
-			.page( this.page, this.limit )
-			.order( this.getSearchOrder() )
-		;
-		
-		if (not this.isForceDelete())
+		if (not this.fields_errors.has(field_name))
 		{
-			q = q.addFilter(["is_deleted", "=", 0]);
+			this.fields_errors.setValue(field_name, new Vector());
 		}
-		
-		return q;
+		Vector<string> errors = this.fields_errors[field_name];
+		errors.pushValue(error);
 	}
-	
-	
-	
-	/**
-	 * Find existing item for create
-	 */
-	async Dict findItemByKey(Dict pk)
-	{
-		/* Get ORM object name */
-		string object_name = this.getObjectName();
-		
-		/* Get filter */
-		Collection<QueryFilter> filter = Query::getPrimaryKey(object_name, pk)
-			|> Query::getFilter
-			|> this.extendSearchFilter
-		;
-		if (filter == null) return null;
-		
-		/* Get query */
-		Query q = new Query()
-			|> .selectRecords(object_name)
-			|> .setFilter(filter)
-			|> .limit(1)
-		;
-		
-		/* Execute query */
-		Dict item = await q.one();
-		
-		return item;
-	}
-	
-	
-	
-	/**
-	 * Find existing item for create
-	 */
-	async Dict findItemForCreating() => null;
 	
 	
 	
@@ -636,26 +516,109 @@ class CrudApi extends BaseObject
 	}
 	
 	
+
+	/**
+	 * Extend search filter
+	 */
+	Collection<list> extendSearchFilter(Collection<list> filter) => filter;
+	
+	
+	
+	/**
+	 * Build query
+	 */
+	QueryBuilder buildSearchQuery(QueryBuilder q)
+	{
+		if (this.isSearch())
+		{
+			q = q
+				.filter( this.getSearchFilter() |> this.extendSearchFilter )
+				.page( this.page, this.limit )
+				.order( this.getSearchOrder() );
+		}
+		if (not this.isForceDelete())
+		{
+			q = q.addFilter(["is_deleted", "=", 0]);
+		}
+		return q;
+	}
+	
+	
+	
+	/**
+	 * Find existing item for create
+	 */
+	async Record findItemByKey(Dict pk)
+	{
+		/* Get ORM class name */
+		string class_name = static::getORM();
+		
+		Collection<list> filter = rtl::methodApply(class_name, "getFilterByPrimaryKey", [pk])
+			|> this.extendSearchFilter
+		;
+		if (filter == null) return null;
+		
+		/* Execute query */
+		Record res = rtl::methodApply(class_name, "select")
+			|> .filter(filter)
+			|> .asRecord(true)
+			|> .limit(1)
+			|> await .one()
+		;
+		
+		return res;
+	}
+	
+	
+	
+	/**
+	 * Find item by field
+	 */
+	async Record findItemByField(string field_name, string value)
+	{
+		/* Get ORM class name */
+		string class_name = static::getORM();
+		
+		/* Find item */
+		Record item = null;
+		value = value |> default string "";
+		if (value != "")
+		{
+			item = rtl::methodApply(class_name, "select")
+				|> .filter([
+					[field_name, "=", value]
+				])
+				|> await .one()
+			;
+		}
+		return item;
+	}
+	
+	
+	
+	/**
+	 * Find existing item for create
+	 */
+	async Record findItemForCreating() => null;
+	
+	
 	
 	/**
 	 * Search query
 	 */
 	async void searchQuery()
 	{
-		/* Get ORM object name */
-		string object_name = this.getObjectName();
+		/* Get ORM class name */
+		string class_name = static::getORM();
 		
-		Query q = new Query()
-			|> .selectRecords(object_name)
+		/* Execute query */
+		QueryBuilder q = rtl::applyMethod(class_name, "select")
+			|> this.buildSearchQuery
 			|> .calcFoundRows(true)
 		;
 		
-		/* Extend search query */
-		q = this.extendSearchQuery(q);
-		
 		/* Get items */
 		Cursor cursor = await q.execute();
-		Connection conn = cursor.getConnection();
 		
 		/* Fetch items */
 		Vector items = new Vector();
@@ -666,18 +629,17 @@ class CrudApi extends BaseObject
 			{
 				break;
 			}
-			row = q.fromDatabase(conn, row);
+			row = q.fromDatabase(cursor.getConnection(), row);
 			items.pushValue(row);
 		}
+		
+		await cursor.close();
 		
 		/* Result */
 		this.q = q;
 		this.items = items.toCollection();
 		this.total = await cursor.foundRows();
 		this.pages = (this.limit > 0) ? rtl::ceil(this.total / this.limit) : 0;
-		
-		/* Close cursor */
-		await cursor.close();
 	}
 	
 	
@@ -687,9 +649,6 @@ class CrudApi extends BaseObject
 	 */
 	async void doSearch()
 	{
-		/* Validate */
-		await this.validate();
-		
 		/* Can query */
 		bool res = await this.canQuery();
 		if (res)
@@ -722,8 +681,17 @@ class CrudApi extends BaseObject
 		/* Create api */
 		CrudApi api = rtl::newInstance(static::getCurrentClassName());
 		
+		/* Get data from request */
+		api.action = "search";
+		api.answer = answer;
+		api.request = request;
+		api.page = request.data["page"] |> default int 0;
+		api.filter = request.data["filter"] |> default Collection null;
+		api.limit = request.data["limit"] |> default int api.getDefaultLimit();
+		if (api.limit > api.getMaxLimit()) api.limit = api.getMaxLimit();
+		
 		/* Init api */
-		await api.init("search", request, answer);
+		await api.init();
 		
 		/* Search */
 		await api.doSearch();
@@ -731,7 +699,85 @@ class CrudApi extends BaseObject
 		/* After query */
 		await api.after();
 		
-		return [api.request, api.answer];
+		return [request, api.answer];
+	}
+	
+	
+	
+	/**
+	 * Get item query
+	 */
+	async void getItemQuery()
+	{
+		this.new_item = await this.findItemByKey(this.pk);
+	}
+	
+	
+	
+	/**
+	 * Get item
+	 */
+	async void doGetItem()
+	{
+		/* Validate */
+		await this.validate();
+		
+		/* Can query */
+		bool res = await this.canQuery();
+		if (res)
+		{
+			/* Before query */
+			await this.beforeQuery();
+			
+			/* Get item query */
+			await this.getItemQuery();
+			
+			/* After query */
+			await this.afterQuery();
+			
+			/* Set success */
+			this.is_success = true;
+		}
+		
+		Dict new_item = this.new_item;
+		
+		/* Process item */
+		if (new_item)
+		{
+			new_item = await this.processItem(new_item);
+		}
+		
+		/* Create response */
+		Dict response = await this.createResponse();
+		this.answer = this.answer::success(this.answer, response);
+	}
+	
+	
+	
+	/**
+	 * Get item api action
+	 */
+	static async list getItemAction(RemoteCallRequest request, RemoteCallAnswer answer)
+	{
+		/* Create api */
+		CrudApi api = rtl::newInstance(static::getCurrentClassName());
+		
+		/* Get data from request */
+		api.action = "getItem";
+		api.answer = answer;
+		api.request = request;
+		api.pk = request.data["pk"] |> default Dict {};
+		
+		/* Init api */
+		await api.init();
+		
+		/* Search */
+		await api.doGetItem();
+		
+		/* After query */
+		await api.after();
+		
+		return [request, api.answer];
 	}
 	
 	
@@ -741,24 +787,16 @@ class CrudApi extends BaseObject
 	 */
 	async void createQuery()
 	{
-		/* Get ORM object name */
-		string object_name = this.getObjectName();
+		/* Get ORM class name */
+		string class_name = static::getORM();
 		
 		/* Convert item */
 		Dict update_item = await this.convertItem(this.item);
 		
-		/* Patch item */
-		update_item = await this.patchItem(update_item);
-		
-		/* Insert item */
-		Cursor cursor = await Query::insertRecord
-		(
-			object_name,
-			update_item
-		);
-		
-		/* Close cursor */
-		await cursor.close();
+		/* Save item */
+		this.new_item = rtl::methodApply(class_name, "createInstance", [update_item]);
+		this.new_item = await this.patchItem(this.new_item);
+		this.pk = await rtl::methodApplyAsync(class_name, "save", [this.new_item]);
 		
 		/* Find new item */
 		this.new_item = await this.findItemByKey(this.pk);
@@ -775,12 +813,9 @@ class CrudApi extends BaseObject
 		this.old_item = this.findItemForCreating();
 		if (this.old_item)
 		{
-			/* Get ORM object name */
-			string object_name = this.getObjectName();
-			
-			/* Set update */
+			string class_name = static::getORM();
+			this.pk = rtl::methodApply(class_name, "getPrimaryKey", [this.old_item]);
 			this.action = "update";
-			this.pk = Query::getPrimaryKey(object_name, this.old_item)
 			
 			/* Update existing item */
 			this.doUpdate();
@@ -822,16 +857,32 @@ class CrudApi extends BaseObject
 		/* Create api */
 		CrudApi api = rtl::newInstance(static::getCurrentClassName());
 		
-		/* Init api */
-		await api.init("create", request, answer);
+		/* Get data from request */
+		api.action = "create";
+		api.answer = answer;
+		api.request = request;
+		api.item = request.data["item"] |> default Dict {};
 		
-		/* Search */
+		/* Init api */
+		await api.init();
+		
+		/* Create */
 		await api.doCreate();
 		
 		/* After query */
 		await api.after();
 		
-		return [api.request, api.answer];
+		return [request, api.answer];
+	}
+	
+	
+	
+	/**
+	 * Returns true if can Query
+	 */
+	async bool canUpdateQuery()
+	{
+		return true;
 	}
 	
 	
@@ -846,31 +897,19 @@ class CrudApi extends BaseObject
 		
 		/* Convert item */
 		Dict update_item = await this.convertItem(item);
-		if (update_item.keys().count() == 0)
+		Collection keys = update_item.keys();
+		if (keys.count() == 0)
 		{
-			return;
+			return false;
 		}
 		
-		/* Patch item */
-		update_item = await this.patchItem(update_item);
+		/* Get ORM class name */
+		string class_name = static::getORM();
 		
-		/* Get diff */
-		update_item = Query::getDiff(this.old_item, update_item);
-		
-		/* Get ORM object name */
-		string object_name = this.getObjectName();
-		
-		/* Skip if no change */
-		if (update_item.keys().count() == 0)
-		{
-			return;
-		}
-		
-		/* Update */
-		Cursor cursor = await Query::updateRecord(object_name, this.old_item, update_item);
-		
-		/* Close cursor */
-		await cursor.close();
+		/* Save item */
+		this.new_item = rtl::methodApply(class_name, "change", [this.old_item, update_item]);
+		this.new_item = await this.patchItem(this.new_item);
+		this.pk = await rtl::methodApplyAsync(class_name, "save", [this.new_item]);
 		
 		/* Find new item */
 		this.new_item = await this.findItemByKey(this.pk);
@@ -929,17 +968,41 @@ class CrudApi extends BaseObject
 		/* Create api */
 		CrudApi api = rtl::newInstance(static::getCurrentClassName());
 		
-		/* Init api */
-		await api.init("update", request, answer);
+		/* Get data from request */
+		api.action = "update";
+		api.answer = answer;
+		api.request = request;
+		api.pk = request.data["pk"] |> default Dict {};
+		api.item = request.data["item"] |> default Dict {};
 		
-		/* Search */
+		/* Init api */
+		await api.init();
+		
+		/* Update */
 		await api.doUpdate();
 		
 		/* After query */
 		await api.after();
 		
-		return [api.request, api.answer];
+		return [request, api.answer];
 	}
+	
+	
+	
+	/**
+	 * Returns true if can Query
+	 */
+	async bool canDeleteQuery()
+	{
+		return true;
+	}
+	
+	
+	
+	/**
+	 * Force delete items
+	 */
+	bool isForceDelete() => true;
 	
 	
 	
@@ -948,41 +1011,29 @@ class CrudApi extends BaseObject
 	 */
 	async void deleteQuery()
 	{
-		/* Get ORM object name */
-		string object_name = this.getObjectName();
-		
-		/* Force delete */
+		/* Get ORM class name */
+		string class_name = static::getORM();
 		if (this.isForceDelete())
 		{
 			/* Delete */
-			Cursor cursor = await Query::deleteRecord(object_name, this.old_item);
-			
-			/* Close cursor */
-			await cursor.close();
+			this.pk = await rtl::methodApplyAsync(class_name, "delete", [this.old_item]);
 		}
-		
-		/* Move to deleted */
 		else
 		{
-			/* Update */
-			Cursor cursor = await Query::updateRecord
-			(
-				object_name,
-				this.old_item,
-				{
-					"is_deleted": true,
-				}
-			);
+			Dict old_item = this.old_item;
+			old_item <= is_deleted <= true;
+			old_item = await this.patchItem(old_item);
 			
-			/* Close cursor */
-			await cursor.close();
+			/* Save item */
+			string class_name = static::getORM();
+			await rtl::methodApplyAsync(class_name, "save", [old_item]);
 		}
 	}
 	
 	
 	
 	/**
-	 * Delete
+	 * Update
 	 */
 	async void doDelete()
 	{
@@ -1003,7 +1054,7 @@ class CrudApi extends BaseObject
 			/* Before query */
 			await this.beforeQuery();
 			
-			/* Delete query */
+			/* Update query */
 			await this.deleteQuery();
 			
 			/* After query */
@@ -1027,16 +1078,22 @@ class CrudApi extends BaseObject
 		/* Create api */
 		CrudApi api = rtl::newInstance(static::getCurrentClassName());
 		
-		/* Init api */
-		await api.init("delete", request, answer);
+		/* Get data from request */
+		api.action = "delete";
+		api.answer = answer;
+		api.request = request;
+		api.pk = request.data["pk"] |> default Dict {};
 		
-		/* Search */
+		/* Init api */
+		await api.init();
+		
+		/* Delete */
 		await api.doDelete();
 		
 		/* After query */
 		await api.after();
 		
-		return [api.request, api.answer];
+		return [request, api.answer];
 	}
 	
 }
