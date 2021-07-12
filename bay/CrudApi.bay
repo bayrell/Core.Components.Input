@@ -569,7 +569,7 @@ class CrudApi extends BaseObject
 		
 		/* Get query */
 		Query q = new Query()
-			|> .selectRecords(object_name)
+			|> .selectObjects(object_name)
 			|> .setFilter(filter)
 			|> .limit(1)
 		;
@@ -646,7 +646,7 @@ class CrudApi extends BaseObject
 		string object_name = this.getObjectName();
 		
 		Query q = new Query()
-			|> .selectRecords(object_name)
+			|> .selectObjects(object_name)
 			|> .calcFoundRows(true)
 		;
 		
@@ -751,7 +751,7 @@ class CrudApi extends BaseObject
 		update_item = await this.patchItem(update_item);
 		
 		/* Insert item */
-		Cursor cursor = await Query::insertRecord
+		Cursor cursor = await Query::insertObject
 		(
 			object_name,
 			update_item
@@ -867,7 +867,7 @@ class CrudApi extends BaseObject
 		}
 		
 		/* Update */
-		Cursor cursor = await Query::updateRecord(object_name, this.old_item, update_item);
+		Cursor cursor = await Query::updateObject(object_name, this.old_item, update_item);
 		
 		/* Close cursor */
 		await cursor.close();
@@ -955,7 +955,7 @@ class CrudApi extends BaseObject
 		if (this.isForceDelete())
 		{
 			/* Delete */
-			Cursor cursor = await Query::deleteRecord(object_name, this.old_item);
+			Cursor cursor = await Query::deleteObject(object_name, this.old_item);
 			
 			/* Close cursor */
 			await cursor.close();
@@ -965,7 +965,7 @@ class CrudApi extends BaseObject
 		else
 		{
 			/* Update */
-			Cursor cursor = await Query::updateRecord
+			Cursor cursor = await Query::updateObject
 			(
 				object_name,
 				this.old_item,
