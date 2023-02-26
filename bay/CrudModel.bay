@@ -183,8 +183,6 @@ struct CrudModel<T> extends BaseStruct
 	 */
 	static async ApiResult findItemApi(Dict api_data)
 	{
-		if (not api_data.has("post_type")) api_data <= post_type <= "page";
-		
 		api_data = static::processApiData("findItemApi", api_data);
 		string url = static::getApiUrl("crud_item", {"api_data": api_data});
 		

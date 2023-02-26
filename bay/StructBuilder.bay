@@ -1,0 +1,83 @@
+/*!
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2016-2023 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+namespace Runtime.Web.Crud;
+
+use Runtime.BaseStruct;
+use Runtime.Web.ApiResult;
+use Runtime.Web.Bus;
+use Runtime.Web.RenderContainer;
+use Runtime.Web.Crud.FieldInfo;
+
+
+struct StructBuilder extends BaseStruct
+{
+	string model_name = "";
+	Dict<FieldInfo> info = {};
+	Collection<string> fields = [];
+	string kind = "";
+	
+	
+	/**
+	 * Build struct
+	 */
+	pure memorize StructBuilder build(string model_name, string kind = "")
+	{
+		StructBuilder builder = new StructBuilder{
+			"model_name": model_name,
+			"kind": kind,
+		};
+		
+		fn buildStruct = rtl::method(model_name, "buildStruct");
+		builder = buildStruct(builder);
+		builder = builder.resolve();
+		
+		return builder;
+	}
+	
+	
+	/**
+	 * Add struct
+	 */
+	StructBuilder addStruct(Dict<FieldInfo> new_info)
+	{
+		StructBuilder builder = this;
+		builder <= info <= builder.info.concat(new_info);
+		return builder;
+	}
+	
+	
+	/**
+	 * Add fields
+	 */
+	StructBuilder addFields(Collection<string> new_fields)
+	{
+		StructBuilder builder = this;
+		builder <= fields <= builder.fields.concat(new_fields);
+		return builder;
+	}
+	
+	
+	/**
+	 * Resolve hooks
+	 */
+	StructBuilder resolve()
+	{
+		return this;
+	}
+}
