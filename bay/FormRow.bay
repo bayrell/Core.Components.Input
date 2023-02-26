@@ -1,4 +1,4 @@
-/*!
+<!--
  *  Bayrell Runtime Library
  *
  *  (c) Copyright 2016-2023 "Ildar Bikmamatov" <support@bayrell.org>
@@ -14,51 +14,40 @@
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
- */
+-->
 
-namespace Runtime.Web.Crud;
-
-use Runtime.Entity.Hook;
+<class name="Runtime.Web.Crud.FormRow">
 
 
-static class ModuleDescription
-{
-	
-	/**
-	 * Returns module name
-	 * @return string
-	 */
-	public static string getModuleName()
-	{
-		return "Runtime.Web.Crud";
-	}
-	
-	
-	/**
-	 * Returns module name
-	 * @return string
-	 */
-	public static string getModuleVersion()
-	{
-		return "0.1.0";
-	}
-	
-	
-	/**
-	 * Returns required modules
-	 * @return Map<string>
-	 */
-	pure Map<string> requiredModules() => 
-	{
-	};
-	
-	
-	/**
-	 * Returns enities
-	 */
-	pure Collection<Dict> entities() =>
-	[
-		new Hook("Runtime.Web.Crud.Hooks.AppHook"),
-	];
-	
+<style>
+.web_form__row{
+	margin-bottom: 10px;
 }
+.web_form__field_result{
+	color: red;
+    font-size: 12px;
+}
+.web_form__row_label{
+	display: block;
+	font-weight: bold;
+	margin-bottom: 5px;
+}
+</style>
+
+
+<template>
+	<div class="web_form__row">
+		<label class="web_form__row_label">{{ render_params["label"] }}</label>
+		%render render_content;
+		<div class="web_form__field_result"
+			data-name={{ render_params["name"] }} data-default="&nbsp;">@raw{ "&nbsp;" }</div>
+	</div>
+</template>
+
+
+<script>
+
+</script>
+
+
+</class>

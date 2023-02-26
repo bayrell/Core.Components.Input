@@ -16,49 +16,20 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Web.Crud;
+namespace Runtime.Web.Crud.Rules;
 
-use Runtime.Entity.Hook;
+use Runtime.lib;
+use Runtime.BaseStruct;
+use Runtime.ORM.Cursor;
+use Runtime.ORM.Database;
+use Runtime.ORM.Query;
+use Runtime.Web.ApiResult;
+use Runtime.Web.Crud.Rules.CrudRule;
+use Runtime.Web.Crud.CrudApi;
 
 
-static class ModuleDescription
+struct Filter extends CrudRule
 {
-	
-	/**
-	 * Returns module name
-	 * @return string
-	 */
-	public static string getModuleName()
-	{
-		return "Runtime.Web.Crud";
-	}
-	
-	
-	/**
-	 * Returns module name
-	 * @return string
-	 */
-	public static string getModuleVersion()
-	{
-		return "0.1.0";
-	}
-	
-	
-	/**
-	 * Returns required modules
-	 * @return Map<string>
-	 */
-	pure Map<string> requiredModules() => 
-	{
-	};
-	
-	
-	/**
-	 * Returns enities
-	 */
-	pure Collection<Dict> entities() =>
-	[
-		new Hook("Runtime.Web.Crud.Hooks.AppHook"),
-	];
-	
+	string api_name = "";
+	string field_name = "";	
 }

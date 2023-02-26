@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Web.Input;
+namespace Runtime.Web.Crud;
 
 use Runtime.Web.App.LayoutModel;
 
@@ -26,15 +26,15 @@ class Helper
 	
 	pure primitive getValue(LayoutModel layout, Collection model_path, Dict params)
 	{
-		primitive model = layout.getModel(model_path);
+		primitive model = rtl::attr(layout, model_path);
 		
 		string value = (params != null) ? params.get("value", "") : "";
-		string def_value = (params != null) ? params.get("default", "") : "";
+		string default_value = (params != null) ? params.get("default_value", "") : "";
 		value = params.has("value") ? value : model;
 		
 		if (rtl::isEmpty(value) and value !== false and value !== 0 and value !== "0")
 		{
-			value = def_value;
+			value = default_value;
 		}
 		
 		return value;

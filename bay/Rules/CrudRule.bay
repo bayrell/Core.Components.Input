@@ -16,49 +16,27 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Web.Crud;
+namespace Runtime.Web.Crud.Rules;
 
-use Runtime.Entity.Hook;
+use Runtime.BaseStruct;
 
 
-static class ModuleDescription
+struct CrudRule extends BaseStruct
 {
-	
-	/**
-	 * Returns module name
-	 * @return string
+    
+    /**
+	 * Before search event
 	 */
-	public static string getModuleName()
+	async void onSearchBefore(CrudRule api)
 	{
-		return "Runtime.Web.Crud";
 	}
-	
-	
-	/**
-	 * Returns module name
-	 * @return string
+    
+    
+    /**
+	 * Search after
 	 */
-	public static string getModuleVersion()
+	void onSearchAfter(CrudRule api)
 	{
-		return "0.1.0";
-	}
-	
-	
-	/**
-	 * Returns required modules
-	 * @return Map<string>
-	 */
-	pure Map<string> requiredModules() => 
-	{
-	};
-	
-	
-	/**
-	 * Returns enities
-	 */
-	pure Collection<Dict> entities() =>
-	[
-		new Hook("Runtime.Web.Crud.Hooks.AppHook"),
-	];
-	
+    }
+    
 }

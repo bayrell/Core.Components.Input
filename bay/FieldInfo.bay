@@ -1,7 +1,7 @@
 /*!
  *  Bayrell Runtime Library
  *
- *  (c) Copyright 2016-2023 "Ildar Bikmamatov" <support@bayrell.org>
+ *  (c) Copyright 2016-2020 "Ildar Bikmamatov" <support@bayrell.org>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -18,47 +18,33 @@
 
 namespace Runtime.Web.Crud;
 
-use Runtime.Entity.Hook;
+use Runtime.lib;
+use Runtime.BaseStruct;
 
 
-static class ModuleDescription
+struct FieldInfo extends BaseStruct
 {
+	/* Common info */
+	string api_name = "";
+	string label = "";
+	string description = "";
+	string component_name = "";
+	fn is_show = null;
 	
-	/**
-	 * Returns module name
-	 * @return string
-	 */
-	public static string getModuleName()
-	{
-		return "Runtime.Web.Crud";
-	}
+	/* Flags */
+	bool primary = false;
+	bool required = false;
+	bool readonly = false;
+	bool virtual = false;
+	bool can_create = true;
+	bool can_update = true;
+	string group = "default";
+	var default_value = null;
 	
-	
-	/**
-	 * Returns module name
-	 * @return string
-	 */
-	public static string getModuleVersion()
-	{
-		return "0.1.0";
-	}
-	
-	
-	/**
-	 * Returns required modules
-	 * @return Map<string>
-	 */
-	pure Map<string> requiredModules() => 
-	{
-	};
-	
-	
-	/**
-	 * Returns enities
-	 */
-	pure Collection<Dict> entities() =>
-	[
-		new Hook("Runtime.Web.Crud.Hooks.AppHook"),
-	];
+	/* Field component settings */
+	Dict component_settings = {};
+    
+    /* Options for select */
+	Collection<Dict> options = [];
 	
 }

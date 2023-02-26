@@ -16,10 +16,7 @@
  *  limitations under the License.
 -->
 
-<class version="1.0"
-	name="Runtime.Web.Input.Button" extends="Runtime.Web.Component" 
-	module="Runtime.Web.Input"
->
+<class name="Runtime.Web.Crud.Button">
 
 <use name="Runtime.Core.Message" />
 <use name="Runtime.Web.LayoutModel" />
@@ -27,18 +24,19 @@
 
 <style>
 .button{
-	padding: 6px 12px;
+	padding: 10px;
 	cursor: pointer;
 	background-color: ${ vars["colors", "default", "background"] };
 	border: 1px ${ vars["colors", "default", "border"] } solid;
 	color: ${ vars["colors", "default", "text"] };
 	/*box-shadow: 0px 2px 5px 0px rgba(0,0,0,0.25);*/
 	outline: 0;
+	font-size: 16px;
 }
 .button:hover{
-	background-color: ${ vars["colors", "default", "hover"] };
+	background-color: ${ vars["colors", "default", "hover_bg"] };
 	border: 1px ${ vars["colors", "default", "border"] } solid;
-	color: ${ vars["colors", "default", "hover-text"] };
+	color: ${ vars["colors", "default", "hover_text"] };
 }
 .button:active{
 	box-shadow: inset 0px 2px 5px 0px rgba(0,0,0,0.25);
@@ -49,9 +47,9 @@
 	color: ${ vars["colors", "primary", "text"] };
 }
 .button.primary:hover{
-	background-color: ${ vars["colors", "primary", "hover-background"] };
+	background-color: ${ vars["colors", "primary", "hover_bg"] };
 	border: 1px ${ vars["colors", "primary", "border"] } solid;
-	color: ${ vars["colors", "primary", "hover-text"] };
+	color: ${ vars["colors", "primary", "hover_text"] };
 }
 .button.danger{
 	background-color: ${ vars["colors", "danger", "background"] };
@@ -59,9 +57,9 @@
 	color: ${ vars["colors", "danger", "text"] };
 }
 .button.danger:hover{
-	background-color: ${ vars["colors", "danger", "hover-background"] };
+	background-color: ${ vars["colors", "danger", "hover_bg"] };
 	border: 1px ${ vars["colors", "danger", "border"] } solid;
-	color: ${ vars["colors", "danger", "hover-text"] };
+	color: ${ vars["colors", "danger", "hover_text"] };
 }
 .button.success{
 	background-color: ${ vars["colors", "success", "background"] };
@@ -69,9 +67,9 @@
 	color: ${ vars["colors", "success", "text"] };
 }
 .button.success:hover{
-	background-color: ${ vars["colors", "success", "hover-background"] };
+	background-color: ${ vars["colors", "success", "hover_bg"] };
 	border: 1px ${ vars["colors", "success", "border"] } solid;
-	color: ${ vars["colors", "success", "hover-text"] };
+	color: ${ vars["colors", "success", "hover_text"] };
 }
 .button.small{
 	padding: 3px 6px;
@@ -80,8 +78,10 @@
 
 
 <template name="render">
-	<button class='button' class={ params["type"] } @tag={ params["@tag"] } @event:MouseClickEvent="onClick">
-		{ content }
+	<button class='button' class={{ render_params["type"] |> default string "button" }}
+		@tag={{ render_params["@tag"] }} @event:MouseClickEvent="onClick"
+	>
+		%render render_content;
 	</button>
 </template>
 
@@ -93,7 +93,7 @@
  */
 async void onClick(Message<MouseClickEvent> msg)
 {
-	await this.sendEvent(msg.data);
+	/* await this.sendEvent(msg.data); */
 }
 
 </script>

@@ -1,14 +1,31 @@
 {
-	"name": "Runtime.Web.Input",
+	"name": "Runtime.Web.Crud",
 	"assets":
 	[
-		"Button",
-		"Helper",
-		"Input",
-		"Label",
-		"Select",
-		"SelectText",
-		"TextArea",
-		"ModuleDescription"
+		"Hooks/AppHook.bay",
+		"Button.bay",
+		"CrudModel.bay",
+		"FieldInfo.bay",
+		"Form.bay",
+		"FormRow.bay",
+		"Helper.bay",
+		"Input.bay",
+		"ItemResult.bay",
+		"SearchResult.bay",
+		"Select.bay",
+		"FormModel.bay",
+		"ModuleDescription.bay"
+	],
+	"src": "./bay",
+	"dest":
+	{
+		"php": "./php",
+		"es6": "./es6"
+	},
+	"allow":
+	[
+		"\\.bay$",
+		"\\.php$",
+		"\\.js$"
 	]
 }

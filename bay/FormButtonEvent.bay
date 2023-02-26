@@ -16,49 +16,13 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Web.Crud;
+namespace Runtime.Web.Events;
 
-use Runtime.Entity.Hook;
+use Runtime.Web.Events.WebEvent;
 
 
-static class ModuleDescription
+struct FormButtonEvent extends WebEvent
 {
 	
-	/**
-	 * Returns module name
-	 * @return string
-	 */
-	public static string getModuleName()
-	{
-		return "Runtime.Web.Crud";
-	}
-	
-	
-	/**
-	 * Returns module name
-	 * @return string
-	 */
-	public static string getModuleVersion()
-	{
-		return "0.1.0";
-	}
-	
-	
-	/**
-	 * Returns required modules
-	 * @return Map<string>
-	 */
-	pure Map<string> requiredModules() => 
-	{
-	};
-	
-	
-	/**
-	 * Returns enities
-	 */
-	pure Collection<Dict> entities() =>
-	[
-		new Hook("Runtime.Web.Crud.Hooks.AppHook"),
-	];
-	
 }
+

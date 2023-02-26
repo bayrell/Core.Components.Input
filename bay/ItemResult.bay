@@ -18,47 +18,12 @@
 
 namespace Runtime.Web.Crud;
 
-use Runtime.Entity.Hook;
+use Runtime.BaseStruct;
 
 
-static class ModuleDescription
+struct ItemResult<T> extends BaseStruct
 {
-	
-	/**
-	 * Returns module name
-	 * @return string
-	 */
-	public static string getModuleName()
-	{
-		return "Runtime.Web.Crud";
-	}
-	
-	
-	/**
-	 * Returns module name
-	 * @return string
-	 */
-	public static string getModuleVersion()
-	{
-		return "0.1.0";
-	}
-	
-	
-	/**
-	 * Returns required modules
-	 * @return Map<string>
-	 */
-	pure Map<string> requiredModules() => 
-	{
-	};
-	
-	
-	/**
-	 * Returns enities
-	 */
-	pure Collection<Dict> entities() =>
-	[
-		new Hook("Runtime.Web.Crud.Hooks.AppHook"),
-	];
-	
+	T data = null;
+	Dict dictionary = null;
+    Dict params = null;
 }
