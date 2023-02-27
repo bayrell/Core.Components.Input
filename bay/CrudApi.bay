@@ -21,7 +21,7 @@ namespace Runtime.Web.Crud;
 use Runtime.lib;
 use Runtime.BaseStruct;
 use Runtime.Web.ApiResult;
-use Runtime.Web.BaseRoute;
+use Runtime.Web.BaseApi;
 use Runtime.Web.Bus;
 use Runtime.Web.RenderContainer;
 use Runtime.Web.Crud.ItemResult;
@@ -34,9 +34,13 @@ use Runtime.ORM.Query;
 use Runtime.ORM.Relation;
 
 
-struct CrudApi extends BaseRoute
+struct CrudApi extends BaseApi
 {
-	ApiResult api_result = null;
+	
+	/**
+	 * Returns api name
+	 */
+	pure string apiName() => "";
 	
 	
 	/**

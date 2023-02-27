@@ -76,6 +76,12 @@ class AppHook extends BaseAppHook
 		d <= colors <= danger <= hover_bg <= "#d14b42";
 		d <= colors <= danger <= hover_text <= "white";
 		
+		/* success */
+		d <= colors <= success <= background <= "green";
+		
+		/* error */
+		d <= colors <= error <= background <= "#dc4c44";
+		
 		return d;
 	}
 }

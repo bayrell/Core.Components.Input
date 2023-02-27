@@ -7,7 +7,7 @@
 		"CrudModel.bay",
 		"FieldInfo.bay",
 		"Form.bay",
-		"FormRow.bay",
+		"FormEvent.bay",
 		"Helper.bay",
 		"Input.bay",
 		"ItemResult.bay",

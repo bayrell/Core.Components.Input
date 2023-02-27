@@ -20,6 +20,7 @@
 
 
 <use name="Runtime.Core.Message" />
+<use name="Runtime.Web.RenderProvider" />
 <use name="Runtime.Web.Events.ChangeEvent" />
 <use name="Runtime.Web.Crud.Helper" />
 
@@ -81,7 +82,14 @@
  */
 public void onChange(Message<ChangeEvent> msg)
 {
-	/* this.sendEvent(msg.data); */
+	if (this.model_path != "")
+	{
+		RenderProvider provider = @.provider(classof RenderProvider);
+		provider.commitComponent( this, msg.event.value );
+	}
+	
+	ChangeEvent event = msg.event.clone({ "field_name": this.params["name"] });
+	this.sendEvent(event);
 }
 
 </script>

@@ -16,13 +16,14 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Web.Events;
+namespace Runtime.Web.Crud;
 
 use Runtime.Web.Events.WebEvent;
 
 
-struct FormButtonEvent extends WebEvent
+struct FormEvent extends WebEvent
 {
-	
+	static const string BUTTON_CLICK = "button_click";
+    string button_name = "";
 }
 

@@ -18,9 +18,13 @@
 
 <class name="Runtime.Web.Crud.Form">
 
+<use name="Runtime.Core.Message" />
 <use name="Runtime.Web.Crud.Button" />
 <use name="Runtime.Web.Crud.FieldInfo" />
+<use name="Runtime.Web.Crud.FormEvent" />
 <use name="Runtime.Web.Crud.StructBuilder" />
+<use name="Runtime.Web.Events.ChangeEvent" />
+<use name="Runtime.Web.Events.MouseClickEvent" />
 
 
 <style>
@@ -44,6 +48,16 @@
 }
 .web_form__result{
 	text-align: center;
+	margin-top: 10px;
+}
+.web_form__result--hide{
+	display: none;
+}
+.web_form__result--success{
+	color: ${ vars["colors", "success", "background"] };
+}
+.web_form__result--error{
+	color: ${ vars["colors", "error", "background"] };
 }
 </style>
 
@@ -65,6 +79,7 @@
 				<{component_name}
 					name={{ field_name }}
 					@model=[ "item", field_name ]
+					@event:ChangeEvent="onChange"
 					options={{ field_info.options }}
 					default_value={{ field_info.default_value }}
 					field_info={{ field_info }}
@@ -80,7 +95,9 @@
 
 
 <template name="renderButton" args="Dict button">
-	<Button type={{ button["type"] }}>
+	<Button type={{ button["type"] }} name={{ button["name"] }}
+		@event:MouseClickEvent="onButtonClick"
+	>
 		{{ button["label"] }}
 	</Button>
 </template>
@@ -101,7 +118,8 @@
 
 
 <template name="renderResult">
-	<div class="web_form__result">
+	<div class="web_form__result" class={{ model.getErrorClass() }} >
+		{{ model.error_message }}
 	</div>
 </template>
 
@@ -130,6 +148,27 @@
 
 
 <script type="frontend">
+
+/**
+ * On item change
+ */
+public void onChange(Message<ChangeEvent> msg)
+{
+	this.sendEvent(msg.event);
+}
+
+
+/**
+ * Button click
+ */
+public void onButtonClick(Message<ChangeEvent> msg)
+{
+	FormEvent event = new FormEvent{
+		"kind": FormEvent::BUTTON_CLICK,
+		"button_name": msg.sender.params["name"],
+	};
+	this.sendEvent(event);
+}
 
 </script>
 

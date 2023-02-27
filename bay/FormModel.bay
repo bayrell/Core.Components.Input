@@ -28,4 +28,15 @@ struct FormModel<T> extends BaseStruct
     Dict params = null;
 	int error_code = 0;
 	string error_message = "";
+	
+	/**
+	 * Returns form class
+	 */
+	string getErrorClass()
+	{
+		if (this.error_message == "") return "web_form__result--hide";
+		if (this.error_code > 0) return "web_form__result--success";
+		if (this.error_code < 0) return "web_form__result--error";
+		return "";
+	}
 }
