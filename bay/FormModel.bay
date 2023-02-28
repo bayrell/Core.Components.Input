@@ -19,6 +19,7 @@
 namespace Runtime.Web.Crud;
 
 use Runtime.BaseStruct;
+use Runtime.Web.Crud.ValidationResult;
 
 
 struct FormModel<T> extends BaseStruct
@@ -28,6 +29,8 @@ struct FormModel<T> extends BaseStruct
     Dict params = null;
 	int error_code = 0;
 	string error_message = "";
+	ValidationResult validation_result = null;
+	
 	
 	/**
 	 * Returns form class
@@ -38,5 +41,16 @@ struct FormModel<T> extends BaseStruct
 		if (this.error_code > 0) return "web_form__result--success";
 		if (this.error_code < 0) return "web_form__result--error";
 		return "";
+	}
+	
+	
+	/**
+	 * Get field result
+	 */
+	Collection<string> getFieldResult(string field_name)
+	{
+		if (this.validation_result == null) return [];
+		if (not this.validation_result.fields.has(field_name)) return [];
+		return this.validation_result.fields[field_name];
 	}
 }

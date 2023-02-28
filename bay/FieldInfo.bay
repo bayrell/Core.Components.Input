@@ -35,9 +35,10 @@ struct FieldInfo extends BaseStruct
 	
 	/* Flags */
 	bool primary = false;
-	bool required = false;
+	bool required = true;
 	bool readonly = false;
 	bool virtual = false;
+	bool nullable = false;
 	bool can_create = true;
 	bool can_update = true;
 	string group = "default";

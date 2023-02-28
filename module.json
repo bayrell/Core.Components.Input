@@ -4,8 +4,12 @@
 	[
 		"Hooks/AppHook.bay",
 		"Rules/ValidationRule.bay",
+		"Rules/PurifyRule.bay",
 		"Rules/EqualPasswords.bay",
+		"Rules/LowerCase.bay",
+		"Rules/Sanitize.bay",
 		"Rules/ValidateEmail.bay",
+		"Rules/ValidateRegEx.bay",
 		"Button.bay",
 		"CrudModel.bay",
 		"FieldInfo.bay",
@@ -17,6 +21,7 @@
 		"SearchResult.bay",
 		"Select.bay",
 		"StructBuilder.bay",
+		"ValidationResult.bay",
 		"FormModel.bay",
 		"ModuleDescription.bay"
 	],

@@ -18,20 +18,41 @@
 
 namespace Runtime.Web.Crud.Rules;
 
+use Runtime.re;
 use Runtime.BaseStruct;
+use Runtime.Web.Crud.Rules.ValidationRule;
 
 
-struct ValidationRule extends BaseStruct
+struct ValidateRegEx extends ValidationRule
 {
+	string field_name = "";
+	string match = "";
+	string message = "";
+	
 	
 	/**
 	 * Validate field_name in item
 	 */
-	bool validate(Dict item) => true;
+	bool validate(Dict item)
+	{
+		var value = item[this.field_name];
+		
+		bool is_match = re::match(this.match, value);
+		if (not is_match) return false;
+		
+		return true;
+	}
 	
 	
 	/**
 	 * Returns error message
 	 */
-	list getErrorMessage(Dict item) => [""];
+	list getErrorMessage(Dict item)
+	{
+		return [
+			this.message,
+			this.field_name
+		];
+	}
+	
 }

@@ -18,20 +18,24 @@
 
 namespace Runtime.Web.Crud.Rules;
 
+use Runtime.re;
 use Runtime.BaseStruct;
 
 
-struct ValidationRule extends BaseStruct
+struct Sanitize extends BaseStruct
 {
-	
+    string field_name = "";
+    
+    
 	/**
-	 * Validate field_name in item
+	 * Purify item
 	 */
-	bool validate(Dict item) => true;
-	
-	
-	/**
-	 * Returns error message
-	 */
-	list getErrorMessage(Dict item) => [""];
+	bool purify(Dict item)
+    {
+        string value = item[this.field_name];
+        value = re::replace("^[a-z0-9_\-\.\@]$", "", value);
+        item <= { this.field_name } <= value;
+        return item;
+    }
+    
 }

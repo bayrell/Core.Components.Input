@@ -85,8 +85,22 @@
 					field_info={{ field_info }}
 					...component_settings
 				/>
-				<div class="web_form__field_result"
-					data-name={{ field_name }} data-default="&nbsp;">@raw{ "&nbsp;" }</div>
+				%set Collection<string> field_result = model.getFieldResult(field_name);
+				%if (field_result.count() == 0)
+				{
+					<div class="web_form__field_result" data-name={{ field_name }}>
+						@raw{ "&nbsp;" }
+					</div>
+				}
+				%else
+				{
+					<div class="web_form__field_result" data-name={{ field_name }}>
+						%for (int i=0; i<field_result.count(); i++)
+						{
+							<div>{{ field_result[i] }}</div>
+						}
+					</div>
+				}
 			</div>
 		}
 	}

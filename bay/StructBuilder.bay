@@ -126,7 +126,6 @@ struct StructBuilder extends BaseStruct
 	 */
 	Dict purify(Dict item)
 	{
-		/* Check form_fields */
 		for (int i=0; i<this.form_fields.count(); i++)
 		{
 			string field_name = this.form_fields[i];
@@ -135,23 +134,47 @@ struct StructBuilder extends BaseStruct
 			FieldInfo info = this.info[field_name];
 			if (not info) continue;
 			if (info.value_type == "") continue;
-			if (value === null) continue;
 			
+			/* If is string */
 			if (info.value_type == "string")
 			{
 				if (not rtl::isString(value))
 				{
 					item <= { field_name } <= null;
+					value = null;
 				}
 				else if (info.do_trim)
 				{
 					item <= { field_name } <= rs::trim(value);
 				}
+				if (not info.nullable and value === null)
+				{
+					item <= { field_name } <= "";
+					value = "";
+				}
 			}
 			
-			if (info.value_type == "int" and not re::match("$[0-9]+^", value))
+			/* If is integer */
+			if (info.value_type == "int")
 			{
-				item <= { field_name } <= (int)value;
+				if (not re::match("$[0-9]+^", value))
+				{
+					item <= { field_name } <= (int)value;
+				}
+				else
+				{
+					item <= { field_name } <= (info.nullable ? null : 0);
+				}
+			}
+		}
+		
+		/* Check rules */
+		for (int i=0; i<this.rules.count(); i++)
+		{
+			PurifyRule rule = this.rules[i];
+			if (rule instanceof PurifyRule)
+			{
+				item = rule.purify(item);
 			}
 		}
 		
