@@ -72,7 +72,7 @@
 		%set Dict component_settings = field_info.component_settings;
 		%set string component_name = field_info.component_name;
 		
-		%if (is_show == null or is_show({ "item": model["item"] }))
+		%if (is_show == null or is_show(model["item"]))
 		{
 			<div class="web_form__row" @key={{ field_name }}>
 				<label class="web_form__row_label">{{ field_info.label }}</label>
@@ -132,9 +132,9 @@
 		%if (builder)
 		{
 			<div class="web_form__rows">
-			%for (int i=0; i<builder.fields.count(); i++)
+			%for (int i=0; i<builder.form_fields.count(); i++)
 			{
-				%render static::renderRow(builder.fields[i]);
+				%render static::renderRow(builder.form_fields[i]);
 			}
 			</div>
 		}

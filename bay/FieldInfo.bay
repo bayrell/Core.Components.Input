@@ -29,6 +29,8 @@ struct FieldInfo extends BaseStruct
 	string label = "";
 	string description = "";
 	string component_name = "";
+	string value_type = "string";
+	bool do_trim = true;
 	fn is_show = null;
 	
 	/* Flags */

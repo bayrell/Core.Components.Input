@@ -3,6 +3,9 @@
 	"assets":
 	[
 		"Hooks/AppHook.bay",
+		"Rules/ValidationRule.bay",
+		"Rules/EqualPasswords.bay",
+		"Rules/ValidateEmail.bay",
 		"Button.bay",
 		"CrudModel.bay",
 		"FieldInfo.bay",

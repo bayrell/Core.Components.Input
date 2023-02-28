@@ -18,18 +18,24 @@
 
 namespace Runtime.Web.Crud;
 
+use Runtime.re;
 use Runtime.BaseStruct;
 use Runtime.Web.ApiResult;
 use Runtime.Web.Bus;
 use Runtime.Web.RenderContainer;
 use Runtime.Web.Crud.FieldInfo;
+use Runtime.Web.Crud.ValidationResult;
+use Runtime.Web.Crud.Rules.ValidationRule;
 
 
 struct StructBuilder extends BaseStruct
 {
 	string model_name = "";
 	Dict<FieldInfo> info = {};
-	Collection<string> fields = [];
+	Collection<string> form_fields = [];
+	Collection<string> table_fields = [];
+	Collection<string> filter_fields = [];
+	Collection<string> rules = [];
 	string kind = "";
 	
 	
@@ -63,12 +69,45 @@ struct StructBuilder extends BaseStruct
 	
 	
 	/**
-	 * Add fields
+	 * Add form fields
 	 */
-	StructBuilder addFields(Collection<string> new_fields)
+	StructBuilder addFormFields(Collection<string> new_fields)
 	{
 		StructBuilder builder = this;
-		builder <= fields <= builder.fields.concat(new_fields);
+		builder <= form_fields <= builder.form_fields.concat(new_fields);
+		return builder;
+	}
+	
+	
+	/**
+	 * Add table fields
+	 */
+	StructBuilder addTableFields(Collection<string> new_fields)
+	{
+		StructBuilder builder = this;
+		builder <= table_fields <= builder.table_fields.concat(new_fields);
+		return builder;
+	}
+	
+	
+	/**
+	 * Add filter fields
+	 */
+	StructBuilder addFilterFields(Collection<string> new_fields)
+	{
+		StructBuilder builder = this;
+		builder <= filter_fields <= builder.filter_fields.concat(new_fields);
+		return builder;
+	}
+	
+	
+	/**
+	 * Add validation rules
+	 */
+	StructBuilder addRules(Collection<BaseStruct> new_rules)
+	{
+		StructBuilder builder = this;
+		builder <= rules <= builder.rules.concat(new_rules);
 		return builder;
 	}
 	
@@ -79,5 +118,112 @@ struct StructBuilder extends BaseStruct
 	StructBuilder resolve()
 	{
 		return this;
+	}
+	
+	
+	/**
+	 * Purify data
+	 */
+	Dict purify(Dict item)
+	{
+		/* Check form_fields */
+		for (int i=0; i<this.form_fields.count(); i++)
+		{
+			string field_name = this.form_fields[i];
+			var value = item[field_name];
+			
+			FieldInfo info = this.info[field_name];
+			if (not info) continue;
+			if (info.value_type == "") continue;
+			if (value === null) continue;
+			
+			if (info.value_type == "string")
+			{
+				if (not rtl::isString(value))
+				{
+					item <= { field_name } <= null;
+				}
+				else if (info.do_trim)
+				{
+					item <= { field_name } <= rs::trim(value);
+				}
+			}
+			
+			if (info.value_type == "int" and not re::match("$[0-9]+^", value))
+			{
+				item <= { field_name } <= (int)value;
+			}
+		}
+		
+		return item;
+	}
+	
+	
+	/**
+	 * Validate dict
+	 */
+	ValidationResult validate(Dict item)
+	{
+		ValidationResult res = new ValidationResult();
+		
+		/* Check form_fields */
+		for (int i=0; i<this.form_fields.count(); i++)
+		{
+			string field_name = this.form_fields[i];
+			var value = item[field_name];
+			
+			FieldInfo info = this.info[field_name];
+			if (not info) continue;
+			
+			fn is_show = info.is_show;
+			if (is_show != null)
+			{
+				if (not is_show(item)) continue;
+			}
+			
+			/* Check value types */
+			if (info.value_type != "" and value !== null)
+			{
+				if (info.value_type == "string" and not rtl::isString(value))
+				{
+					res = res.appendErrorMessage([
+						@.format("must be string", {"field_name": field_name}),
+						field_name
+					]);
+				}
+				if (info.value_type == "int" and not rtl::isInt(value))
+				{
+					res = res.appendErrorMessage([
+						@.format("must be integer", {"field_name": field_name}),
+						field_name
+					]);
+				}
+			}
+			
+			/* Check required */
+			if (info.required and (value === null or value === ""))
+			{
+				res = res.appendErrorMessage([
+					@.format("%field_name% is required", {"field_name": field_name}),
+					field_name
+				]);
+			}
+		}
+		
+		/* Check rules */
+		for (int i=0; i<this.rules.count(); i++)
+		{
+			ValidationRule rule = this.rules[i];
+			if (rule instanceof ValidationRule)
+			{
+				if (not rule.validate(item))
+				{
+					list message = rule.getErrorMessage(item);
+					res = res.appendErrorMessage(message);
+				}
+			}
+		}
+		
+		return res;
 	}
 }
