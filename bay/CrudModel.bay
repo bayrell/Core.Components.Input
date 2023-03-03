@@ -32,10 +32,20 @@ struct CrudModel<T> extends BaseStruct
 	T item = null;
     Collection<T> items = null;
     Dict dictionary = null;
-	Dict search_data = null;
+	Dict search_data = {};
+	Dict find_item_data = {};
 	int error_code = 0;
 	string error_message = "";
 	string search = "";
+	
+	
+	/**
+	 * Returns api name
+	 */
+	static string getApiName()
+	{
+		return "";
+	}
 	
 	
 	/**
@@ -43,6 +53,9 @@ struct CrudModel<T> extends BaseStruct
 	 */
 	static string getApiUrl(string action, Dict data)
 	{
+		string api_name = static::getApiName();
+		if (action == "crud_search") return api_name ~ ".crud_search";
+		if (action == "crud_item") return api_name ~ ".crud_item";
 		return "";
 	}
 	
@@ -111,18 +124,13 @@ struct CrudModel<T> extends BaseStruct
 	/**
 	 * Search items
 	 */
-	async static void searchItems(ModelProxy model, Dict search_data = null)
+	async static void searchItems(ModelProxy model)
 	{
-		if (not search_data) search_data = {};
-		
-		/* Set attr */
-		model.setAttr("search_data", search_data);
-		
 		/* Process before */
 		await static::before(model, "searchItems", {});
 		
 		/* Send api */
-		ApiResult res = await static::searchApi( model.data(["search_data"]) );
+		ApiResult res = await static::searchApi( model.data().search_data );
 		
 		/* Set api result */
 		model.commit("setApiResult", "searchItems", res);
@@ -149,18 +157,13 @@ struct CrudModel<T> extends BaseStruct
 	/**
 	 * Find item
 	 */
-	async static void findItem(ModelProxy model, Dict search_data = null)
+	async static void findItem(ModelProxy model)
 	{
-		if (not search_data) search_data = {};
-		
-		/* Set attr */
-		model.setAttr("search_data", search_data);
-		
 		/* Process before */
 		await static::before(model, "before", "findItem", {});
 		
 		/* Send api */
-		ApiResult res = await static::findItemApi( model.data(["search_data"]) );
+		ApiResult res = await static::findItemApi( model.data().find_item_data );
 		
 		/* Set api result */
 		model.commit("setApiResult", "findItem", res);
