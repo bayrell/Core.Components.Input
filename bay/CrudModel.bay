@@ -21,6 +21,7 @@ namespace Runtime.Web.Crud;
 use Runtime.BaseStruct;
 use Runtime.Web.ApiResult;
 use Runtime.Web.Bus;
+use Runtime.Web.ModelProxy;
 use Runtime.Web.RenderContainer;
 
 
@@ -31,7 +32,7 @@ struct CrudModel<T> extends BaseStruct
 	T item = null;
     Collection<T> items = null;
     Dict dictionary = null;
-	Dict api_data = null;
+	Dict search_data = null;
 	int error_code = 0;
 	string error_message = "";
 	string search = "";
@@ -49,147 +50,137 @@ struct CrudModel<T> extends BaseStruct
 	/**
 	 * Before action
 	 */
-	async CrudModel before(string action, Dict data)
+	async static void before(ModelProxy model, string action, Dict data)
 	{
-		return this;
 	}
 	
 	
 	/**
 	 * After action
 	 */
-	async CrudModel after(string action, Dict data)
+	async static void after(ModelProxy model, string action, Dict data)
 	{
-		return this;
 	}
 	
 	
 	/**
 	 * Process api data
 	 */
-	static Dict processApiData(string action, Dict api_data)
+	static Dict processApiData(string action, Dict search_data)
 	{
-		return api_data;
+		return search_data;
 	}
 	
 	
 	/**
-	 * Process data
+	 * Set api result
 	 */
-	Dict getActionSearchData(RenderContainer container)
+	CrudModel setApiResult(string action, ApiResult res)
 	{
-		int page = (int)container.request.query.get("page", 1);
+		CrudModel model = this;
+		if (res.isSuccess())
+		{
+			if (action == "searchItems")
+			{
+				model = model.copy({
+					"items": res["data"]["items"],
+					"pages": res["data"]["pages"],
+					"page": res["data"]["page"],
+				});
+			}
+			
+			else if (action == "findItem")
+			{
+				model <= item <= res["data", "item"];
+			}
+		}
 		
-		return {
-			"page": page,
-		};
+		/* Search */
+		if (action == "searchItems" and model.search_data.has("search"))
+		{
+			model <= search <= model.search_data["search"];
+		}
+		
+		model <= error_message <= res.getErrorMessage();
+		model <= error_code <= res.getErrorCode();
+		
+		return model;
 	}
 	
 	
 	/**
 	 * Search items
 	 */
-	async CrudModel searchItems(Dict api_data = null)
+	async static void searchItems(ModelProxy model, Dict search_data = null)
 	{
-		if (not api_data) api_data = {};
+		if (not search_data) search_data = {};
 		
-		CrudModel model = this;
+		/* Set attr */
+		model.setAttr("search_data", search_data);
 		
-		/* Before action */
-		model <= api_data <= api_data;
-		model = await model.processBefore( "searchItems", {} );
+		/* Process before */
+		await static::before(model, "searchItems", {});
 		
 		/* Send api */
-		ApiResult res = await static::searchApi(model.api_data);
+		ApiResult res = await static::searchApi( model.data(["search_data"]) );
 		
-		if (res.isSuccess())
-		{
-			model = model.copy({
-				"items": res["data"]["items"],
-				"pages": res["data"]["pages"],
-				"page": res["data"]["page"],
-			});
-		}
+		/* Set api result */
+		model.commit("setApiResult", "searchItems", res);
 		
-		/* Search */
-		if (api_data.has("search"))
-		{
-			model <= search <= api_data["search"];
-		}
-		
-		model <= error_message <= res.getErrorMessage();
-		model <= error_code <= res.getErrorCode();
-		
-		/* After action */
-		model = await model.processAfter("searchItems", {
-			"res": res,
-		});
-		
-		return model;
+		/* Process after */
+		await static::after(model, "searchItems", { "res": res });
 	}
 	
 	
 	/**
 	 * Search api
 	 */
-	static async ApiResult searchApi(Dict api_data)
+	static async ApiResult searchApi(Dict search_data)
 	{
-		string url = static::getApiUrl("crud_search", {"api_data": api_data});
+		string url = static::getApiUrl("crud_search", {"search_data": search_data});
 		
-		api_data = static::processApiData("searchApi", api_data);
-		ApiResult res = await Bus::callApi(url, api_data);
-		/*res.throwIfException();*/
+		search_data = static::processApiData("searchApi", search_data);
+		ApiResult res = await Bus::callApi(url, search_data);
 		
 		return res;
 	}
 	
 	
-	
 	/**
 	 * Find item
 	 */
-	CrudModel findItem(Dict api_data = null)
+	async static void findItem(ModelProxy model, Dict search_data = null)
 	{
-		if (not api_data) api_data = {};
+		if (not search_data) search_data = {};
 		
-		CrudModel model = this;
+		/* Set attr */
+		model.setAttr("search_data", search_data);
 		
-		/* Before action */
-		model <= api_data <= api_data;
-		model = await model.processBefore( "findItem", {} );
+		/* Process before */
+		await static::before(model, "before", "findItem", {});
 		
 		/* Send api */
-		ApiResult res = await static::findItemApi(model.api_data);
+		ApiResult res = await static::findItemApi( model.data(["search_data"]) );
 		
-		if (res.isSuccess())
-		{
-			model <= item <= res["data", "item"];
-		}
+		/* Set api result */
+		model.commit("setApiResult", "findItem", res);
 		
-		model <= error_message <= res.getErrorMessage();
-		model <= error_code <= res.getErrorCode();
-		
-		/* After action */
-		model = await model.processAfter("findItem", {
-			"res": res,
-		});
-		
-		return model;
+		/* Process after */
+		await static::after(model, "after", "findItem", { "res": res });
 	}
 	
 	
 	/**
 	 * Get by id Api
 	 */
-	static async ApiResult findItemApi(Dict api_data)
+	static async ApiResult findItemApi(Dict search_data)
 	{
-		api_data = static::processApiData("findItemApi", api_data);
-		string url = static::getApiUrl("crud_item", {"api_data": api_data});
+		search_data = static::processApiData("findItemApi", search_data);
+		string url = static::getApiUrl("crud_item", {"search_data": search_data});
 		
-		ApiResult res = await Bus::callApi(url, api_data);
-		/*res.throwIfException();*/
+		ApiResult res = await Bus::callApi(url, search_data);
 		
 		return res;
 	}
-		
+	
 }
