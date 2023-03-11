@@ -12,6 +12,8 @@
 		"Rules/ValidateRegEx.bay",
 		"Button.bay",
 		"CrudModel.bay",
+		"CrudPage.bay",
+		"CrudRoute.bay",
 		"FieldInfo.bay",
 		"Form.bay",
 		"FormEvent.bay",
@@ -27,6 +29,7 @@
 		"SelectLabel.bay",
 		"StructBuilder.bay",
 		"Table.bay",
+		"TextArea.bay",
 		"ValidationResult.bay",
 		"ModuleDescription.bay"
 	],

@@ -58,6 +58,12 @@ struct CrudModel<T> extends BaseStruct
 	
 	
 	/**
+	 * Returns page title
+	 */
+	string getPageTitle(string action) => "";
+	
+	
+	/**
 	 * Get api url
 	 */
 	static string getApiUrl(string action, Dict data)

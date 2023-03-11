@@ -1,7 +1,7 @@
 <!--
  *  Bayrell Runtime Library
  *
- *  (c) Copyright 2016-2021 "Ildar Bikmamatov" <support@bayrell.org>
+ *  (c) Copyright 2016-2023 "Ildar Bikmamatov" <support@bayrell.org>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,20 +16,18 @@
  *  limitations under the License.
 -->
 
-<class version="1.0"
-	name="Runtime.Web.Input.TextArea" extends="Runtime.Web.Component" 
-	module="Runtime.Web.Input"
->
-
+<class name="Runtime.Web.Crud.TextArea">
 
 <use name="Runtime.Core.Message" />
+<use name="Runtime.Web.Crud.Helper" />
 <use name="Runtime.Web.Events.ChangeEvent" />
-<use name="Runtime.Web.Input.Helper" />
+<use name="Runtime.Web.RenderProvider" />
 
 
 <style>
 .textarea{
 	width: 100%;
+	max-width: 100%;
 	min-height: 300px;
 	padding: 6px 12px;
 	background-color: ${ vars["colors", "default", "background"] };
@@ -39,31 +37,35 @@
 </style>
 
 
+<template>
 
-<template name="render">
-
-	%set string name = (params != null) ? params.get("name", "") : "";
-	%set string type = (params != null) ? params.get("type", "input") : "";
-	%set string value = Helper::getValue(layout, model_path, params);
-	%set primitive tag = (params != null) ? params.get("@tag", "") : "";
-	<textarea class='input' @tag={ tag } @event:ChangeEvent="onChange"
+	%set string value = Helper::getValue(layout, model_path, render_params);
+	%set string name = (render_params != null) ? render_params.get("name", "") : "";
+	%set string type = (render_params != null) ? render_params.get("type", "input") : "";
+	%set primitive tag = (render_params != null) ? render_params.get("@tag", "") : "";
+	<textarea class='textarea' @tag={ tag } @event:ChangeEvent="onChange"
 		name={ name } type={ type } value={ value } />
-		
+	
 </template>
 
 
-
-<script type="frontend">
+<script>
 
 /**
  * On change
  */
 public void onChange(Message<ChangeEvent> msg)
 {
-	this.sendEvent(msg.data);
+	if (this.model_path != "")
+	{
+		RenderProvider provider = @.provider(classof RenderProvider);
+		provider.commitComponent( this, msg.event.value );
+	}
+	
+	ChangeEvent event = msg.event.clone({ "field_name": this.params["name"] });
+	this.sendEvent(event);
 }
 
 </script>
-
 
 </class>

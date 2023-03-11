@@ -32,7 +32,7 @@
 	
 }
 .web_form__row{
-	margin-bottom: 10px;
+	margin-bottom: 5px;
 }
 .web_form__field_result{
 	color: red;

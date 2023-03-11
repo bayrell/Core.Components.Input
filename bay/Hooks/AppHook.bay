@@ -45,6 +45,7 @@ class AppHook extends BaseAppHook
 		css_class_names.pushValue("Runtime.Web.Crud.Form");
 		css_class_names.pushValue("Runtime.Web.Crud.Input");
 		css_class_names.pushValue("Runtime.Web.Crud.Select");
+		css_class_names.pushValue("Runtime.Web.Crud.TextArea");
 		
 		return d;
 	}

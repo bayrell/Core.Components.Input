@@ -63,33 +63,37 @@
 			{
 				%set string field_name = builder.table_fields[i];
 				%set FieldInfo field_info = builder.info[field_name];
-				%set Dict component_settings = field_info.component_settings;
-				%set string component_name = field_info.table_component_name;
 				
-				%set string value = model["items", index, field_name];
-				%set fn calculate = field_info.calculate;
-				%if (calculate)
+				%if (field_info)
 				{
-					%set value = calculate(model["items", index], index);
-				}
-				
-				<td>
-					%if (component_name)
+					%set Dict component_settings = field_info.component_settings;
+					%set string component_name = field_info.table_component_name;
+					
+					%set string value = model["items", index, field_name];
+					%set fn calculate = field_info.calculate;
+					%if (calculate)
 					{
-						<{component_name}
-							name={{ field_name }}
-							value={{ value }}
-							options={{ field_info.options }}
-							default_value={{ field_info.default_value }}
-							crud_field_info={{ field_info }}
-							crud_index={{ index }}
-							crud_model={{ model }}
-							@events={{ field_info.events }}
-							@event:BaseEvent="onEvent"
-							...component_settings
-						/>
+						%set value = calculate(model["items", index], index);
 					}
-				</td>
+					
+					<td>
+						%if (component_name)
+						{
+							<{component_name}
+								name={{ field_name }}
+								value={{ value }}
+								options={{ field_info.options }}
+								default_value={{ field_info.default_value }}
+								crud_field_info={{ field_info }}
+								crud_index={{ index }}
+								crud_model={{ model }}
+								@events={{ field_info.events }}
+								@event:BaseEvent="onEvent"
+								...component_settings
+							/>
+						}
+					</td>
+				}
 			}
 		</tr>
 	}
@@ -105,7 +109,10 @@
 			{
 				%set string field_name = builder.table_fields[i];
 				%set FieldInfo field_info = builder.info[field_name];
-				<th>{{ field_info.label }}</th>
+				%if (field_info)
+				{
+					<th>{{ field_info.label }}</th>
+				}
 			}
 		</tr>
 	}

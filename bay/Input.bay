@@ -18,17 +18,16 @@
 
 <class name="Runtime.Web.Crud.Input">
 
-
 <use name="Runtime.Core.Message" />
-<use name="Runtime.Web.RenderProvider" />
-<use name="Runtime.Web.Events.ChangeEvent" />
 <use name="Runtime.Web.Crud.Helper" />
+<use name="Runtime.Web.Events.ChangeEvent" />
+<use name="Runtime.Web.RenderProvider" />
 
 
 <style>
 .input{
 	width: 100%;
-	padding: 10px;
+	padding: 5px 8px;
 	background-color: ${ vars["colors", "default", "background"] };
 	border: 1px ${ vars["colors", "default", "border"] } solid;
 	outline: transparent;
@@ -49,7 +48,6 @@
 </template>
 
 
-
 <script>
 
 /**
@@ -68,6 +66,5 @@ public void onChange(Message<ChangeEvent> msg)
 }
 
 </script>
-
 
 </class>

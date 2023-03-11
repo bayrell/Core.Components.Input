@@ -29,7 +29,7 @@
 .select{
 	width: 100%;
 	max-width: 100%;
-	padding: 10px;
+	padding: 5px 8px;
 	background-color: ${ vars["colors", "default", "background"] };
 	border: 1px ${ vars["colors", "default", "border"] } solid;
 	outline: transparent;
@@ -53,7 +53,7 @@
 		{
 			%set selected = { "selected": "selected" };
 		}
-		<option @key=":select_value" value="" ...selected>Выберите значение</option>
+		<option @key=":select_value" value={{ " " }} ...selected>Выберите значение</option>
 	}
 	
 	%set Collection options = render_params["options"];
@@ -67,7 +67,7 @@
 			{
 				%set selected = { "selected": "selected" };
 			}
-			<option @key={ item["value"] } value={ item["value"] } ...selected>
+			<option @key={ item["value"] } value={ "" ~ item["value"] } ...selected>
 				{{ item["label"] }}
 			</option>
 		}
