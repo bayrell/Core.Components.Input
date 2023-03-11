@@ -20,6 +20,7 @@ namespace Runtime.Web.Crud;
 
 use Runtime.re;
 use Runtime.BaseStruct;
+use Runtime.Exceptions.ApiException;
 use Runtime.Web.ApiResult;
 use Runtime.Web.Bus;
 use Runtime.Web.RenderContainer;
@@ -62,8 +63,7 @@ struct StructBuilder extends BaseStruct
 	 * Build struct
 	 */
 	pure memorize StructBuilder build(
-		string model_name, string kind = "",
-		bool do_resolve = false
+		string model_name, string kind = ""
 	)
 	{
 		StructBuilder builder = new StructBuilder{
@@ -73,11 +73,6 @@ struct StructBuilder extends BaseStruct
 		
 		fn buildStruct = rtl::method(model_name, "buildStruct");
 		builder = buildStruct(builder);
-		
-		if (do_resolve)
-		{
-			builder = builder.resolve();
-		}
 		
 		return builder;
 	}
@@ -176,6 +171,7 @@ struct StructBuilder extends BaseStruct
 	 */
 	Dict purify(Dict item)
 	{
+		Map new_item = new Map();
 		for (int i=0; i<this.form_fields.count(); i++)
 		{
 			string field_name = this.form_fields[i];
@@ -186,21 +182,28 @@ struct StructBuilder extends BaseStruct
 			if (info.value_type == "") continue;
 			if (info.virtual) continue;
 			
+			/* Check show field */
+			fn is_show = info.is_show;
+			if (is_show != null)
+			{
+				if (not is_show(item)) continue;
+			}
+			
 			/* If is string */
 			if (info.value_type == "string")
 			{
 				if (not rtl::isString(value))
 				{
-					item <= { field_name } <= null;
+					new_item <= { field_name } <= null;
 					value = null;
 				}
 				else if (info.do_trim)
 				{
-					item <= { field_name } <= rs::trim(value);
+					new_item <= { field_name } <= rs::trim(value);
 				}
 				if (not info.nullable and value === null)
 				{
-					item <= { field_name } <= "";
+					new_item <= { field_name } <= "";
 					value = "";
 				}
 			}
@@ -210,11 +213,11 @@ struct StructBuilder extends BaseStruct
 			{
 				if (not re::match("$[0-9]+^", value))
 				{
-					item <= { field_name } <= (int)value;
+					new_item <= { field_name } <= (int)value;
 				}
 				else
 				{
-					item <= { field_name } <= (info.nullable ? null : 0);
+					new_item <= { field_name } <= (info.nullable ? null : 0);
 				}
 			}
 		}
@@ -225,11 +228,11 @@ struct StructBuilder extends BaseStruct
 			PurifyRule rule = this.rules[i];
 			if (rule instanceof PurifyRule)
 			{
-				item = rule.purify(item);
+				new_item = rule.purify(new_item);
 			}
 		}
 		
-		return item;
+		return new_item.toDict();
 	}
 	
 	
@@ -300,5 +303,26 @@ struct StructBuilder extends BaseStruct
 		}
 		
 		return res;
+	}
+	
+	
+	/**
+	 * Validate api
+	 */
+	ApiResult validateApi(ApiResult api_result, Dict item)
+	{
+		ValidationResult validation_result = this.validate( item );
+		if (validation_result.isSuccess()) return api_result;
+		
+		api_result = api_result
+			|> .exception(
+				new ApiException("Ошибка. Проверьте корректность данных"),
+				{
+					"validation_result": validation_result.toDict(),
+				}
+			)
+		;
+		
+		return api_result;
 	}
 }

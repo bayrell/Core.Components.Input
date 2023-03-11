@@ -80,6 +80,17 @@ struct FormModel<T> extends BaseStruct
 			}
 		}
 		
+		/* Set validation result */
+		if (res.data != null and res.data.has("validation_result"))
+		{
+			ValidationResult validation_result = new ValidationResult(res.data["validation_result"]);
+			model <= validation_result <= validation_result;
+		}
+		else
+		{
+			model <= validation_result <= null;
+		}
+		
 		model <= error_message <= res.getErrorMessage();
 		model <= error_code <= res.getErrorCode();
 		

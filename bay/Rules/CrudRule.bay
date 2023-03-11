@@ -19,24 +19,41 @@
 namespace Runtime.Web.Crud.Rules;
 
 use Runtime.BaseStruct;
+use Runtime.Web.Crud.CrudApi;
 
 
 struct CrudRule extends BaseStruct
 {
-    
-    /**
+	
+	/**
 	 * Before search event
 	 */
-	async void onSearchBefore(CrudRule api)
+	async void onSearchBefore(CrudApi api)
 	{
 	}
-    
-    
-    /**
+	
+	
+	/**
 	 * Search after
 	 */
-	void onSearchAfter(CrudRule api)
+	async void onSearchAfter(CrudApi api)
 	{
-    }
-    
+	}
+	
+	
+	/**
+	 * Before save event
+	 */
+	async void onSaveBefore(CrudApi api)
+	{
+	}
+	
+	
+	/**
+	 * After save event
+	 */
+	async void onSaveAfter(CrudApi api)
+	{
+	}
+	
 }
