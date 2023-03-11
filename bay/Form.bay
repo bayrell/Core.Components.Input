@@ -70,21 +70,24 @@
 	{
 		%set fn is_show = field_info.is_show;
 		%set Dict component_settings = field_info.component_settings;
-		%set string component_name = field_info.component_name;
+		%set string component_name = field_info.form_component_name;
 		
 		%if (is_show == null or is_show(model["item"]))
 		{
 			<div class="web_form__row" @key={{ field_name }}>
 				<label class="web_form__row_label">{{ field_info.label }}</label>
-				<{component_name}
-					name={{ field_name }}
-					@model=[ "item", field_name ]
-					@event:ChangeEvent="onChange"
-					options={{ field_info.options }}
-					default_value={{ field_info.default_value }}
-					field_info={{ field_info }}
-					...component_settings
-				/>
+				%if (component_name)
+				{
+					<{component_name}
+						name={{ field_name }}
+						@model=[ "item", field_name ]
+						@event:ChangeEvent="onChange"
+						options={{ field_info.options }}
+						default_value={{ field_info.default_value }}
+						field_info={{ field_info }}
+						...component_settings
+					/>
+				}
 				%set Collection<string> field_result = model.getFieldResult(field_name);
 				%if (field_result.count() == 0)
 				{
@@ -161,7 +164,7 @@
 </template>
 
 
-<script type="frontend">
+<script>
 
 /**
  * On item change

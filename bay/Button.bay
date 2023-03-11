@@ -23,8 +23,8 @@
 <use name="Runtime.Web.Events.MouseClickEvent" />
 
 <style>
-.button{
-	padding: 10px;
+.web_button{
+	padding: 10px 20px;
 	cursor: pointer;
 	background-color: ${ vars["colors", "default", "background"] };
 	border: 1px ${ vars["colors", "default", "border"] } solid;
@@ -33,56 +33,71 @@
 	outline: 0;
 	font-size: 16px;
 }
-.button:hover{
+.web_button:hover{
 	background-color: ${ vars["colors", "default", "hover_bg"] };
 	border: 1px ${ vars["colors", "default", "border"] } solid;
 	color: ${ vars["colors", "default", "hover_text"] };
 }
-.button:active{
+.web_button:active{
 	box-shadow: inset 0px 2px 5px 0px rgba(0,0,0,0.25);
 }
-.button.primary{
+.web_button.primary{
 	background-color: ${ vars["colors", "primary", "background"] };
 	border: 1px ${ vars["colors", "primary", "border"] } solid;
 	color: ${ vars["colors", "primary", "text"] };
 }
-.button.primary:hover{
+.web_button.primary:hover{
 	background-color: ${ vars["colors", "primary", "hover_bg"] };
 	border: 1px ${ vars["colors", "primary", "border"] } solid;
 	color: ${ vars["colors", "primary", "hover_text"] };
 }
-.button.danger{
+.web_button.danger{
 	background-color: ${ vars["colors", "danger", "background"] };
 	border: 1px ${ vars["colors", "danger", "border"] } solid;
 	color: ${ vars["colors", "danger", "text"] };
 }
-.button.danger:hover{
+.web_button.danger:hover{
 	background-color: ${ vars["colors", "danger", "hover_bg"] };
 	border: 1px ${ vars["colors", "danger", "border"] } solid;
 	color: ${ vars["colors", "danger", "hover_text"] };
 }
-.button.success{
+.web_button.success{
 	background-color: ${ vars["colors", "success", "background"] };
 	border: 1px ${ vars["colors", "success", "border"] } solid;
 	color: ${ vars["colors", "success", "text"] };
 }
-.button.success:hover{
+.web_button.success:hover{
 	background-color: ${ vars["colors", "success", "hover_bg"] };
 	border: 1px ${ vars["colors", "success", "border"] } solid;
 	color: ${ vars["colors", "success", "hover_text"] };
 }
-.button.small{
-	padding: 3px 6px;
+.web_button.small{
+	padding: 3px 10px;
+	font-size: 14px;
 }
 </style>
 
 
 <template name="render">
-	<button class='button' class={{ render_params["type"] |> default string "button" }}
-		@tag={{ render_params["@tag"] }} @event:MouseClickEvent="onClick"
-	>
-		%render render_content;
-	</button>
+	%set string href = render_params["href"];
+	%if (href == null)
+	{
+		<button class="web_button" class={{ render_params["type"] |> default string "button" }}
+			@tag={{ render_params["@tag"] }} @event:MouseClickEvent="onClick"
+		>
+			%render render_content;
+		</button>
+	}
+	%else
+	{
+		<a class="nolink web_button__href" href={{ href }}>
+			<button class="web_button" class={{ render_params["type"] |> default string "button" }}
+				@tag={{ render_params["@tag"] }} @event:MouseClickEvent="onClick"
+			>
+				%render render_content;
+			</button>
+		</a>
+	}
 </template>
 
 

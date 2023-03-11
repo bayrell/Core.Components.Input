@@ -1,7 +1,7 @@
 <!--
  *  Bayrell Runtime Library
  *
- *  (c) Copyright 2016-2021 "Ildar Bikmamatov" <support@bayrell.org>
+ *  (c) Copyright 2016-2023 "Ildar Bikmamatov" <support@bayrell.org>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,39 +16,18 @@
  *  limitations under the License.
 -->
 
-<class version="1.0"
-	name="Runtime.Web.Input.Label" extends="Runtime.Web.Component" 
-	module="Runtime.Web.Input"
->
+<class name="Runtime.Web.Crud.RowNumber">
 
 
 <use name="Runtime.Core.Message" />
-<use name="Runtime.Web.Events.User.ChangeEvent" />
-<use name="Runtime.Web.Input.Helper" />
+<use name="Runtime.Web.RenderProvider" />
+<use name="Runtime.Web.Events.ChangeEvent" />
+<use name="Runtime.Web.Crud.Helper" />
 
 
-<style>
-</style>
-
-
-
-<template name="render">
-	
-	%set var value = Helper::getValue(layout, model_path, params);
-	%set value = rtl::isString(value) ? rs::split("\n", value) : [ value ];
-	
-	%for (int i=0; i<value.count(); i++)
-	{
-		{ value[i] }<br/>
-	}
-	
+<template>
+    {{ render_params["crud_index"] + 1 }}
 </template>
-
-
-
-<script type="frontend">
-
-</script>
 
 
 </class>

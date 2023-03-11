@@ -19,6 +19,7 @@
 namespace Runtime.Web.Crud;
 
 use Runtime.BaseStruct;
+use Runtime.Web.ApiResult;
 use Runtime.Web.Crud.ValidationResult;
 
 
@@ -30,6 +31,60 @@ struct FormModel<T> extends BaseStruct
 	int error_code = 0;
 	string error_message = "";
 	ValidationResult validation_result = null;
+	Dict find_item_data = {};
+	
+	
+	/**
+	 * Set wait message
+	 */
+	FormModel setWaitMessage()
+	{
+		FormModel model = this;
+		
+		model <= error_code <= 0;
+		model <= error_message <= "Wait please ...";
+		
+		return model;
+	}
+	
+	
+	/**
+	 * Clear error message
+	 */
+	FormModel clearErrorMessage()
+	{
+		FormModel model = this;
+		
+		model <= error_code <= 0;
+		model <= error_message <= "";
+		
+		return model;
+	}
+	
+	
+	/**
+	 * Set api result
+	 */
+	FormModel setApiResult(string action, ApiResult res)
+	{
+		if (res == null) return this;
+		
+		FormModel model = this;
+		
+		if (res.isSuccess())
+		{
+			Dict item = res["data", "item"];
+			if (item)
+			{
+				model <= item <= item;
+			}
+		}
+		
+		model <= error_message <= res.getErrorMessage();
+		model <= error_code <= res.getErrorCode();
+		
+		return model;
+	}
 	
 	
 	/**

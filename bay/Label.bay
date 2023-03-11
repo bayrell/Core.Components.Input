@@ -1,7 +1,7 @@
 <!--
  *  Bayrell Runtime Library
  *
- *  (c) Copyright 2016-2021 "Ildar Bikmamatov" <support@bayrell.org>
+ *  (c) Copyright 2016-2023 "Ildar Bikmamatov" <support@bayrell.org>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,44 +16,36 @@
  *  limitations under the License.
 -->
 
-<class version="1.0"
-	name="Runtime.Web.Input.SelectText" extends="Runtime.Web.Component" 
-	module="Runtime.Web.Input"
->
+<class name="Runtime.Web.Crud.Label">
 
-
-<use name="Runtime.lib" />
 <use name="Runtime.Core.Message" />
 <use name="Runtime.Web.Events.User.ChangeEvent" />
-<use name="Runtime.Web.Input.Helper" />
+<use name="Runtime.Web.Crud.Helper" />
 
 
 <style>
 </style>
 
 
-
-<template name="render">
+<template>
 	
-	%set string name = (params != null) ? params.get("name", "") : "";
-	%set string value = Helper::getValue(layout, model_path, params);
+	%set string value = Helper::getValue(layout, model_path, render_params);
+	%set value = rtl::isString(value) ? rs::split("\n", value) : [ value ];
 	
-	%set Collection options = params["options"];
-	%if (rtl::exists(options))
+	%for (int i=0; i<value.count(); i++)
 	{
-		%set Dict item = options.findItem( lib::equalAttr("id", value) );
-		%if (rtl::exists(item))
+		{{ value[i] }}
+		%if (i + 1 < value.count())
 		{
-			{ item["value"] }
+			<br/>
 		}
 	}
+	
 </template>
 
 
-
-<script type="frontend">
+<script>
 
 </script>
-
 
 </class>

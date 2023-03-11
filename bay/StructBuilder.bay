@@ -25,6 +25,7 @@ use Runtime.Web.Bus;
 use Runtime.Web.RenderContainer;
 use Runtime.Web.Crud.FieldInfo;
 use Runtime.Web.Crud.ValidationResult;
+use Runtime.Web.Crud.Rules.PurifyRule;
 use Runtime.Web.Crud.Rules.ValidationRule;
 
 
@@ -37,12 +38,33 @@ struct StructBuilder extends BaseStruct
 	Collection<string> filter_fields = [];
 	Collection<string> rules = [];
 	string kind = "";
+	bool resolved = false;
+	
+	
+	/**
+	 * Returns field value
+	 */
+	var getFieldValue(string field_name, Dict item, int index = 0)
+	{
+		var value = "";
+		FieldInfo info = this.info[field_name];
+		if (!info) return value;
+		
+		fn calculate = info.calculate;
+		if (calculate) value = calculate(item, index);
+		else value = item[field_name];
+		
+		return value;
+	}
 	
 	
 	/**
 	 * Build struct
 	 */
-	pure memorize StructBuilder build(string model_name, string kind = "")
+	pure memorize StructBuilder build(
+		string model_name, string kind = "",
+		bool do_resolve = false
+	)
 	{
 		StructBuilder builder = new StructBuilder{
 			"model_name": model_name,
@@ -51,7 +73,11 @@ struct StructBuilder extends BaseStruct
 		
 		fn buildStruct = rtl::method(model_name, "buildStruct");
 		builder = buildStruct(builder);
-		builder = builder.resolve();
+		
+		if (do_resolve)
+		{
+			builder = builder.resolve();
+		}
 		
 		return builder;
 	}
@@ -91,6 +117,27 @@ struct StructBuilder extends BaseStruct
 	
 	
 	/**
+	 * Insert table fields
+	 */
+	StructBuilder insertTableFields(string field_name_before, Collection<string> new_fields)
+	{
+		StructBuilder builder = this;
+		int index = builder.table_fields.indexOf(field_name_before);
+		
+		Collection new_table_fields = []
+		if (index >= 0)
+		{
+			new_table_fields = new_table_fields.concat( builder.table_fields.slice(0, index) );
+		}
+		new_table_fields = new_table_fields.concat( new_fields );
+		new_table_fields = new_table_fields.concat( builder.table_fields.slice(index + 1) );
+		
+		builder <= table_fields <= new_table_fields;
+		return builder;
+	}
+	
+	
+	/**
 	 * Add filter fields
 	 */
 	StructBuilder addFilterFields(Collection<string> new_fields)
@@ -117,7 +164,10 @@ struct StructBuilder extends BaseStruct
 	 */
 	StructBuilder resolve()
 	{
-		return this;
+		if (this.resolved) return this;
+		StructBuilder builder = this;
+		builder <= resolved <= true;
+		return builder;
 	}
 	
 	
@@ -134,6 +184,7 @@ struct StructBuilder extends BaseStruct
 			FieldInfo info = this.info[field_name];
 			if (not info) continue;
 			if (info.value_type == "") continue;
+			if (info.virtual) continue;
 			
 			/* If is string */
 			if (info.value_type == "string")
@@ -197,6 +248,7 @@ struct StructBuilder extends BaseStruct
 			
 			FieldInfo info = this.info[field_name];
 			if (not info) continue;
+			if (info.virtual) continue;
 			
 			fn is_show = info.is_show;
 			if (is_show != null)

@@ -28,10 +28,12 @@
 <style>
 .select{
 	width: 100%;
+	max-width: 100%;
 	padding: 10px;
 	background-color: ${ vars["colors", "default", "background"] };
 	border: 1px ${ vars["colors", "default", "border"] } solid;
 	outline: transparent;
+	line-height: normal;
 }
 </style>
 

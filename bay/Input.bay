@@ -32,11 +32,12 @@
 	background-color: ${ vars["colors", "default", "background"] };
 	border: 1px ${ vars["colors", "default", "border"] } solid;
 	outline: transparent;
+	line-height: normal;
 }
 </style>
 
 
-<template name="render">
+<template>
 
 	%set string value = Helper::getValue(layout, model_path, render_params);
 	%set string name = (render_params != null) ? render_params.get("name", "") : "";
@@ -49,7 +50,7 @@
 
 
 
-<script type="frontend">
+<script>
 
 /**
  * On change

@@ -48,8 +48,6 @@ struct CrudApi extends BaseApi
 	 */
 	pure string getApiMethod(string api_name)
 	{
-		if (api_name == "crud_search") return "actionSearch";
-		if (api_name == "crud_item") return "actionItem";
 		return "";
 	}
 	
@@ -303,8 +301,19 @@ struct CrudApi extends BaseApi
 		
 		/* Search aftert event */
 		await this.onSearchAfter();
-		
-		/* Set response */
-		this.container.setResponse( this.api_result );
+	}
+	
+	
+	/**
+	 * Action save
+	 */
+	void actionSave()
+	{
+		this.api_result = this.api_result.success({
+			"message": "Ok",
+			"data":
+			{
+			}
+		});
 	}
 }

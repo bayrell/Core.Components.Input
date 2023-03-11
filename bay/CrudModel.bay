@@ -23,6 +23,7 @@ use Runtime.Web.ApiResult;
 use Runtime.Web.Bus;
 use Runtime.Web.ModelProxy;
 use Runtime.Web.RenderContainer;
+use Runtime.Web.Crud.FormModel;
 
 
 struct CrudModel<T> extends BaseStruct
@@ -34,9 +35,11 @@ struct CrudModel<T> extends BaseStruct
     Dict dictionary = null;
 	Dict search_data = {};
 	Dict find_item_data = {};
+	FormModel save_form = null;
 	int error_code = 0;
 	string error_message = "";
 	string search = "";
+	string action = "";
 	
 	
 	/**
@@ -49,6 +52,12 @@ struct CrudModel<T> extends BaseStruct
 	
 	
 	/**
+	 * Returns primary key of model
+	 */
+	pure Dict pk(Dict item) => {};
+	
+	
+	/**
 	 * Get api url
 	 */
 	static string getApiUrl(string action, Dict data)
@@ -56,8 +65,17 @@ struct CrudModel<T> extends BaseStruct
 		string api_name = static::getApiName();
 		if (action == "crud_search") return api_name ~ ".crud_search";
 		if (action == "crud_item") return api_name ~ ".crud_item";
+		if (action == "crud_save") return api_name ~ ".crud_save";
 		return "";
 	}
+	
+	
+	/**
+	 * Set CRUD action
+	 */
+	CrudModel setAction(string action = "") => this.clone({
+		"action": action,
+	});
 	
 	
 	/**
@@ -90,6 +108,8 @@ struct CrudModel<T> extends BaseStruct
 	 */
 	CrudModel setApiResult(string action, ApiResult res)
 	{
+		if (res == null) return this;
+		
 		CrudModel model = this;
 		if (res.isSuccess())
 		{
@@ -186,4 +206,40 @@ struct CrudModel<T> extends BaseStruct
 		return res;
 	}
 	
+	
+	/**
+	 * Save form
+	 */
+	async static void doSave(ModelProxy model)
+	{
+		/* Process before */
+		await static::before(model, "before", "doSave", {});
+		
+		/* Send api */
+		CrudModel data = model.data();
+		ApiResult res = await static::saveApi(
+			data::pk(data.save_form.item),
+			data.save_form.item.toDict()
+		);
+		
+		/* Set api result */
+		model.proxy(["save_form"]).commit("setApiResult", "doSave", res);
+		
+		/* Process after */
+		await static::after(model, "after", "doSave", { "res": res });
+	}
+	
+	
+	/**
+	 * Save Api
+	 */
+	static async ApiResult saveApi(Dict pk, Dict item)
+	{
+		Dict post_data = static::processApiData("saveApi", {"pk": pk, "item": item});
+		string url = static::getApiUrl("crud_save", post_data);
+		
+		ApiResult res = await Bus::callApi(url, post_data);
+		
+		return res;
+	}
 }
