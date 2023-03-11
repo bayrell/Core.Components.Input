@@ -123,9 +123,12 @@
 	%set Collection items = model["items"];
 	<table class="web_table">
 		%render static::renderHeader();
-		%for (int i=0; i<items.count(); i++)
+		%if (items)
 		{
-			%render static::renderRow(i);
+			%for (int i=0; i<items.count(); i++)
+			{
+				%render static::renderRow(i);
+			}
 		}
 	</table>
 </template>
