@@ -30,11 +30,8 @@ struct CrudModel<T> extends BaseStruct
 {
 	int page = 0;
     int pages = 0;
-	T item = null;
     Collection<T> items = null;
     Dict dictionary = null;
-	Dict search_data = {};
-	Dict find_item_data = {};
 	FormModel save_form = null;
 	int error_code = 0;
 	string error_message = "";
@@ -134,17 +131,17 @@ struct CrudModel<T> extends BaseStruct
 			}
 		}
 		
-		/* Search */
-		if (action == "searchItems" and model.search_data.has("search"))
-		{
-			model <= search <= model.search_data["search"];
-		}
-		
 		model <= error_message <= res.getErrorMessage();
 		model <= error_code <= res.getErrorCode();
 		
 		return model;
 	}
+	
+	
+	/**
+	 * Returns search data
+	 */
+	Dict getSearchData() => {};
 	
 	
 	/**
@@ -156,7 +153,8 @@ struct CrudModel<T> extends BaseStruct
 		await static::before(model, "searchItems", {});
 		
 		/* Send api */
-		ApiResult res = await static::searchApi( model.data().search_data );
+		Dict search_data = model.data().getSearchData();
+		ApiResult res = await static::searchApi( search_data );
 		
 		/* Set api result */
 		model.commit("setApiResult", "searchItems", res);
@@ -181,6 +179,16 @@ struct CrudModel<T> extends BaseStruct
 	
 	
 	/**
+	 * Returns find item data
+	 */
+	Dict getFindItemData() => {
+		"pk": {
+			"id": this.save_form.item_id,
+		}
+	};
+	
+	
+	/**
 	 * Find item
 	 */
 	async static void findItem(ModelProxy model)
@@ -189,10 +197,11 @@ struct CrudModel<T> extends BaseStruct
 		await static::before(model, "before", "findItem", {});
 		
 		/* Send api */
-		ApiResult res = await static::findItemApi( model.data().find_item_data );
+		Dict find_item_data = model.data().getFindItemData();
+		ApiResult res = await static::findItemApi( find_item_data );
 		
 		/* Set api result */
-		model.commit("setApiResult", "findItem", res);
+		model.proxy("save_form").commit("setApiResult", "findItem", res);
 		
 		/* Process after */
 		await static::after(model, "after", "findItem", { "res": res });
@@ -223,8 +232,9 @@ struct CrudModel<T> extends BaseStruct
 		
 		/* Send api */
 		CrudModel data = model.data();
+		Dict find_item_data = data.getFindItemData();
 		ApiResult res = await static::saveApi(
-			data::pk(data.save_form.item),
+			find_item_data,
 			data.save_form.item.toDict()
 		);
 		
@@ -239,9 +249,10 @@ struct CrudModel<T> extends BaseStruct
 	/**
 	 * Save Api
 	 */
-	static async ApiResult saveApi(Dict pk, Dict item)
+	static async ApiResult saveApi(Dict post_data, Dict item)
 	{
-		Dict post_data = static::processApiData("saveApi", {"pk": pk, "item": item});
+		post_data <= item <= item;
+		post_data = static::processApiData("saveApi", post_data);
 		string url = static::getApiUrl("crud_save", post_data);
 		
 		ApiResult res = await Bus::callApi(url, post_data);

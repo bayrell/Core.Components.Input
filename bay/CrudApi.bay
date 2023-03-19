@@ -309,7 +309,7 @@ struct CrudApi extends BaseApi
 		;
 		
 		/* Execute query */
-		Cursor c = await Database::execute(q);
+		Cursor c = await Database::execute(q, this.databaseParams(q));
 		Relation item = await c.fetch();
 		await c.close();
 		

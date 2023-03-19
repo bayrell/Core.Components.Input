@@ -26,12 +26,12 @@ use Runtime.Web.Crud.ValidationResult;
 struct FormModel<T> extends BaseStruct
 {
 	T item = null;
+	int item_id = 0;
 	Dict dictionary = null;
     Dict params = null;
 	int error_code = 0;
 	string error_message = "";
 	ValidationResult validation_result = null;
-	Dict find_item_data = {};
 	
 	
 	/**

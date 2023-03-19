@@ -178,7 +178,7 @@ public void onChange(Message<ChangeEvent> msg)
 /**
  * Button click
  */
-public void onButtonClick(Message<ChangeEvent> msg)
+public void onButtonClick(Message<MouseClickEvent> msg)
 {
 	FormEvent event = new FormEvent{
 		"kind": FormEvent::BUTTON_CLICK,

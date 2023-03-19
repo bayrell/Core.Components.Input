@@ -1,0 +1,124 @@
+<!--
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2016-2023 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+-->
+
+<class name="Runtime.Web.Crud.Tabs">
+
+<use name="Runtime.Core.Message" />
+<use name="Runtime.Web.Events.MouseClickEvent" />
+
+
+<style>
+%tabs{
+	position: relative;
+}
+%tabs__header_wrap{
+	overflow: hidden;
+	white-space: nowrap;
+	-webkit-overflow-scrolling: touch;
+}
+%tabs__header{
+	position: relative;
+	border-bottom: 1px #ccc solid;
+}
+%tabs__header_item{
+	display: inline-block;
+	vertical-align: top;
+	padding: 10px;
+	cursor: pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-khtml-user-select: none;
+	-ms-user-select: none;
+	border-top: 1px transparent solid;
+	border-left: 1px transparent solid;
+	border-right: 1px transparent solid;
+	text-decoration: none;
+	color: inherit;
+}
+%tabs__header_item:hover, %tabs__header_item:visited, %tabs__header_item:visited:hover{
+	text-decoration: none;
+	color: inherit;
+}
+%tabs__header_item--active{
+	background-color: white;
+	border-top: 1px #ccc solid;
+	border-left: 1px #ccc solid;
+	border-right: 1px #ccc solid;
+}
+%tabs__content{
+	margin-top: 20px;
+}
+</style>
+
+
+<template>
+
+%set Collection tabs = render_params["tabs"];
+%set Collection labels = render_params["labels"];
+%set Collection href = render_params["href"];
+
+<div class="tabs">
+	
+	<div class="tabs__header">
+	%for (int i=0; i<tabs.count(); i++){
+		%set bool is_active = (model != null and tabs[i] == model.active);
+		
+		%if (href == null)
+		{
+			<div class="tabs__header_item" class={{ is_active ? "tabs__header_item--active" : "" }}
+				data-name={{ tabs[i] }}
+				@event:MouseClickEvent="onClick"
+			>
+				{{ labels[i] }}
+			</div>
+		}
+		%else
+		{
+			<a class="tabs__header_item" class={{ is_active ? "tabs__header_item--active" : "" }}
+				data-name={{ tabs[i] }} href={{ href[i] }}
+				@event:MouseClickEvent="onClick"
+			>
+				{{ labels[i] }}
+			</a>
+		}
+	}
+	</div>
+	
+	<div class="tabs__content">
+		%render render_content;
+	</div>
+</div>
+
+</template>
+
+
+<script>
+
+void onClick(Message<MouseClickEvent> msg)
+{
+	if (not this.params.has("href"))
+	{
+		string name = msg.sender.params["data-name"];
+		this.commit("setActive", name);
+	}
+}
+
+</script>
+
+
+</class>

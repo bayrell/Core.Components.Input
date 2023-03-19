@@ -28,7 +28,10 @@
 		"Select.bay",
 		"SelectLabel.bay",
 		"StructBuilder.bay",
+		"TabItem.bay",
 		"Table.bay",
+		"TabModel.bay",
+		"Tabs.bay",
 		"TextArea.bay",
 		"ValidationResult.bay",
 		"ModuleDescription.bay"
