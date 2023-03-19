@@ -31,6 +31,7 @@ use Runtime.Web.Crud.SearchResult;
 use Runtime.Web.Crud.StructBuilder;
 use Runtime.Web.Crud.Rules.CrudRule;
 use Runtime.Web.Crud.Rules.Filter;
+use Runtime.ORM.Connection;
 use Runtime.ORM.Cursor;
 use Runtime.ORM.Database;
 use Runtime.ORM.Query;
@@ -113,7 +114,7 @@ struct CrudApi extends BaseApi
 	/**
 	 * Returns database params
 	 */
-	Dict databaseParams(Query q) => {};
+	Dict databaseParams() => {};
 	
 	
 	/**
@@ -256,7 +257,7 @@ struct CrudApi extends BaseApi
 		;
 		
 		/* Execute query */
-		Cursor c = await Database::execute(q, this.databaseParams(q));
+		Cursor c = await Database::execute(q, this.databaseParams());
 		Collection items = await c.fetchAll();
 		if (q._limit > 0)
 		{
@@ -309,7 +310,7 @@ struct CrudApi extends BaseApi
 		;
 		
 		/* Execute query */
-		Cursor c = await Database::execute(q, this.databaseParams(q));
+		Cursor c = await Database::execute(q, this.databaseParams());
 		Relation item = await c.fetch();
 		await c.close();
 		
@@ -336,6 +337,9 @@ struct CrudApi extends BaseApi
 	 */
 	async void updateItem(Dict new_item)
 	{
+		Dict p = this.databaseParams();
+		Connection conn = Database::getConnection( p["name"] );
+		
 		Collection keys = new_item.keys();
 		if (keys.count() > 0)
 		{
@@ -345,10 +349,10 @@ struct CrudApi extends BaseApi
 				this.item.set(field_name, new_item[field_name]);
 			}
 			
-			await this.item.save();
+			await this.item.save(conn);
 		}
 		
-		await this.item.refresh();
+		await this.item.refresh(conn);
 	}
 	
 	

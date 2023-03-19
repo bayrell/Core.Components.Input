@@ -32,10 +32,15 @@
 <use name="Runtime.Web.Crud.Table" component="true" />
 
 
+<template name="renderPageTitle" args="string title">
+	<h1>{{ title }}</h1>
+</template>
+
+
 <template name="renderIndex">
 	%set StructBuilder builder = static::getStruct();
 	
-	<h1 class="wp-heading-inline">{{ model.getPageTitle("index") }}</h1>
+	%render static::renderPageTitle(model.getPageTitle("index"));
 	
 	<Table
 		builder={{ builder }}
@@ -74,7 +79,7 @@
 	
 	%if (model.save_form.item)
 	{
-		<h1 class="wp-heading-inline">{{ model.getPageTitle("save") }}</h1>
+		%render static::renderPageTitle(model.getPageTitle("save"));
 		%render static::renderSaveForm();
 	}
 	

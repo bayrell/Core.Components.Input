@@ -18,7 +18,7 @@
 
 <class name="Runtime.Web.Crud.Form">
 
-<use name="Runtime.Core.Message" />
+<use name="Runtime.Web.Message" />
 <use name="Runtime.Web.Crud.Button" />
 <use name="Runtime.Web.Crud.FieldInfo" />
 <use name="Runtime.Web.Crud.FormEvent" />
@@ -27,7 +27,7 @@
 <use name="Runtime.Web.Events.MouseClickEvent" />
 
 
-<style>
+<style global="true">
 .web_form{
 	
 }
