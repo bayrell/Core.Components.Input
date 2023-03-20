@@ -79,8 +79,39 @@
 	
 	%if (model.save_form.item)
 	{
-		%render static::renderPageTitle(model.getPageTitle("save"));
+		%render static::renderPageTitle(model.getPageTitle("edit"));
 		%render static::renderSaveForm();
+	}
+	
+	%else
+	{
+		<p>Item not found</p>
+	}
+	
+</template>
+
+
+<template name="renderDelete">
+	
+	<div class="button_top">
+		<Button type="small" href={{ static::getBackHref(layout) }}>
+			Back
+		</Button>
+	</div>
+	
+	%if (model.delete_form.item)
+	{
+		<center>
+			%render static::renderPageTitle(model.getPageTitle("delete"));
+			<div class="crud_page__delete_buttons"
+				@event:MouseClickEvent="onDeleteClick"
+			>
+				<Button type="danger">Delete</Button>
+			</div>
+			<div class="web_form__result" class={{ model.delete_form.getErrorClass() }} >
+				{{ model.delete_form.error_message }}
+			</div>
+		</center>
 	}
 	
 	%else
@@ -99,9 +130,14 @@
 		%render static::renderIndex();
 	}
 	
-	%else
+	%else if (model.action == "edit")
 	{
 		%render static::renderSave();
+	}
+	
+	%else if (model.action == "delete")
+	{
+		%render static::renderDelete();
 	}
 	
 	</div>
@@ -130,11 +166,26 @@ async void onFormEvent(Message<FormEvent> msg)
 		ModelProxy model = this.modelProxy();
 		
 		/* Set wait message */
-		this.save_form.component.commit("setWaitMessage");
+		model.proxy("save_form").commit("setWaitMessage");
 		
 		/* Send save form */
 		await model.data()::doSave(model);
 	}
+}
+
+
+/**
+ * Submit
+ */
+async void onDeleteClick(Message<MouseClickEvent> msg)
+{
+	ModelProxy model = this.modelProxy();
+	
+	/* Set wait message */
+	model.proxy("delete_form").commit("setWaitMessage");
+	
+	/* Send delete form */
+	await model.data()::doDelete(model);
 }
 
 

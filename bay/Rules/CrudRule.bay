@@ -56,4 +56,19 @@ struct CrudRule extends BaseStruct
 	{
 	}
 	
+	
+	/**
+	 * Before delete event
+	 */
+	async void onDeleteBefore(CrudApi api)
+	{
+	}
+	
+	
+	/**
+	 * After delete event
+	 */
+	async void onDeleteAfter(CrudApi api)
+	{
+	}
 }

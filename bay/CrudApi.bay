@@ -218,6 +218,34 @@ struct CrudApi extends BaseApi
 	
 	
 	/**
+	 * Before delete event
+	 */
+	async void onDeleteBefore()
+	{
+		Collection<CrudRule> rules = this.getRules();
+		for (int i=0; i<rules.count(); i++)
+		{
+			CrudRule rule = rules[i];
+			await rule.onDeleteBefore(this);
+		}
+	}
+	
+	
+	/**
+	 * After delete event
+	 */
+	async void onDeleteAfter()
+	{
+		Collection<CrudRule> rules = this.getRules();
+		for (int i=0; i<rules.count(); i++)
+		{
+			CrudRule rule = rules[i];
+			await rule.onDeleteAfter(this);
+		}
+	}
+	
+	
+	/**
 	 * Returns page limit
 	 */
 	list getPageLimit()
@@ -301,7 +329,8 @@ struct CrudApi extends BaseApi
 		
 		/* Get primare key */
 		Dict pk = this.api_data["pk"];
-		Collection filter = rtl::method(relation_name, "getPrimaryFilter")(pk);
+		fn getPrimaryFilter = rtl::method(relation_name, "getPrimaryFilter");
+		Collection filter = getPrimaryFilter(pk, true);
 		
 		/* Build query */
 		Query q = rtl::method(relation_name, "selectQuery")()
@@ -397,7 +426,7 @@ struct CrudApi extends BaseApi
 		/* Find item */
 		this.findItem();
 		
-		/* Search before event */
+		/* Save before event */
 		await this.onSaveBefore();
 		
 		StructBuilder builder = this.getStructBuilder();
@@ -433,5 +462,45 @@ struct CrudApi extends BaseApi
 		
 		/* Save aftert event */
 		await this.onSaveAfter();
+	}
+	
+	
+	/**
+	 * Delete item
+	 */
+	async void deleteItem()
+	{
+		Dict p = this.databaseParams();
+		Connection conn = Database::getConnection( p["name"] );
+		this.item.delete(conn);
+	}
+	
+	
+	/**
+	 * Action delete
+	 */
+	void actionDelete()
+	{
+		this.action = "actionDelete";
+		
+		/* Find item */
+		this.findItem();
+		
+		/* Delete before event */
+		await this.onDeleteBefore();
+		
+		/* Delete item */
+		this.deleteItem();
+		
+		/* Set api result */
+		this.api_result = this.api_result.success({
+			"message": "Ok",
+			"data":
+			{
+			}
+		});
+		
+		/* Delete aftert event */
+		await this.onDeleteAfter();
 	}
 }
