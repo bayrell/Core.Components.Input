@@ -22,6 +22,7 @@
 <use name="Runtime.Web.Message" />
 <use name="Runtime.Web.Events.BaseEvent" />
 <use name="Runtime.Web.Crud.FieldInfo" />
+<use name="Runtime.Web.Crud.Pagination" component="true" />
 <use name="Runtime.Web.Crud.StructBuilder" />
 
 
@@ -48,6 +49,9 @@
 }
 .web_table tr:nth-child(odd){
 	background-color: white;
+}
+.web_table__row_pagination %(Pagination)pagination{
+	padding: 0; margin: 0;
 }
 </style>
 
@@ -119,6 +123,24 @@
 </template>
 
 
+<template name="renderPagination">
+	%set int page = render_params["page"];
+	%set int pages = render_params["pages"];
+	%set StructBuilder builder = render_params["builder"];
+	%if (pages > 1)
+	{
+	<tr>
+		<td colspan={{ builder.table_fields.count() }} class="web_table__row_pagination">
+			<Pagination
+				page={{ page }}
+				pages={{ pages }}
+			/>
+		</td>
+	</tr>
+	}
+</template>
+
+
 <template>
 	%set Collection items = model["items"];
 	<table class="web_table">
@@ -130,6 +152,7 @@
 				%render static::renderRow(i);
 			}
 		}
+		%render static::renderPagination();
 	</table>
 </template>
 

@@ -26,7 +26,8 @@
 
 
 <template>
-    {{ render_params["crud_index"] + 1 }}
+    %set var crud_model = render_params.get("crud_model");
+    {{ crud_model.page + render_params["crud_index"] }}
 </template>
 
 

@@ -44,6 +44,8 @@
 	
 	<Table
 		builder={{ builder }}
+		page={{ model.page }}
+		pages={{ model.pages }}
 		@model=[]
 	>
 	</Table>

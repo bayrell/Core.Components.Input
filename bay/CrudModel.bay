@@ -143,7 +143,9 @@ struct CrudModel<T> extends BaseStruct
 	/**
 	 * Returns search data
 	 */
-	Dict getSearchData() => {};
+	Dict getSearchData() => {
+		"page": this.page,
+	};
 	
 	
 	/**

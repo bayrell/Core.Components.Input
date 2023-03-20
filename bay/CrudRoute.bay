@@ -71,6 +71,7 @@ class CrudRoute extends BaseRoute
 		
 		/* Search items */
 		model.commit("setAction", "index");
+		model.setAttr("page", this.container.request.query.get("p", 1));
 		fn searchItems = rtl::method(page_model_class_name, "searchItems");
 		await searchItems( model );
 		
@@ -109,4 +110,35 @@ class CrudRoute extends BaseRoute
 		this.container.render( page_name );
 	}
 	
+	
+	
+	/**
+	 * Action delete
+	 */
+	async void actionDelete()
+	{
+		string page_model_class_name = this.getPageModelName();
+		string page_name = this.getPageName();
+		
+		this.container.setLayoutName( this.getLayoutName() );
+		this.container.setPageModel( rtl::newInstance(page_model_class_name) );
+		ModelProxy model = this.container.modelProxy();
+		
+		/* Get item */
+		int id = (int)this.container.request.query["id"];
+		model.commit("setAction", "delete");
+		
+		/* Create save form */
+		ModelProxy delete_form = model.proxy("delete_form");
+		delete_form.setNewModel( new FormModel );
+		
+		/* Find item */
+		delete_form.setAttr( "item_id", id );
+		fn findItem = rtl::method(page_model_class_name, "findItem");
+		await findItem( model );
+		delete_form.commit("clearErrorMessage");
+		
+		/* Render page */
+		this.container.render( page_name );
+	}
 }
