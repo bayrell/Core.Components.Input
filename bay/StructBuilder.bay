@@ -192,6 +192,7 @@ struct StructBuilder extends BaseStruct
 			/* If is string */
 			if (info.value_type == "string")
 			{
+				if (rtl::isInt(value) or rtl::isBool(value)) value = rtl::toString(value);
 				if (not rtl::isString(value))
 				{
 					new_item <= { field_name } <= null;
