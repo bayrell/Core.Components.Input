@@ -125,7 +125,7 @@ struct StructBuilder extends BaseStruct
 			new_table_fields = new_table_fields.concat( builder.table_fields.slice(0, index) );
 		}
 		new_table_fields = new_table_fields.concat( new_fields );
-		new_table_fields = new_table_fields.concat( builder.table_fields.slice(index + 1) );
+		new_table_fields = new_table_fields.concat( builder.table_fields.slice(index) );
 		
 		builder <= table_fields <= new_table_fields;
 		return builder;

@@ -80,7 +80,7 @@ struct ForeignKey extends CrudRule
 		fn mapItem = rule.mapItem;
 		
 		/* Get primary keys */
-		Collection<int> pk_ids = items.map( lib::attr(rule.primary_key) );
+		Collection<int> pk_ids = items.map( lib::attr(rule.foreign_key) );
 		
 		/* Load rows from database */
 		Query q = buildSearchQuery(rule, pk_ids);
@@ -97,7 +97,7 @@ struct ForeignKey extends CrudRule
 				for (int j=0; j<rows.count(); j++)
 				{
 					Dict row = rows[j];
-					if (item.get(rule.primary_key) == row.get(rule.foreign_key))
+					if (item.get(rule.foreign_key) == row.get(rule.primary_key))
 					{
 						res.pushValue( row );
 					}

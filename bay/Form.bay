@@ -80,11 +80,13 @@
 				{
 					<{component_name}
 						name={{ field_name }}
-						@model=[ "item", field_name ]
-						@event:ChangeEvent="onChange"
 						options={{ field_info.options }}
 						default_value={{ field_info.default_value }}
-						field_info={{ field_info }}
+						crud_action="form"
+						crud_field_info={{ field_info }}
+						crud_model={{ model }}
+						@model=[ "item", field_name ]
+						@event:ChangeEvent="onChange"
 						...component_settings
 					/>
 				}

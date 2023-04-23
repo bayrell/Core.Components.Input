@@ -141,7 +141,7 @@ struct CrudApi extends BaseApi
 					if (
 						rtl::isString(field_name) and
 						rtl::isString(field_op) and
-						rtl::isString(field_value)
+						(rtl::isString(field_value) or rtl::isInt(field_value))
 					)
 					{
 						Filter rule = filter_fields.findItem(

@@ -88,6 +88,7 @@
 								value={{ value }}
 								options={{ field_info.options }}
 								default_value={{ field_info.default_value }}
+								crud_action="table"
 								crud_field_info={{ field_info }}
 								crud_index={{ index }}
 								crud_model={{ model }}
