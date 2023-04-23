@@ -327,7 +327,7 @@ struct CrudApi extends BaseApi
 	 */
 	async void actionSearchOne()
 	{
-		this.action = "actionSearch";
+		this.action = "actionItem";
 		
 		list res = this.getPageLimit();
 		int page = res[0];
