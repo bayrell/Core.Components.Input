@@ -72,8 +72,7 @@ class CrudRoute extends BaseRoute
 		/* Search items */
 		model.commit("setAction", "index");
 		model.setAttr("page", this.container.request.query.get("p", 1));
-		fn searchItems = rtl::method(page_model_class_name, "searchItems");
-		await searchItems( model );
+		await model.commitAsync("searchItems");
 		
 		/* Render page */
 		this.container.render( page_name );
@@ -102,8 +101,7 @@ class CrudRoute extends BaseRoute
 		
 		/* Find item */
 		save_form.setAttr( "item_id", id );
-		fn findItem = rtl::method(page_model_class_name, "findItem");
-		await findItem( model );
+		await model.commitAsync("findItem");
 		save_form.commit("clearErrorMessage");
 		
 		/* Render page */
@@ -134,8 +132,7 @@ class CrudRoute extends BaseRoute
 		
 		/* Find item */
 		delete_form.setAttr( "item_id", id );
-		fn findItem = rtl::method(page_model_class_name, "findItem");
-		await findItem( model );
+		await model.commitAsync("findItem");
 		delete_form.commit("clearErrorMessage");
 		
 		/* Render page */

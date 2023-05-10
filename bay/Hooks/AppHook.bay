@@ -29,8 +29,8 @@ class AppHook extends BaseAppHook
 	 */
 	void register_hooks()
 	{
-		this.register( static::CSS_CLASS_NAMES );
-		this.register( static::CSS_VARS );
+		this.register( static::CSS_CLASS_NAMES, -100 );
+		this.register( static::CSS_VARS, -100 );
 	}
 	
 	
