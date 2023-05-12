@@ -19,6 +19,7 @@
 namespace Runtime.Web.Crud;
 
 use Runtime.BaseStruct;
+use Runtime.Exceptions.ApiException;
 use Runtime.Web.ApiResult;
 use Runtime.Web.Bus;
 use Runtime.Web.RenderContainer;
@@ -59,6 +60,23 @@ struct ValidationResult extends BaseStruct
 		}
 		
 		return res;
+	}
+	
+	
+	/**
+	 * Returns api result
+	 */
+	Dict getResult()
+	{
+		ApiException e = new ApiException("Ошибка. Проверьте корректность данных");
+		return {
+			"code": e.getErrorCode(),
+			"message": e.getErrorMessage(),
+			"error_name": e::getClassName(),
+			"data": {
+				"validation_result": this.toDict(),
+			},
+		};
 	}
 	
 }
