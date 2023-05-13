@@ -18,9 +18,9 @@
 
 <class name="Runtime.Web.Crud.CrudPage">
 
+<use name="Runtime.ModelProxy" />
 <use name="Runtime.Web.LayoutModel" />
 <use name="Runtime.Web.Message" />
-<use name="Runtime.Web.ModelProxy" />
 <use name="Runtime.Web.Events.MouseClickEvent" />
 <use name="Runtime.Web.Crud.Button" />
 <use name="Runtime.Web.Crud.FieldInfo" />
