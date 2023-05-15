@@ -14,6 +14,7 @@
 		"CrudModel.bay",
 		"CrudPage.bay",
 		"CrudRoute.bay",
+		"DTO.bay",
 		"FieldInfo.bay",
 		"Form.bay",
 		"FormEvent.bay",

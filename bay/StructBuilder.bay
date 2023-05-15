@@ -335,4 +335,34 @@ struct StructBuilder extends BaseStruct
 		
 		return api_result;
 	}
+	
+	
+	/**
+	 * Convert to dict
+	 */
+	Dict convert(BaseStruct item)
+	{
+		Map new_item = new Map();
+		for (int i=0; i<this.form_fields.count(); i++)
+		{
+			string field_name = this.form_fields[i];
+			var value = item[field_name];
+			
+			FieldInfo info = this.info[field_name];
+			if (not info) continue;
+			if (info.value_type == "") continue;
+			if (info.virtual) continue;
+			
+			/* Check show field */
+			fn is_show = info.is_show;
+			if (is_show != null)
+			{
+				if (not is_show(item)) continue;
+			}
+			
+			new_item.setValue(field_name, value);
+		}
+		
+		return new_item.toDict();
+	}
 }

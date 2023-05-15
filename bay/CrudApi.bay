@@ -501,7 +501,7 @@ struct CrudApi extends BaseApi
 		await this.validateItem(new_item);
 		
 		/* Update item */
-		this.updateItem(new_item);
+		this.updateItem( builder.toDict(new_item) );
 		
 		/* Transform items */
 		string model_name = static::getModelName();
