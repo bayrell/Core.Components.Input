@@ -152,7 +152,7 @@ struct CrudModel<T> extends BaseStruct
 	/**
 	 * Search items
 	 */
-	async static void searchItems(ModelProxy model, Dict data = null)
+	async static ApiResult searchItems(ModelProxy model, Dict data = null)
 	{
 		/* Process before */
 		await static::before(model, "searchItems", {});
@@ -167,6 +167,8 @@ struct CrudModel<T> extends BaseStruct
 		
 		/* Process after */
 		await static::after(model, "searchItems", { "res": res });
+		
+		return res;
 	}
 	
 	
@@ -228,7 +230,7 @@ struct CrudModel<T> extends BaseStruct
 	/**
 	 * Find item
 	 */
-	async static void findItem(ModelProxy model, Dict data = null)
+	async static ApiResult findItem(ModelProxy model, Dict data = null)
 	{
 		/* Process before */
 		await static::before(model, "before", "findItem", {});
@@ -247,6 +249,8 @@ struct CrudModel<T> extends BaseStruct
 		
 		/* Process after */
 		await static::after(model, "after", "findItem", { "res": res });
+		
+		return res;
 	}
 	
 	
@@ -267,7 +271,7 @@ struct CrudModel<T> extends BaseStruct
 	/**
 	 * Save form
 	 */
-	async static void doSave(ModelProxy model)
+	async static ApiResult doSave(ModelProxy model)
 	{
 		/* Process before */
 		await static::before(model, "before", "doSave", {});
@@ -285,6 +289,8 @@ struct CrudModel<T> extends BaseStruct
 		
 		/* Process after */
 		await static::after(model, "after", "doSave", { "res": res });
+		
+		return res;
 	}
 	
 	
@@ -306,7 +312,7 @@ struct CrudModel<T> extends BaseStruct
 	/**
 	 * Delete
 	 */
-	async static void doDelete(ModelProxy model)
+	async static ApiResult doDelete(ModelProxy model)
 	{
 		/* Process before */
 		await static::before(model, "before", "doDelete", {});
@@ -323,6 +329,8 @@ struct CrudModel<T> extends BaseStruct
 		
 		/* Process after */
 		await static::after(model, "after", "doDelete", { "res": res });
+		
+		return res;
 	}
 	
 	

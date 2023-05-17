@@ -85,6 +85,7 @@
 						crud_action="form"
 						crud_field_info={{ field_info }}
 						crud_model={{ model }}
+						@ref={{ "field_" ~ field_name }}
 						@model=[ "item", field_name ]
 						@event:ChangeEvent="onChange"
 						...component_settings
