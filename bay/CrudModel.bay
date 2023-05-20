@@ -31,7 +31,9 @@ struct CrudModel<T> extends BaseStruct
 	int page = 0;
     int pages = 0;
     Collection<T> items = null;
-    Dict dictionary = null;
+    Dict dictionary = {};
+	Dict item_data = null;
+	Dict search_data = null;
 	FormModel item_form = null;
 	FormModel save_form = null;
 	FormModel delete_form = null;
@@ -85,27 +87,19 @@ struct CrudModel<T> extends BaseStruct
 	
 	
 	/**
-	 * Before action
+	 * Set page
 	 */
-	async static void before(ModelProxy model, string action, Dict data)
-	{
-	}
+	CrudModel setPage(int page = 0) => this.clone({
+		"page": page,
+	});
 	
 	
 	/**
-	 * After action
+	 * Event
 	 */
-	async static void after(ModelProxy model, string action, Dict data)
+	async static void event(ModelProxy model, string action, Dict data)
 	{
-	}
-	
-	
-	/**
-	 * Process api data
-	 */
-	static Dict processApiData(string action, Dict search_data)
-	{
-		return search_data;
+		return data;
 	}
 	
 	
@@ -119,7 +113,7 @@ struct CrudModel<T> extends BaseStruct
 		CrudModel model = this;
 		if (res.isSuccess())
 		{
-			if (action == "searchItems")
+			if (action == "crudSearch")
 			{
 				model = model.copy({
 					"items": res["data"]["items"],
@@ -128,7 +122,7 @@ struct CrudModel<T> extends BaseStruct
 				});
 			}
 			
-			else if (action == "findItem")
+			else if (action == "crudItem")
 			{
 				model <= item <= res["data", "item"];
 			}
@@ -152,35 +146,31 @@ struct CrudModel<T> extends BaseStruct
 	/**
 	 * Search items
 	 */
-	async static ApiResult searchItems(ModelProxy model, Dict data = null)
+	async static ApiResult crudSearch(ModelProxy model, Dict data = null)
 	{
-		/* Process before */
-		await static::before(model, "searchItems", {});
+		model.setAttr("search_data", data);
+		
+		/* Extends search data */
+		Dict post_data = model.data().getSearchData();
+		if (data != null) post_data = data.concat(data);
+		
+		/* Process event */
+		Dict data = await static::event(model, "crudSearchBefore", {
+			"post_data": post_data,
+		});
 		
 		/* Send api */
-		Dict search_data = model.data().getSearchData();
-		if (data != null) search_data = data.concat(data);
-		ApiResult res = await static::searchApi( search_data );
+		string url = static::getApiUrl("crud_search", post_data);
+		ApiResult res = await Bus::callApi(url, post_data);
 		
 		/* Set api result */
-		model.commit("setApiResult", "searchItems", res);
+		model.commit("setApiResult", "crudSearch", res);
 		
-		/* Process after */
-		await static::after(model, "searchItems", { "res": res });
-		
-		return res;
-	}
-	
-	
-	/**
-	 * Search api
-	 */
-	static async ApiResult searchApi(Dict search_data)
-	{
-		string url = static::getApiUrl("crud_search", {"search_data": search_data});
-		
-		search_data = static::processApiData("searchApi", search_data);
-		ApiResult res = await Bus::callApi(url, search_data);
+		/* Process event */
+		await static::event(model, "crudSearchAfter", {
+			"post_data": post_data,
+			"res": res
+		});
 		
 		return res;
 	}
@@ -199,9 +189,9 @@ struct CrudModel<T> extends BaseStruct
 	
 	
 	/**
-	 * Returns find item data
+	 * Returns item data
 	 */
-	Dict getFindItemData()
+	Dict getItemData()
 	{
 		FormModel model = this.getItemModel();
 		if (model == null) return null;
@@ -230,39 +220,35 @@ struct CrudModel<T> extends BaseStruct
 	/**
 	 * Find item
 	 */
-	async static ApiResult findItem(ModelProxy model, Dict data = null)
+	async static ApiResult crudItem(ModelProxy model, Dict data = null)
 	{
-		/* Process before */
-		await static::before(model, "before", "findItem", {});
+		model.setAttr("item_data", data);
+		
+		/* Get post data */
+		CrudModel crud_model = model.data();
+		Dict post_data = crud_model.getItemData();
+		if (data != null) post_data = data.concat(data);
+		
+		/* Process event */
+		Dict data = await static::event(model, "crudItemBefore", {
+			"post_data": post_data,
+		});
 		
 		/* Send api */
-		Dict find_item_data = model.data().getFindItemData();
-		if (data != null) find_item_data = data.concat(data);
-		ApiResult res = await static::findItemApi( find_item_data );
+		string url = static::getApiUrl("crud_item", post_data);
+		ApiResult res = await Bus::callApi(url, post_data);
 		
 		/* Set api result */
 		ModelProxy model_item = static::getItemModelProxy(model);
 		if (model_item)
 		{
-			model_item.commit("setApiResult", "findItem", res);
+			model_item.commit("setApiResult", "crudItem", res);
 		}
 		
 		/* Process after */
-		await static::after(model, "after", "findItem", { "res": res });
-		
-		return res;
-	}
-	
-	
-	/**
-	 * Get by id Api
-	 */
-	static async ApiResult findItemApi(Dict search_data)
-	{
-		search_data = static::processApiData("findItemApi", search_data);
-		string url = static::getApiUrl("crud_item", {"search_data": search_data});
-		
-		ApiResult res = await Bus::callApi(url, search_data);
+		await static::event(model, "crudItemAfter", {
+			"post_data": post_data, "res": res
+		});
 		
 		return res;
 	}
@@ -271,39 +257,30 @@ struct CrudModel<T> extends BaseStruct
 	/**
 	 * Save form
 	 */
-	async static ApiResult doSave(ModelProxy model)
+	async static ApiResult crudSave(ModelProxy model)
 	{
+		/* Get post data */
+		CrudModel crud_model = model.data();
+		Dict post_data = crud_model.getItemData();
+		post_data <= item <= crud_model.save_form.item.toDict();
+		
 		/* Process before */
-		await static::before(model, "before", "doSave", {});
+		Dict d = await static::event(model, "before", "crudSaveBefore", {
+			"post_data": post_data,
+		});
 		
 		/* Send api */
-		CrudModel data = model.data();
-		Dict find_item_data = data.getFindItemData();
-		ApiResult res = await static::saveApi(
-			find_item_data,
-			data.save_form.item.toDict()
-		);
+		string url = static::getApiUrl("crud_save", post_data);
+		ApiResult res = await Bus::callApi(url, post_data);
 		
 		/* Set api result */
-		model.proxy(["save_form"]).commit("setApiResult", "doSave", res);
+		model.proxy(["save_form"]).commit("setApiResult", "crudSave", res);
 		
 		/* Process after */
-		await static::after(model, "after", "doSave", { "res": res });
-		
-		return res;
-	}
-	
-	
-	/**
-	 * Save Api
-	 */
-	static async ApiResult saveApi(Dict post_data, Dict item)
-	{
-		post_data <= item <= item;
-		post_data = static::processApiData("saveApi", post_data);
-		string url = static::getApiUrl("crud_save", post_data);
-		
-		ApiResult res = await Bus::callApi(url, post_data);
+		await static::event(model, "crudSaveAfter", {
+			"post_data": post_data,
+			"res": res,
+		});
 		
 		return res;
 	}
@@ -312,39 +289,31 @@ struct CrudModel<T> extends BaseStruct
 	/**
 	 * Delete
 	 */
-	async static ApiResult doDelete(ModelProxy model)
+	async static ApiResult crudDelete(ModelProxy model)
 	{
+		/* Get post data */
+		CrudModel crud_model = model.data();
+		Dict post_data = crud_model.getItemData();
+		
 		/* Process before */
-		await static::before(model, "before", "doDelete", {});
+		Dict d = await static::event(model, "crudDeleteBefore", {
+			"post_data": post_data,
+		});
 		
 		/* Send api */
-		CrudModel data = model.data();
-		Dict find_item_data = data.getFindItemData();
-		ApiResult res = await static::deleteApi(
-			find_item_data
-		);
-		
-		/* Set api result */
-		model.proxy(["delete_form"]).commit("setApiResult", "doDelete", res);
-		
-		/* Process after */
-		await static::after(model, "after", "doDelete", { "res": res });
-		
-		return res;
-	}
-	
-	
-	/**
-	 * Delete Api
-	 */
-	static async ApiResult deleteApi(Dict post_data, Dict item)
-	{
-		post_data <= item <= item;
-		post_data = static::processApiData("deleteApi", post_data);
 		string url = static::getApiUrl("crud_delete", post_data);
-		
 		ApiResult res = await Bus::callApi(url, post_data);
 		
+		/* Set api result */
+		model.proxy(["delete_form"]).commit("setApiResult", "crudDelete", res);
+		
+		/* Process after */
+		await static::event(model, "crudDeleteAfter", {
+			"post_data": post_data,
+			"res": res,
+		});
+		
 		return res;
 	}
+	
 }

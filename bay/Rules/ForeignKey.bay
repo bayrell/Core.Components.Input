@@ -105,7 +105,10 @@ struct ForeignKey extends CrudRule
 				
 				if (mapItem == null)
 				{
-					item <= { rule.api_name } <= res.toCollection();
+					if (rule.api_name)
+					{
+						item <= { rule.api_name } <= res.toCollection();
+					}
 				}
 				else
 				{

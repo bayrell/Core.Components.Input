@@ -338,9 +338,9 @@ struct StructBuilder extends BaseStruct
 	
 	
 	/**
-	 * Convert to dict
+	 * Returns data
 	 */
-	Dict convert(BaseStruct item)
+	Dict data(BaseStruct item)
 	{
 		Map new_item = new Map();
 		for (int i=0; i<this.form_fields.count(); i++)
