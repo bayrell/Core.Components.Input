@@ -105,7 +105,7 @@ struct CrudApi extends BaseApi
 	/**
 	 * Build search query
 	 */
-	Query buildSearchQuery(Query q)
+	async Query buildSearchQuery(Query q)
 	{
 		return q;
 	}
@@ -282,7 +282,7 @@ struct CrudApi extends BaseApi
 		Query q = rtl::method(relation_name, "selectQuery")()
 			|> .page(page - 1, limit)
 			|> this.buildFilter
-			|> this.buildSearchQuery
+			|> await this.buildSearchQuery
 		;
 		
 		/* Execute query */
@@ -306,7 +306,7 @@ struct CrudApi extends BaseApi
 		;
 		
 		/* Set api result */
-		this.api_result = this.api_result.success({
+		this.success({
 			"data":
 			{
 				"page": page,
@@ -343,7 +343,7 @@ struct CrudApi extends BaseApi
 		Query q = rtl::method(relation_name, "selectQuery")()
 			|> .page(page - 1, limit)
 			|> this.buildFilter
-			|> this.buildSearchQuery
+			|> await this.buildSearchQuery
 		;
 		
 		/* Execute query */
@@ -390,7 +390,7 @@ struct CrudApi extends BaseApi
 		/* Build query */
 		Query q = rtl::method(relation_name, "selectQuery")()
 			|> .filter(filter)
-			|> this.buildSearchQuery
+			|> await this.buildSearchQuery
 		;
 		
 		/* Execute query */
