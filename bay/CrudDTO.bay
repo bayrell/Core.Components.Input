@@ -22,7 +22,7 @@ use Runtime.BaseStruct;
 use Runtime.Web.Crud.StructBuilder;
 
 
-struct DTO extends BaseStruct
+struct CrudDTO extends BaseStruct
 {
 	/**
 	 * Build struct

@@ -18,12 +18,23 @@
 
 namespace Runtime.Web.Crud;
 
+use Runtime.lib;
 use Runtime.BaseStruct;
 use Runtime.ModelProxy;
+use Runtime.Exceptions.ApiException;
+use Runtime.Exceptions.RuntimeException;
+use Runtime.ORM.Connection;
+use Runtime.ORM.Cursor;
+use Runtime.ORM.Database;
+use Runtime.ORM.Query;
+use Runtime.ORM.Relation;
 use Runtime.Web.ApiResult;
 use Runtime.Web.Bus;
 use Runtime.Web.RenderContainer;
 use Runtime.Web.Crud.FormModel;
+use Runtime.Web.Crud.StructBuilder;
+use Runtime.Web.Crud.Rules.CrudRule;
+use Runtime.Web.Crud.Rules.Filter;
 
 
 struct CrudModel<T> extends BaseStruct
@@ -41,6 +52,18 @@ struct CrudModel<T> extends BaseStruct
 	string error_message = "";
 	string search = "";
 	string action = "";
+	
+	
+	/**
+	 * Returns relation name
+	 */
+	pure string getRelationName() => "";
+	
+	
+	/**
+	 * Returns model name
+	 */
+	pure string getModelName() => "";
 	
 	
 	/**
@@ -265,7 +288,7 @@ struct CrudModel<T> extends BaseStruct
 		post_data <= item <= crud_model.save_form.item.toDict();
 		
 		/* Process before */
-		Dict d = await static::event(model, "before", "crudSaveBefore", {
+		Dict d = await static::event(model, "crudSaveBefore", {
 			"post_data": post_data,
 		});
 		
@@ -315,5 +338,515 @@ struct CrudModel<T> extends BaseStruct
 		
 		return res;
 	}
+	
+	
+	
+	#ifdef BACKEND then
+	
+	
+	/**
+	 * Returns page limit
+	 */
+	list getPageLimit()
+	{
+		int page = (int)(this.container.request.payload["page"] |> default string 1);
+		int limit = (int)(this.container.request.payload["limit"] |> default string -1);
+		
+		if (page <= 1) page = 1;
+		if (limit <= 0) limit = 10;
+		if (limit > 100) limit = 100;
+		
+		return [page, limit];
+	}
+	
+	
+	/**
+	 * Backend event
+	 */
+	async static void backendEvent(RenderContainer container, string action, Dict data)
+	{
+		if (action == "actionSearchAfter")
+		{
+			Collection<CrudRule> rules = static::getRules();
+			for (int i=0; i<rules.count(); i++)
+			{
+				CrudRule rule = rules[i];
+				await rule.onSearchAfter(container);
+			}
+		}
+		
+		else if (action == "actionSaveBefore")
+		{
+			Collection<CrudRule> rules = static::getRules();
+			for (int i=0; i<rules.count(); i++)
+			{
+				CrudRule rule = rules[i];
+				await rule.onSaveBefore(this);
+			}
+		}
+		
+		else if (action == "actionSaveAfter")
+		{
+			Collection<CrudRule> rules = static::getRules();
+			for (int i=0; i<rules.count(); i++)
+			{
+				CrudRule rule = rules[i];
+				await rule.onSaveAfter(this);
+			}
+		}
+		
+		else if (action == "actionDeleteBefore")
+		{
+			Collection<CrudRule> rules = static::getRules();
+			for (int i=0; i<rules.count(); i++)
+			{
+				CrudRule rule = rules[i];
+				await rule.onDeleteBefore(this);
+			}
+		}
+		
+		else if (action == "actionDeleteAfter")
+		{
+			Collection<CrudRule> rules = static::getRules();
+			for (int i=0; i<rules.count(); i++)
+			{
+				CrudRule rule = rules[i];
+				await rule.onDeleteAfter(this);
+			}
+		}
+		
+		return data;
+	}
+	
+	
+	/**
+	 * Returns rules
+	 */
+	pure Collection<CrudRule> getRules(RenderContainer container) =>
+	[
+	];
+	
+	
+	/**
+	 * Build filter
+	 */
+	static Query buildFilter(RenderContainer container, Query q)
+	{
+		Collection<string> filter_fields = static::getRules(container)
+			|> .filter( lib::isInstance(classof Filter) )
+		;
+		
+		Vector query_filter = new Vector();
+		Collection request_filter = container.request.payload["filter"];
+		if (request_filter instanceof Collection)
+		{
+			for (int i=0; i<request_filter.count(); i++)
+			{
+				Collection filter = request_filter[i];
+				if (filter instanceof Collection and filter.count() == 3)
+				{
+					string field_name = filter[0];
+					string field_op = filter[1];
+					string field_value = filter[2];
+					if (
+						rtl::isString(field_name) and
+						rtl::isString(field_op) and
+						(rtl::isString(field_value) or rtl::isInt(field_value))
+					)
+					{
+						Filter rule = filter_fields.findItem(
+							lib::equalAttr("api_name", field_name)
+						);
+						
+						if (rule)
+						{
+							query_filter.pushValue([rule.field_name, field_op, field_value]);
+						}
+					}
+				}
+			}
+		}
+		
+		return q.filter( query_filter.toCollection() );
+	}
+	
+	
+	/**
+	 * Init api
+	 */
+	static async void initApi(RenderContainer container, Dict post_data)
+	{
+		if (not container.backend_storage.has("api"))
+		{
+			container.backend_storage.setValue("api", new Map());
+		}
+		
+		container.backend_storage["api"].setValue("action", "actionSearch");
+		container.backend_storage["api"].setValue("post_data", post_data);
+	}
+	
+	
+	/**
+	 * Action search
+	 */
+	static void actionSearch(RenderContainer container, Dict post_data)
+	{
+		/* Init api */
+		await static::initApi(container, post_data, "actionSearch");
+		
+		list res = this.getPageLimit();
+		int page = res[0];
+		int limit = res[1];
+		int pages = 0;
+		int rows = 0;
+		
+		container.backend_storage["api"].setValue("page", page);
+		container.backend_storage["api"].setValue("limit", limit);
+		
+		
+		/* Search before event */
+		await static::backendEvent(container, "actionSearchBefore", {});
+		
+		
+		/* Build query */
+		string relation_name = static::getRelationName();
+		Query q = rtl::method(relation_name, "selectQuery")()
+			|> .page(page - 1, limit)
+		;
+		q = static::buildFilter(container, q);
+		q = static::buildSearchQuery(container, q);
+		
+		
+		/* Execute query */
+		Cursor c = await Database::execute(q, static::databaseParams());
+		Collection items = await c.fetchAll();
+		if (q._limit > 0)
+		{
+			page = await c.getPage() + 1;
+			pages = await c.getPages();
+		}
+		await c.close();
+		
+		
+		/* Transform items */
+		string model_name = static::getModelName();
+		items = items
+			|> lib::map(
+				Dict (Relation item) use (model_name) => item.toModel( model_name )
+			)
+		;
+		
+		
+		/* Set answer */
+		container.backend_storage["api"].setValue("page", page);
+		container.backend_storage["api"].setValue("pages", pages);
+		container.backend_storage["api"].setValue("rows", rows);
+		
+		container.success({
+			"data":
+			{
+				"page": page,
+				"pages": pages,
+				"items": items,
+				"dictionary": [],
+			}
+		});
+		
+		
+		/* Search after event */
+		await static::backendEvent(container, "actionSearchAfter", {});
+	}
+	
+	
+	/**
+	 * Action search
+	 */
+	static async void actionSearchOne(RenderContainer container, Dict post_data)
+	{
+		/* Init api */
+		await static::initApi(container, post_data, "actionItem");
+		
+		list res = this.getPageLimit();
+		int page = res[0];
+		int limit = 1;
+		int pages = 0;
+		int rows = 0;
+		
+		
+		/* Search before event */
+		await static::backendEvent(container, "actionSearchBefore", {});
+		
+		
+		/* Build query */
+		string relation_name = static::getRelationName();
+		Query q = rtl::method(relation_name, "selectQuery")()
+			|> .page(page - 1, limit)
+		;
+		q = static::buildFilter(container, q);
+		q = static::buildSearchQuery(container, q);
+		
+		
+		/* Execute query */
+		Cursor c = await Database::execute(q, static::databaseParams());
+		Collection items = await c.fetchAll();
+		if (q._limit > 0)
+		{
+			page = await c.getPage() + 1;
+			pages = await c.getPages();
+		}
+		await c.close();
+		
+		
+		/* Transform items */
+		string model_name = static::getModelName();
+		items = items
+			|> lib::map(
+				Dict (Relation item) use (model_name) => item.toModel( model_name )
+			)
+		;
+		
+		
+		/* Set answer */
+		container.backend_storage["api"].setValue("page", page);
+		container.backend_storage["api"].setValue("pages", pages);
+		container.backend_storage["api"].setValue("rows", rows);
+		
+		container.success({
+			"data":
+			{
+				"page": page,
+				"pages": pages,
+				"item": items[0],
+				"items": items,
+				"dictionary": [],
+			}
+		});
+		
+		
+		/* Search after event */
+		await static::backendEvent(container, "actionSearchAfter", {});
+	}
+	
+	
+	/**
+	 * Find item
+	 */
+	static async void findItem(RenderContainer container)
+	{
+		/* Query to database */
+		string relation_name = static::getRelationName();
+		
+		
+		/* Get primary key */
+		Dict pk = container.request.payload["pk"];
+		fn getPrimaryFilter = rtl::method(relation_name, "getPrimaryFilter");
+		Collection filter = getPrimaryFilter(pk, true);
+		
+		
+		/* Build query */
+		Query q = rtl::method(relation_name, "selectQuery")()
+			|> .filter(filter)
+		;
+		q = static::buildSearchQuery(container, q);
+		
+		
+		/* Execute query */
+		Cursor c = await Database::execute(q, static::databaseParams());
+		Relation item = await c.fetch();
+		await c.close();
+		
+		if (!item)
+		{
+			throw new ApiException("Item not found");
+		}
+		
+		
+		/* Set item */
+		container.backend_storage["api"].setValue("item", item);
+	}
+	
+	
+	/**
+	 * Validate item
+	 */
+	static async void validateItem(RenderContainer container, StructBuilder builder, Dict new_item)
+	{
+		container <= response <= builder.validateApi(container.response, new_item);
+	}
+	
+	
+	/**
+	 * Update item
+	 */
+	static async void updateItem(RenderContainer container, Relation item, Dict update_data)
+	{
+		Dict p = static::databaseParams();
+		Connection conn = Database::getConnection( p["name"] );
+		
+		Collection keys = update_data.keys();
+		if (keys.count() > 0)
+		{
+			for (int i=0; i<keys.count(); i++)
+			{
+				string field_name = keys[i]
+				item.set(field_name, update_data[field_name]);
+			}
+			
+			await item.save(conn);
+		}
+		
+		await item.refresh(conn);
+	}
+	
+	
+	/**
+	 * Action item
+	 */
+	static async void actionItem(RenderContainer container, Dict post_data)
+	{
+		/* Init api */
+		await static::initApi(container, post_data, "actionItem");
+		
+		
+		/* Before event */
+		await static::backendEvent(container, "actionItemBefore", {});
+		
+		
+		/* Find item */
+		await static::findItem(container);
+		
+		
+		/* Transform items */
+		Relation item = container.backend_storage["api", "item"];
+		string model_name = static::getModelName();
+		BaseStruct item = item.toModel( model_name );
+		
+		
+		/* Set answer */
+		container.success({
+			"data":
+			{
+				"item": item,
+				"dictionary": [],
+			}
+		});
+		
+		
+		/* After event */
+		await static::backendEvent(container, "actionItemAfter", {});
+	}
+	
+	
+	/**
+	 * Action save
+	 */
+	static async void actionSave(RenderContainer container, Dict post_data)
+	{
+		/* Init api */
+		await static::initApi(container, post_data, "actionSave");
+		
+		
+		/* Before event */
+		await static::backendEvent(container, "actionSaveBefore", {});
+		
+		
+		/* Find item */
+		await static::findItem(container);
+		
+		
+		StructBuilder builder = static::getStruct();
+		if (builder == null)
+		{
+			throw new RuntimeException("Builder is null");
+		}
+		
+		
+		/* Purify item */
+		Dict new_item = container.request.payload["item"];
+		new_item = builder.purify( new_item );
+		
+		
+		/* Validate new item */
+		await this.validateItem(container, builder, new_item);
+		
+		/* If validation error */
+		if (container.response.error_name != "") return;
+		
+		
+		/* Update item */
+		Relation item = container.backend_storage["api", "item"];
+		Dict update_item = builder.data(new_item);
+		await static::updateItem( container, item, update_item );
+		
+		
+		/* Transform items */
+		string model_name = static::getModelName();
+		BaseStruct item = item.toModel( model_name );
+		
+		
+		/* Set api result */
+		container.success({
+			"data":
+			{
+				"item": item,
+				"dictionary": [],
+			}
+		});
+		
+		
+		/* After event */
+		await static::backendEvent(container, "actionSaveAfter", {});
+	}
+	
+	
+	/**
+	 * Delete item
+	 */
+	static async void deleteItem(RenderContainer container, Relation item)
+	{
+		Dict p = static::databaseParams();
+		Connection conn = Database::getConnection( p["name"] );
+		item.delete(conn);
+	}
+	
+	
+	/**
+	 * Action delete
+	 */
+	static async void actionDelete(RenderContainer container, Dict post_data)
+	{
+		/* Init api */
+		await static::initApi(container, post_data, "actionDelete");
+		
+		
+		/* Before event */
+		await static::backendEvent(container, "actionDeleteBefore", {});
+		
+		
+		/* Find item */
+		await static::findItem(container);
+		
+		
+		/* Delete item */
+		Relation item = container.backend_storage["api", "item"];
+		await static::deleteItem(container, item);
+		
+		
+		/* Set api result */
+		container.success({
+			"data":
+			{
+				"item": item,
+				"dictionary": [],
+			}
+		});
+		
+		
+		/* Before event */
+		await static::backendEvent(container, "actionDeleteAfter", {});
+	}
+	
+	
+	#endif
 	
 }

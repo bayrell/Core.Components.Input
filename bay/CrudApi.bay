@@ -250,8 +250,8 @@ struct CrudApi extends BaseApi
 	 */
 	list getPageLimit()
 	{
-		int page = (int)(this.api_data["page"] |> default string 1);
-		int limit = (int)(this.api_data["limit"] |> default string -1);
+		int page = (int)(this.container.request.payload["page"] |> default string 1);
+		int limit = (int)(this.container.request.payload["limit"] |> default string -1);
 		
 		if (page <= 1) page = 1;
 		if (limit <= 0) limit = 10;
@@ -306,7 +306,7 @@ struct CrudApi extends BaseApi
 		;
 		
 		/* Set api result */
-		this.success({
+		this.container.success({
 			"data":
 			{
 				"page": page,
@@ -383,7 +383,7 @@ struct CrudApi extends BaseApi
 		string relation_name = static::getRelationName();
 		
 		/* Get primare key */
-		Dict pk = this.api_data["pk"];
+		Dict pk = this.container.request.payload["pk"];
 		fn getPrimaryFilter = rtl::method(relation_name, "getPrimaryFilter");
 		Collection filter = getPrimaryFilter(pk, true);
 		
@@ -491,7 +491,7 @@ struct CrudApi extends BaseApi
 		}
 		
 		/* Purify item */
-		Dict new_item = this.api_data["item"];
+		Dict new_item = this.container.request.payloada["item"];
 		new_item = builder.purify( new_item );
 		
 		/* Validate new item */
