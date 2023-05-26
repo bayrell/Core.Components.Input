@@ -171,7 +171,7 @@ async void onFormEvent(Message<FormEvent> msg)
 		model.proxy("save_form").commit("setWaitMessage");
 		
 		/* Send save form */
-		await model.data()::doSave(model);
+		await model.commitAsync("crudSave");
 	}
 }
 
@@ -187,7 +187,7 @@ async void onDeleteClick(Message<MouseClickEvent> msg)
 	model.proxy("delete_form").commit("setWaitMessage");
 	
 	/* Send delete form */
-	await model.data()::doDelete(model);
+	await model.commitAsync("crudDelete");
 }
 
 
@@ -195,6 +195,7 @@ async void onDeleteClick(Message<MouseClickEvent> msg)
  * Returns struct
  */
 pure memorize StructBuilder getStruct() => null;
+
 
 </script>
 

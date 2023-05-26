@@ -72,7 +72,7 @@ class CrudRoute extends BaseRoute
 		/* Search items */
 		model.commit("setAction", "index");
 		model.setAttr("page", this.container.request.query.get("p", 1));
-		await model.commitAsync("searchItems");
+		await model.commitAsync("crudSearch");
 		
 		/* Render page */
 		this.container.render( page_name );
@@ -101,7 +101,7 @@ class CrudRoute extends BaseRoute
 		
 		/* Find item */
 		save_form.setAttr( "item_id", id );
-		await model.commitAsync("findItem");
+		await model.commitAsync("crudItem");
 		save_form.commit("clearErrorMessage");
 		
 		/* Render page */
@@ -132,7 +132,7 @@ class CrudRoute extends BaseRoute
 		
 		/* Find item */
 		delete_form.setAttr( "item_id", id );
-		await model.commitAsync("findItem");
+		await model.commitAsync("crudItem");
 		delete_form.commit("clearErrorMessage");
 		
 		/* Render page */

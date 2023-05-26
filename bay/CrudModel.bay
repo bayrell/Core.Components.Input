@@ -29,6 +29,7 @@ use Runtime.ORM.Database;
 use Runtime.ORM.Query;
 use Runtime.ORM.Relation;
 use Runtime.Web.ApiResult;
+use Runtime.Web.BaseModel;
 use Runtime.Web.Bus;
 use Runtime.Web.RenderContainer;
 use Runtime.Web.Crud.FormModel;
@@ -37,7 +38,7 @@ use Runtime.Web.Crud.Rules.CrudRule;
 use Runtime.Web.Crud.Rules.Filter;
 
 
-struct CrudModel<T> extends BaseStruct
+struct CrudModel<T> extends BaseModel
 {
 	int page = 0;
     int pages = 0;
@@ -67,6 +68,23 @@ struct CrudModel<T> extends BaseStruct
 	
 	
 	/**
+	 * Returns page type
+	 */
+	pure string getPageType() => "";
+	
+	
+	/**
+	 * Returns struct builder
+	 */
+	pure StructBuilder getStruct(fn build_fn = null)
+	{
+		string class_name = static::getModelName();
+		string kind = static::getPageType();
+		return StructBuilder::build(class_name, kind, build_fn);
+	}
+	
+	
+	/**
 	 * Returns api name
 	 */
 	static string getApiName()
@@ -85,20 +103,6 @@ struct CrudModel<T> extends BaseStruct
 	 * Returns page title
 	 */
 	string getPageTitle(string action) => "";
-	
-	
-	/**
-	 * Get api url
-	 */
-	static string getApiUrl(string action, Dict data)
-	{
-		string api_name = static::getApiName();
-		if (action == "crud_search") return api_name ~ ".crud_search";
-		if (action == "crud_item") return api_name ~ ".crud_item";
-		if (action == "crud_save") return api_name ~ ".crud_save";
-		if (action == "crud_delete") return api_name ~ ".crud_delete";
-		return "";
-	}
 	
 	
 	/**
@@ -183,8 +187,7 @@ struct CrudModel<T> extends BaseStruct
 		});
 		
 		/* Send api */
-		string url = static::getApiUrl("crud_search", post_data);
-		ApiResult res = await Bus::callApi(url, post_data);
+		ApiResult res = await static::remoteCall("actionSearch", post_data);
 		
 		/* Set api result */
 		model.commit("setApiResult", "crudSearch", res);
@@ -258,8 +261,7 @@ struct CrudModel<T> extends BaseStruct
 		});
 		
 		/* Send api */
-		string url = static::getApiUrl("crud_item", post_data);
-		ApiResult res = await Bus::callApi(url, post_data);
+		ApiResult res = await static::remoteCall("actionItem", post_data);
 		
 		/* Set api result */
 		ModelProxy model_item = static::getItemModelProxy(model);
@@ -293,8 +295,7 @@ struct CrudModel<T> extends BaseStruct
 		});
 		
 		/* Send api */
-		string url = static::getApiUrl("crud_save", post_data);
-		ApiResult res = await Bus::callApi(url, post_data);
+		ApiResult res = await static::remoteCall("actionSave", post_data);
 		
 		/* Set api result */
 		model.proxy(["save_form"]).commit("setApiResult", "crudSave", res);
@@ -324,8 +325,7 @@ struct CrudModel<T> extends BaseStruct
 		});
 		
 		/* Send api */
-		string url = static::getApiUrl("crud_delete", post_data);
-		ApiResult res = await Bus::callApi(url, post_data);
+		ApiResult res = await static::remoteCall("actionDelete", post_data);
 		
 		/* Set api result */
 		model.proxy(["delete_form"]).commit("setApiResult", "crudDelete", res);
@@ -347,10 +347,10 @@ struct CrudModel<T> extends BaseStruct
 	/**
 	 * Returns page limit
 	 */
-	list getPageLimit()
+	static list getPageLimit(RenderContainer container)
 	{
-		int page = (int)(this.container.request.payload["page"] |> default string 1);
-		int limit = (int)(this.container.request.payload["limit"] |> default string -1);
+		int page = (int)(container.request.payload["data", "page"] |> default string 1);
+		int limit = (int)(container.request.payload["data", "limit"] |> default string -1);
 		
 		if (page <= 1) page = 1;
 		if (limit <= 0) limit = 10;
@@ -367,7 +367,7 @@ struct CrudModel<T> extends BaseStruct
 	{
 		if (action == "actionSearchAfter")
 		{
-			Collection<CrudRule> rules = static::getRules();
+			Collection<CrudRule> rules = static::getRules(container);
 			for (int i=0; i<rules.count(); i++)
 			{
 				CrudRule rule = rules[i];
@@ -377,7 +377,7 @@ struct CrudModel<T> extends BaseStruct
 		
 		else if (action == "actionSaveBefore")
 		{
-			Collection<CrudRule> rules = static::getRules();
+			Collection<CrudRule> rules = static::getRules(container);
 			for (int i=0; i<rules.count(); i++)
 			{
 				CrudRule rule = rules[i];
@@ -387,7 +387,7 @@ struct CrudModel<T> extends BaseStruct
 		
 		else if (action == "actionSaveAfter")
 		{
-			Collection<CrudRule> rules = static::getRules();
+			Collection<CrudRule> rules = static::getRules(container);
 			for (int i=0; i<rules.count(); i++)
 			{
 				CrudRule rule = rules[i];
@@ -397,7 +397,7 @@ struct CrudModel<T> extends BaseStruct
 		
 		else if (action == "actionDeleteBefore")
 		{
-			Collection<CrudRule> rules = static::getRules();
+			Collection<CrudRule> rules = static::getRules(container);
 			for (int i=0; i<rules.count(); i++)
 			{
 				CrudRule rule = rules[i];
@@ -407,7 +407,7 @@ struct CrudModel<T> extends BaseStruct
 		
 		else if (action == "actionDeleteAfter")
 		{
-			Collection<CrudRule> rules = static::getRules();
+			Collection<CrudRule> rules = static::getRules(container);
 			for (int i=0; i<rules.count(); i++)
 			{
 				CrudRule rule = rules[i];
@@ -437,7 +437,7 @@ struct CrudModel<T> extends BaseStruct
 		;
 		
 		Vector query_filter = new Vector();
-		Collection request_filter = container.request.payload["filter"];
+		Collection request_filter = container.request.payload["data", "filter"];
 		if (request_filter instanceof Collection)
 		{
 			for (int i=0; i<request_filter.count(); i++)
@@ -472,6 +472,12 @@ struct CrudModel<T> extends BaseStruct
 	
 	
 	/**
+	 * Build search query
+	 */
+	static async Query buildSearchQuery(RenderContainer container, Query q) => q;
+	
+	
+	/**
 	 * Init api
 	 */
 	static async void initApi(RenderContainer container, Dict post_data)
@@ -494,7 +500,7 @@ struct CrudModel<T> extends BaseStruct
 		/* Init api */
 		await static::initApi(container, post_data, "actionSearch");
 		
-		list res = this.getPageLimit();
+		list res = static::getPageLimit(container);
 		int page = res[0];
 		int limit = res[1];
 		int pages = 0;
@@ -503,10 +509,8 @@ struct CrudModel<T> extends BaseStruct
 		container.backend_storage["api"].setValue("page", page);
 		container.backend_storage["api"].setValue("limit", limit);
 		
-		
 		/* Search before event */
 		await static::backendEvent(container, "actionSearchBefore", {});
-		
 		
 		/* Build query */
 		string relation_name = static::getRelationName();
@@ -515,7 +519,6 @@ struct CrudModel<T> extends BaseStruct
 		;
 		q = static::buildFilter(container, q);
 		q = static::buildSearchQuery(container, q);
-		
 		
 		/* Execute query */
 		Cursor c = await Database::execute(q, static::databaseParams());
@@ -527,7 +530,6 @@ struct CrudModel<T> extends BaseStruct
 		}
 		await c.close();
 		
-		
 		/* Transform items */
 		string model_name = static::getModelName();
 		items = items
@@ -535,7 +537,6 @@ struct CrudModel<T> extends BaseStruct
 				Dict (Relation item) use (model_name) => item.toModel( model_name )
 			)
 		;
-		
 		
 		/* Set answer */
 		container.backend_storage["api"].setValue("page", page);
@@ -552,7 +553,6 @@ struct CrudModel<T> extends BaseStruct
 			}
 		});
 		
-		
 		/* Search after event */
 		await static::backendEvent(container, "actionSearchAfter", {});
 	}
@@ -566,16 +566,14 @@ struct CrudModel<T> extends BaseStruct
 		/* Init api */
 		await static::initApi(container, post_data, "actionItem");
 		
-		list res = this.getPageLimit();
+		list res = static::getPageLimit(container);
 		int page = res[0];
 		int limit = 1;
 		int pages = 0;
 		int rows = 0;
 		
-		
 		/* Search before event */
 		await static::backendEvent(container, "actionSearchBefore", {});
-		
 		
 		/* Build query */
 		string relation_name = static::getRelationName();
@@ -584,7 +582,6 @@ struct CrudModel<T> extends BaseStruct
 		;
 		q = static::buildFilter(container, q);
 		q = static::buildSearchQuery(container, q);
-		
 		
 		/* Execute query */
 		Cursor c = await Database::execute(q, static::databaseParams());
@@ -596,7 +593,6 @@ struct CrudModel<T> extends BaseStruct
 		}
 		await c.close();
 		
-		
 		/* Transform items */
 		string model_name = static::getModelName();
 		items = items
@@ -604,7 +600,6 @@ struct CrudModel<T> extends BaseStruct
 				Dict (Relation item) use (model_name) => item.toModel( model_name )
 			)
 		;
-		
 		
 		/* Set answer */
 		container.backend_storage["api"].setValue("page", page);
@@ -622,7 +617,6 @@ struct CrudModel<T> extends BaseStruct
 			}
 		});
 		
-		
 		/* Search after event */
 		await static::backendEvent(container, "actionSearchAfter", {});
 	}
@@ -636,19 +630,16 @@ struct CrudModel<T> extends BaseStruct
 		/* Query to database */
 		string relation_name = static::getRelationName();
 		
-		
 		/* Get primary key */
-		Dict pk = container.request.payload["pk"];
+		Dict pk = container.request.payload["data", "pk"];
 		fn getPrimaryFilter = rtl::method(relation_name, "getPrimaryFilter");
 		Collection filter = getPrimaryFilter(pk, true);
-		
 		
 		/* Build query */
 		Query q = rtl::method(relation_name, "selectQuery")()
 			|> .filter(filter)
 		;
 		q = static::buildSearchQuery(container, q);
-		
 		
 		/* Execute query */
 		Cursor c = await Database::execute(q, static::databaseParams());
@@ -657,9 +648,8 @@ struct CrudModel<T> extends BaseStruct
 		
 		if (!item)
 		{
-			throw new ApiException("Item not found");
+			return container.fail( new ApiException("Item not found") );
 		}
-		
 		
 		/* Set item */
 		container.backend_storage["api"].setValue("item", item);
@@ -707,20 +697,17 @@ struct CrudModel<T> extends BaseStruct
 		/* Init api */
 		await static::initApi(container, post_data, "actionItem");
 		
-		
 		/* Before event */
 		await static::backendEvent(container, "actionItemBefore", {});
 		
-		
 		/* Find item */
 		await static::findItem(container);
-		
+		if (container.response.error_name != "") return;
 		
 		/* Transform items */
 		Relation item = container.backend_storage["api", "item"];
 		string model_name = static::getModelName();
 		BaseStruct item = item.toModel( model_name );
-		
 		
 		/* Set answer */
 		container.success({
@@ -730,7 +717,6 @@ struct CrudModel<T> extends BaseStruct
 				"dictionary": [],
 			}
 		});
-		
 		
 		/* After event */
 		await static::backendEvent(container, "actionItemAfter", {});
@@ -745,14 +731,12 @@ struct CrudModel<T> extends BaseStruct
 		/* Init api */
 		await static::initApi(container, post_data, "actionSave");
 		
-		
 		/* Before event */
 		await static::backendEvent(container, "actionSaveBefore", {});
 		
-		
 		/* Find item */
 		await static::findItem(container);
-		
+		if (container.response.error_name != "") return;
 		
 		StructBuilder builder = static::getStruct();
 		if (builder == null)
@@ -760,29 +744,22 @@ struct CrudModel<T> extends BaseStruct
 			throw new RuntimeException("Builder is null");
 		}
 		
-		
 		/* Purify item */
-		Dict new_item = container.request.payload["item"];
+		Dict new_item = container.request.payload["data", "item"];
 		new_item = builder.purify( new_item );
 		
-		
 		/* Validate new item */
-		await this.validateItem(container, builder, new_item);
-		
-		/* If validation error */
+		await static::validateItem(container, builder, new_item);
 		if (container.response.error_name != "") return;
-		
 		
 		/* Update item */
 		Relation item = container.backend_storage["api", "item"];
 		Dict update_item = builder.data(new_item);
 		await static::updateItem( container, item, update_item );
 		
-		
 		/* Transform items */
 		string model_name = static::getModelName();
 		BaseStruct item = item.toModel( model_name );
-		
 		
 		/* Set api result */
 		container.success({
@@ -792,7 +769,6 @@ struct CrudModel<T> extends BaseStruct
 				"dictionary": [],
 			}
 		});
-		
 		
 		/* After event */
 		await static::backendEvent(container, "actionSaveAfter", {});
@@ -818,19 +794,16 @@ struct CrudModel<T> extends BaseStruct
 		/* Init api */
 		await static::initApi(container, post_data, "actionDelete");
 		
-		
 		/* Before event */
 		await static::backendEvent(container, "actionDeleteBefore", {});
 		
-		
 		/* Find item */
 		await static::findItem(container);
-		
+		if (container.response.error_name != "") return;
 		
 		/* Delete item */
 		Relation item = container.backend_storage["api", "item"];
 		await static::deleteItem(container, item);
-		
 		
 		/* Set api result */
 		container.success({
@@ -840,7 +813,6 @@ struct CrudModel<T> extends BaseStruct
 				"dictionary": [],
 			}
 		});
-		
 		
 		/* Before event */
 		await static::backendEvent(container, "actionDeleteAfter", {});
