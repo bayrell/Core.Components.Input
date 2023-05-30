@@ -105,12 +105,34 @@ struct StructBuilder extends BaseStruct
 	
 	
 	/**
+	 * Prepend form fields
+	 */
+	StructBuilder prependFormFields(Collection<string> new_fields)
+	{
+		StructBuilder builder = this;
+		builder <= form_fields <= builder.form_fields.prependCollectionIm(new_fields);
+		return builder;
+	}
+	
+	
+	/**
 	 * Add table fields
 	 */
 	StructBuilder addTableFields(Collection<string> new_fields)
 	{
 		StructBuilder builder = this;
 		builder <= table_fields <= builder.table_fields.concat(new_fields);
+		return builder;
+	}
+	
+	
+	/**
+	 * Prepend table fields
+	 */
+	StructBuilder prependTableFields(Collection<string> new_fields)
+	{
+		StructBuilder builder = this;
+		builder <= table_fields <= builder.table_fields.prependCollectionIm(new_fields);
 		return builder;
 	}
 	
@@ -325,7 +347,7 @@ struct StructBuilder extends BaseStruct
 		if (validation_result.isSuccess()) return api_result;
 		
 		api_result = api_result
-			|> .exception(
+			|> .fail(
 				new ApiException("Ошибка. Проверьте корректность данных"),
 				{
 					"validation_result": validation_result.toDict(),

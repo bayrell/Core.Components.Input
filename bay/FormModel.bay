@@ -26,7 +26,7 @@ use Runtime.Web.Crud.ValidationResult;
 struct FormModel<T> extends BaseStruct
 {
 	T item = null;
-	int item_id = 0;
+	Dict item_pk = null;
 	Dict dictionary = null;
     Dict params = null;
 	int error_code = 0;
@@ -77,6 +77,12 @@ struct FormModel<T> extends BaseStruct
 			if (item)
 			{
 				model <= item <= item;
+			}
+			
+			if (action == "crudSave")
+			{
+				Dict pk = res["data", "pk"];
+				model <= item_pk <= pk;
 			}
 		}
 		

@@ -72,7 +72,37 @@ class CrudRoute extends BaseRoute
 		/* Search items */
 		model.commit("setAction", "index");
 		model.setAttr("page", this.container.request.query.get("p", 1));
+		await model.commitAsync("crudRouteBefore", this.container);
 		await model.commitAsync("crudSearch");
+		await model.commitAsync("crudRouteAfter", this.container);
+		
+		/* Render page */
+		this.container.render( page_name );
+	}
+	
+	
+	/**
+	 * Action add
+	 */
+	async void actionAdd()
+	{
+		string page_model_class_name = this.getPageModelName();
+		string page_name = this.getPageName();
+		
+		/* Create model */
+		this.container.setLayoutName( this.getLayoutName() );
+		this.container.setPageModel( rtl::newInstance(page_model_class_name) );
+		ModelProxy model = this.container.modelProxy();
+		model.commit("setAction", "add");
+		
+		/* Create save form */
+		ModelProxy save_form = model.proxy("save_form");
+		save_form.setNewModel( new FormModel );
+		
+		/* Init form */
+		await model.commitAsync("crudRouteBefore", this.container);
+		await model.commitAsync("crudAdd");
+		await model.commitAsync("crudRouteAfter", this.container);
 		
 		/* Render page */
 		this.container.render( page_name );
@@ -92,7 +122,6 @@ class CrudRoute extends BaseRoute
 		ModelProxy model = this.container.modelProxy();
 		
 		/* Get item */
-		int id = (int)this.container.request.query["id"];
 		model.commit("setAction", "edit");
 		
 		/* Create save form */
@@ -100,9 +129,10 @@ class CrudRoute extends BaseRoute
 		save_form.setNewModel( new FormModel );
 		
 		/* Find item */
-		save_form.setAttr( "item_id", id );
+		await model.commitAsync("crudRouteBefore", this.container);
 		await model.commitAsync("crudItem");
 		save_form.commit("clearErrorMessage");
+		await model.commitAsync("crudRouteAfter", this.container);
 		
 		/* Render page */
 		this.container.render( page_name );
@@ -123,7 +153,6 @@ class CrudRoute extends BaseRoute
 		ModelProxy model = this.container.modelProxy();
 		
 		/* Get item */
-		int id = (int)this.container.request.query["id"];
 		model.commit("setAction", "delete");
 		
 		/* Create save form */
@@ -131,9 +160,10 @@ class CrudRoute extends BaseRoute
 		delete_form.setNewModel( new FormModel );
 		
 		/* Find item */
-		delete_form.setAttr( "item_id", id );
+		await model.commitAsync("crudRouteBefore", this.container);
 		await model.commitAsync("crudItem");
 		delete_form.commit("clearErrorMessage");
+		await model.commitAsync("crudRouteAfter", this.container);
 		
 		/* Render page */
 		this.container.render( page_name );
