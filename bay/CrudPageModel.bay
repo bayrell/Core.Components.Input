@@ -638,11 +638,7 @@ struct CrudPageModel<T> extends BaseModel
 		
 		/* Transform items */
 		string model_name = static::getModelName();
-		items = items
-			|> lib::map(
-				Dict (Relation item) use (model_name) => item.toModel( model_name )
-			)
-		;
+		items = Relation::transformItems(items, model_name);
 		
 		container.backend_storage["api"].setValue("page", page);
 		container.backend_storage["api"].setValue("pages", pages);

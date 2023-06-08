@@ -42,7 +42,7 @@ struct ForeignKey extends CrudRule
 	/**
 	 * Search after
 	 */
-	void onSearchAfter(CrudApi api)
+	void onSearchAfter(RenderContainer container)
 	{
 		ForeignKey rule = this;
 		ApiResult api_result = api.api_result;
