@@ -25,7 +25,6 @@ use Runtime.Exceptions.ApiException;
 use Runtime.Exceptions.RuntimeException;
 use Runtime.ORM.Connection;
 use Runtime.ORM.Cursor;
-use Runtime.ORM.Database;
 use Runtime.ORM.Query;
 use Runtime.ORM.Relation;
 use Runtime.Web.ApiResult;
@@ -411,6 +410,24 @@ struct CrudPageModel<T> extends BaseModel
 	
 	
 	/**
+	 * Returns database params
+	 */
+	pure Dict getDatabaseParams() => {};
+	
+	
+	/**
+	 * Returns database Connection
+	 */
+	pure Connection getDatabaseConnection()
+	{
+		Dict p = static::getDatabaseParams();
+		string connection_name = p["name"];
+		Connection conn = Connection::getConnection( connection_name );
+		return conn;
+	}
+	
+	
+	/**
 	 * Returns page limit
 	 */
 	static list getPageLimit(RenderContainer container)
@@ -579,13 +596,11 @@ struct CrudPageModel<T> extends BaseModel
 	
 	
 	/**
-	 * Action search
+	 * Search items
 	 */
-	static void actionSearch(RenderContainer container, Dict post_data)
+	static async void searchItems(RenderContainer container)
 	{
-		/* Init api */
-		await static::initApi(container, post_data, "actionSearch");
-		if (container.response.error_name != "") return;
+		string action = container.backend_storage["api", "action"];
 		
 		list res = static::getPageLimit(container);
 		int page = res[0];
@@ -593,23 +608,26 @@ struct CrudPageModel<T> extends BaseModel
 		int pages = 0;
 		int rows = 0;
 		
-		container.backend_storage["api"].setValue("page", page);
-		container.backend_storage["api"].setValue("limit", limit);
+		if (action == "actionSearchOne")
+		{
+			limit = 1;
+		}
 		
-		/* Search before event */
-		await static::backendEvent(container, "actionSearchBefore", {});
-		if (container.response.error_name != "") return;
+		container.backend_storage["api"].setValue("page", page);
+		container.backend_storage["api"].setValue("limit", limit);		
 		
 		/* Build query */
 		string relation_name = static::getRelationName();
-		Query q = rtl::method(relation_name, "selectQuery")()
+		Query q = rtl::method(relation_name, "query")()
+			|> .select()
 			|> .page(page - 1, limit)
 		;
 		q = static::buildFilter(container, q);
 		q = static::buildSearchQuery(container, q);
 		
 		/* Execute query */
-		Cursor c = await Database::execute(q, static::databaseParams());
+		Connection conn = static::getDatabaseConnection();
+		Cursor c = await conn.execute(q, static::getDatabaseParams());
 		Collection items = await c.fetchAll();
 		if (q._limit > 0)
 		{
@@ -626,10 +644,33 @@ struct CrudPageModel<T> extends BaseModel
 			)
 		;
 		
-		/* Set answer */
 		container.backend_storage["api"].setValue("page", page);
 		container.backend_storage["api"].setValue("pages", pages);
 		container.backend_storage["api"].setValue("rows", rows);
+		container.backend_storage["api"].setValue("items", items);
+	}
+	
+	
+	/**
+	 * Action search
+	 */
+	static void actionSearch(RenderContainer container, Dict post_data)
+	{
+		/* Init api */
+		await static::initApi(container, post_data, "actionSearch");
+		if (container.response.error_name != "") return;
+		
+		/* Search before event */
+		await static::backendEvent(container, "actionSearchBefore", {});
+		if (container.response.error_name != "") return;
+		
+		/* Search items */
+		await static::searchItems(container);
+		
+		/* Set answer */
+		int page = container.backend_storage["api", "page"];
+		int pages = container.backend_storage["api", "pages"];
+		Collection<Dict> items = container.backend_storage["api", "items"];
 		
 		container.success({
 			"data":
@@ -655,46 +696,17 @@ struct CrudPageModel<T> extends BaseModel
 		await static::initApi(container, post_data, "actionSearchOne");
 		if (container.response.error_name != "") return;
 		
-		list res = static::getPageLimit(container);
-		int page = res[0];
-		int limit = 1;
-		int pages = 0;
-		int rows = 0;
-		
 		/* Search before event */
 		await static::backendEvent(container, "actionSearchOneBefore", {});
 		if (container.response.error_name != "") return;
 		
-		/* Build query */
-		string relation_name = static::getRelationName();
-		Query q = rtl::method(relation_name, "selectQuery")()
-			|> .page(page - 1, limit)
-		;
-		q = static::buildFilter(container, q);
-		q = static::buildSearchQuery(container, q);
-		
-		/* Execute query */
-		Cursor c = await Database::execute(q, static::databaseParams());
-		Collection items = await c.fetchAll();
-		if (q._limit > 0)
-		{
-			page = await c.getPage() + 1;
-			pages = await c.getPages();
-		}
-		await c.close();
-		
-		/* Transform items */
-		string model_name = static::getModelName();
-		items = items
-			|> lib::map(
-				Dict (Relation item) use (model_name) => item.toModel( model_name )
-			)
-		;
+		/* Search items */
+		await static::searchItems(container);
 		
 		/* Set answer */
-		container.backend_storage["api"].setValue("page", page);
-		container.backend_storage["api"].setValue("pages", pages);
-		container.backend_storage["api"].setValue("rows", rows);
+		int page = container.backend_storage["api", "page"];
+		int pages = container.backend_storage["api", "pages"];
+		Collection<Dict> items = container.backend_storage["api", "items"];
 		
 		container.success({
 			"data":
@@ -724,13 +736,15 @@ struct CrudPageModel<T> extends BaseModel
 		Collection filter = getPrimaryFilter(pk, true);
 		
 		/* Build query */
-		Query q = rtl::method(relation_name, "selectQuery")()
+		Query q = rtl::method(relation_name, "query")()
+			|> .select()
 			|> .filter(filter)
 		;
 		q = static::buildSearchQuery(container, q);
 		
 		/* Execute query */
-		Cursor c = await Database::execute(q, static::databaseParams());
+		Connection conn = static::getDatabaseConnection();
+		Cursor c = await conn.execute(q, static::getDatabaseParams());
 		Relation item = await c.fetch();
 		await c.close();
 		
@@ -772,9 +786,7 @@ struct CrudPageModel<T> extends BaseModel
 	 */
 	static async void updateItem(RenderContainer container, Relation item, Dict update_data)
 	{
-		Dict p = static::databaseParams();
-		Connection conn = Database::getConnection( p["name"] );
-		
+		Connection conn = static::getDatabaseConnection();
 		Collection keys = update_data.keys();
 		if (keys.count() > 0)
 		{
@@ -872,7 +884,7 @@ struct CrudPageModel<T> extends BaseModel
 		if (container.response.error_name != "") return;
 		
 		/* Get new pk */
-		Dict pk = item::getPrimaryKey(item.data());
+		Dict pk = item.getPrimaryKey();
 		
 		/* Find item */
 		await static::findItem(container, pk);
@@ -902,8 +914,7 @@ struct CrudPageModel<T> extends BaseModel
 	 */
 	static async void deleteItem(RenderContainer container, Relation item)
 	{
-		Dict p = static::databaseParams();
-		Connection conn = Database::getConnection( p["name"] );
+		Connection conn = static::getDatabaseConnection();
 		item.delete(conn);
 	}
 	
