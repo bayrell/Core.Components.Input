@@ -79,11 +79,8 @@ struct FormModel<T> extends BaseStruct
 				model <= item <= item;
 			}
 			
-			if (action == "crudSave")
-			{
-				Dict pk = res["data", "pk"];
-				model <= item_pk <= pk;
-			}
+			Dict pk = res["data", "pk"];
+			model <= item_pk <= pk;
 		}
 		
 		/* Set validation result */
