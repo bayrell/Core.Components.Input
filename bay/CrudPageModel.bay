@@ -131,7 +131,7 @@ struct CrudPageModel<T> extends BaseModel
 	
 	
 	/**
-	 * Returns crud item data
+	 * Returns crud item post_data
 	 */
 	Dict getCrudItemPostData()
 	{

@@ -24,6 +24,7 @@ use Runtime.ORM.Cursor;
 use Runtime.ORM.Database;
 use Runtime.ORM.Query;
 use Runtime.Web.ApiResult;
+use Runtime.Web.RenderContainer;
 use Runtime.Web.Crud.Rules.CrudRule;
 use Runtime.Web.Crud.CrudApi;
 
@@ -35,7 +36,7 @@ struct ForeignKey extends CrudRule
 	string primary_key = "";
 	string foreign_key = "";
 	fn checkSearch = null;
-	fn buildSearchQuery = null;
+	fn getItems = null;
 	fn mapItem = null;
 	
 	
@@ -45,18 +46,19 @@ struct ForeignKey extends CrudRule
 	void onSearchAfter(RenderContainer container)
 	{
 		ForeignKey rule = this;
-		ApiResult api_result = api.api_result;
+		ApiResult api_result = container.response;
 		Collection<Dict> items = [];
 		
-		rule <= api <= api;
+		string action = container.backend_storage["api", "action"];
+		string page_class_name = container.backend_storage["api", "page_class_name"];
 		
 		/* Check action */
-		if (api.action != "actionSearch" and api.action != "actionItem")
+		if (action != "actionSearch" and action != "actionItem")
 		{
 			return;
 		}
-		if (api.action == "actionSearch") items = api_result.data["items"];
-		if (api.action == "actionItem")
+		if (action == "actionSearch") items = api_result.data["items"];
+		if (action == "actionItem")
 		{
 			Dict item = api_result.data["item"];
 			if (item == null)
@@ -76,15 +78,14 @@ struct ForeignKey extends CrudRule
 			}
 		}
 		
-		fn buildSearchQuery = rule.buildSearchQuery;
+		fn getItems = rule.getItems;
 		fn mapItem = rule.mapItem;
 		
 		/* Get primary keys */
 		Collection<int> pk_ids = items.map( lib::attr(rule.foreign_key) );
 		
 		/* Load rows from database */
-		Query q = buildSearchQuery(rule, pk_ids);
-		Dict rows = Database::fetchAll(q);
+		Dict rows = await getItems(container, rule, pk_ids);
 		
 		/* Map items */
 		items = items.map(
@@ -119,9 +120,9 @@ struct ForeignKey extends CrudRule
 			}
 		);
 		
-		if (api.action == "actionSearch") api_result <= data <= items <= items;
-		if (api.action == "actionItem") api_result <= data <= item <= items[0];
+		if (action == "actionSearch") api_result <= data <= items <= items;
+		if (action == "actionItem") api_result <= data <= item <= items[0];
 		
-		api.api_result = api_result;
+		container <= response <= api_result;
 	}
 }
