@@ -26,12 +26,11 @@ use Runtime.ORM.Query;
 use Runtime.Web.ApiResult;
 use Runtime.Web.RenderContainer;
 use Runtime.Web.Crud.Rules.CrudRule;
-use Runtime.Web.Crud.CrudApi;
+use Runtime.Web.Crud.CrudPageApi;
 
 
 struct ForeignKey extends CrudRule
 {
-	CrudApi api = null;
 	string api_name = "";
 	string primary_key = "";
 	string foreign_key = "";
@@ -43,14 +42,13 @@ struct ForeignKey extends CrudRule
 	/**
 	 * Search after
 	 */
-	void onSearchAfter(RenderContainer container)
+	void onSearchAfter(CrudPageApi api)
 	{
 		ForeignKey rule = this;
-		ApiResult api_result = container.response;
+		ApiResult api_result = api.container.response;
 		Collection<Dict> items = [];
 		
-		string action = container.backend_storage["api", "action"];
-		string page_class_name = container.backend_storage["api", "page_class_name"];
+		string action = api.action;
 		
 		/* Check action */
 		if (action != "actionSearch" and action != "actionItem")
@@ -85,7 +83,7 @@ struct ForeignKey extends CrudRule
 		Collection<int> pk_ids = items.map( lib::attr(rule.foreign_key) );
 		
 		/* Load rows from database */
-		Dict rows = await getItems(container, rule, pk_ids);
+		Dict rows = await getItems(api, rule, pk_ids);
 		
 		/* Map items */
 		items = items.map(
@@ -123,6 +121,6 @@ struct ForeignKey extends CrudRule
 		if (action == "actionSearch") api_result <= data <= items <= items;
 		if (action == "actionItem") api_result <= data <= item <= items[0];
 		
-		container <= response <= api_result;
+		api.container.response = api_result;
 	}
 }

@@ -1,0 +1,648 @@
+/*!
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2016-2023 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+namespace Runtime.Web.Crud;
+
+use Runtime.lib;
+use Runtime.BaseStruct;
+use Runtime.ModelProxy;
+use Runtime.Exceptions.ApiException;
+use Runtime.Exceptions.RuntimeException;
+use Runtime.ORM.Connection;
+use Runtime.ORM.Cursor;
+use Runtime.ORM.Query;
+use Runtime.ORM.Relation;
+use Runtime.Web.ApiResult;
+use Runtime.Web.BaseApi;
+use Runtime.Web.BaseModel;
+use Runtime.Web.Bus;
+use Runtime.Web.RenderContainer;
+use Runtime.Web.Crud.FormModel;
+use Runtime.Web.Crud.StructBuilder;
+use Runtime.Web.Crud.Rules.CrudRule;
+use Runtime.Web.Crud.Rules.Filter;
+
+
+class CrudPageApi extends BaseApi
+{
+	string action = "";
+	int page = 0;
+	int pages = 0;
+	Collection items = null;
+	Collection rows = null;
+	Relation item = null;
+	
+	
+	/**
+	 * Returns api name
+	 */
+	pure string apiName() => "";
+	
+	
+	/**
+	 * Returns api methods
+	 */
+	pure string getApiMethod(string api_name)
+	{
+		return "";
+	}
+	
+	
+	/**
+	 * Returns relation name
+	 */
+	pure string getRelationName() => "";
+	
+	
+	/**
+	 * Returns model name
+	 */
+	pure string getModelName() => "";
+	
+	
+	/**
+	 * Returns page type
+	 */
+	pure string getPageType() => "";
+	
+	
+	/**
+	 * Returns struct builder
+	 */
+	StructBuilder getStruct(fn build_fn = null)
+	{
+		string class_name = static::getModelName();
+		string kind = static::getPageType();
+		return StructBuilder::build(class_name, kind, build_fn);
+	}
+	
+	
+	/**
+	 * Returns database params
+	 */
+	Dict getDatabaseParams() => {};
+	
+	
+	/**
+	 * Returns database Connection
+	 */
+	Connection getDatabaseConnection()
+	{
+		Dict p = this.getDatabaseParams();
+		string connection_name = p["name"];
+		Connection conn = Connection::getConnection( connection_name );
+		return conn;
+	}
+	
+	
+	/**
+	 * Returns page limit
+	 */
+	list getPageLimit()
+	{
+		int page = (int)(this.post_data["page"] |> default string 1);
+		int limit = (int)(this.post_data["limit"] |> default string -1);
+		
+		if (page <= 1) page = 1;
+		if (limit <= 0) limit = 10;
+		if (limit > 100) limit = 100;
+		
+		return [page, limit];
+	}
+	
+	
+	/**
+	 * Backend event
+	 */
+	async void backendEvent(string event, Dict data)
+	{
+		/* Search */
+		if (event == "actionSearchBefore" or
+			event == "actionSearchOneBefore" or
+			event == "actionItemBefore"
+		)
+		{
+			Collection<CrudRule> rules = this.getRules();
+			for (int i=0; i<rules.count(); i++)
+			{
+				CrudRule rule = rules[i];
+				await rule.onSearchBefore(this);
+			}
+		}
+		
+		else if (event == "actionSearchAfter" or
+			event == "actionSearchOneAfter" or
+			event == "actionItemAfter"
+		)
+		{
+			Collection<CrudRule> rules = this.getRules();
+			for (int i=0; i<rules.count(); i++)
+			{
+				CrudRule rule = rules[i];
+				await rule.onSearchAfter(this);
+			}
+		}
+		
+		/* Save */
+		else if (event == "actionSaveBefore")
+		{
+			Collection<CrudRule> rules = this.getRules();
+			for (int i=0; i<rules.count(); i++)
+			{
+				CrudRule rule = rules[i];
+				await rule.onSaveBefore(this);
+			}
+		}
+		
+		else if (event == "actionSaveAfter")
+		{
+			Collection<CrudRule> rules = this.getRules();
+			for (int i=0; i<rules.count(); i++)
+			{
+				CrudRule rule = rules[i];
+				await rule.onSaveAfter(this);
+			}
+		}
+		
+		/* Delete */
+		else if (event == "actionDeleteBefore")
+		{
+			Collection<CrudRule> rules = this.getRules();
+			for (int i=0; i<rules.count(); i++)
+			{
+				CrudRule rule = rules[i];
+				await rule.onDeleteBefore(this);
+			}
+		}
+		
+		else if (event == "actionDeleteAfter")
+		{
+			Collection<CrudRule> rules = this.getRules();
+			for (int i=0; i<rules.count(); i++)
+			{
+				CrudRule rule = rules[i];
+				await rule.onDeleteAfter(this);
+			}
+		}
+		
+		return data;
+	}
+	
+	
+	/**
+	 * Returns rules
+	 */
+	Collection<CrudRule> getRules() =>
+	[
+	];
+	
+	
+	/**
+	 * Build filter
+	 */
+	Query buildFilter(Query q)
+	{
+		Collection<string> filter_fields = this.getRules()
+			|> .filter( lib::isInstance(classof Filter) )
+		;
+		
+		Vector query_filter = new Vector();
+		Collection request_filter = this.post_data["filter"];
+		if (request_filter instanceof Collection)
+		{
+			for (int i=0; i<request_filter.count(); i++)
+			{
+				Collection filter = request_filter[i];
+				if (filter instanceof Collection and filter.count() == 3)
+				{
+					string field_name = filter[0];
+					string field_op = filter[1];
+					string field_value = filter[2];
+					if (
+						rtl::isString(field_name) and
+						rtl::isString(field_op) and
+						(rtl::isString(field_value) or rtl::isInt(field_value))
+					)
+					{
+						Filter rule = filter_fields.findItem(
+							lib::equalAttr("api_name", field_name)
+						);
+						
+						if (rule)
+						{
+							query_filter.pushValue([rule.field_name, field_op, field_value]);
+						}
+					}
+				}
+			}
+		}
+		
+		return q.filter( query_filter.toCollection() );
+	}
+	
+	
+	/**
+	 * Build search query
+	 */
+	async Query buildSearchQuery(Query q) => q;
+	
+	
+	/**
+	 * Init api
+	 */
+	async void initApi(string action)
+	{
+		this.action = action;
+	}
+	
+	
+	/**
+	 * Search items
+	 */
+	async void searchItems()
+	{
+		list res = this.getPageLimit();
+		int page = res[0];
+		int limit = res[1];
+		int pages = 0;
+		int rows = 0;
+		
+		if (this.action == "actionSearchOne")
+		{
+			limit = 1;
+		}
+		
+		this.page = page;
+		this.limit = limit;
+		
+		/* Build query */
+		string relation_name = static::getRelationName();
+		Query q = rtl::method(relation_name, "query")()
+			|> .select()
+			|> .page(page - 1, limit)
+		;
+		q = this.buildFilter( q);
+		q = this.buildSearchQuery(q);
+		
+		/* Execute query */
+		Connection conn = this.getDatabaseConnection();
+		Cursor c = await conn.execute(q, this.getDatabaseParams());
+		Collection items = await c.fetchAll();
+		if (q._limit > 0)
+		{
+			page = await c.getPage() + 1;
+			pages = await c.getPages();
+		}
+		await c.close();
+		
+		/* Transform items */
+		string model_name = this.getModelName();
+		items = Relation::transformItems(items, model_name);
+		
+		this.page = page;
+		this.pages = pages;
+		this.items = items;
+		this.rows = rows;
+	}
+	
+	
+	/**
+	 * Action search
+	 */
+	void actionSearch()
+	{
+		/* Init api */
+		await this.initApi("actionSearch");
+		if (this.container.response.error_name != "") return;
+		
+		/* Search before event */
+		await this.backendEvent("actionSearchBefore", {});
+		if (this.container.response.error_name != "") return;
+		
+		/* Search items */
+		await this.searchItems();
+		
+		this.container.success({
+			"data":
+			{
+				"page": this.page,
+				"pages": this.pages,
+				"items": this.items,
+				"dictionary": [],
+			}
+		});
+		
+		/* Search after event */
+		await this.backendEvent("actionSearchAfter", {});
+	}
+	
+	
+	/**
+	 * Action search
+	 */
+	async void actionSearchOne()
+	{
+		/* Init api */
+		await this.initApi("actionSearchOne");
+		if (this.container.response.error_name != "") return;
+		
+		/* Search before event */
+		await this.backendEvent("actionSearchOneBefore", {});
+		if (this.container.response.error_name != "") return;
+		
+		/* Search items */
+		await this.searchItems();
+		
+		/* Set answer */
+		int page = this.post_data["page"];
+		int pages = this.post_data["pages"];
+		Collection<Dict> items = this.post_data["items"];
+		
+		/* Get item data */
+		string relation_name = static::getRelationName();
+		Dict item_data = items[0];
+		Dict item_pk = rtl::callMethod(relation_name, "getPrimaryFromData", [item_data]);
+		
+		this.container.success({
+			"data":
+			{
+				"pk": item_pk,
+				"item": item_data,
+				"dictionary": [],
+			}
+		});
+		
+		/* Search after event */
+		await this.backendEvent("actionSearchOneAfter", {});
+	}
+	
+	
+	/**
+	 * Find item
+	 */
+	async Relation findItem(Dict pk)
+	{
+		/* Query to database */
+		string relation_name = static::getRelationName();
+		
+		/* Get primary key */
+		fn getPrimaryFilter = rtl::method(relation_name, "getPrimaryFilter");
+		Collection filter = getPrimaryFilter(pk, true);
+		
+		/* Build query */
+		Query q = rtl::method(relation_name, "query")()
+			|> .select()
+			|> .filter(filter)
+		;
+		q = this.buildSearchQuery(q);
+		
+		/* Execute query */
+		Connection conn = this.getDatabaseConnection();
+		Cursor c = await conn.execute(q, this.getDatabaseParams());
+		Relation item = await c.fetch();
+		await c.close();
+		
+		if (!item)
+		{
+			return null;
+		}
+		
+		return item;
+	}
+	
+	
+	/**
+	 * Create item
+	 */
+	async Relation createItem()
+	{
+		/* Create relation */
+		string relation_name = static::getRelationName();
+		Relation item = rtl::newInstance(relation_name);
+		return item;
+	}
+	
+	
+	/**
+	 * Validate item
+	 */
+	async void validateItem(StructBuilder builder, Dict new_item)
+	{
+		this.container.response = builder.validateApi(this.container.response, new_item); 
+	}
+	
+	
+	/**
+	 * Update item
+	 */
+	async void updateItem(Relation item, Dict update_data)
+	{
+		Connection conn = this.getDatabaseConnection();
+		Collection keys = update_data.keys();
+		if (keys.count() > 0)
+		{
+			for (int i=0; i<keys.count(); i++)
+			{
+				string field_name = keys[i]
+				item.set(field_name, update_data[field_name]);
+			}
+			
+			await item.save(conn);
+		}
+	}
+	
+	
+	/**
+	 * Action item
+	 */
+	async void actionItem()
+	{
+		/* Init api */
+		await this.initApi("actionItem");
+		if (this.container.response.error_name != "") return;
+		
+		/* Before event */
+		await this.backendEvent("actionItemBefore", {});
+		if (this.container.response.error_name != "") return;
+		
+		/* Find item */
+		Dict pk = this.post_data["pk"];
+		this.item = await this.findItem(pk);
+		if (this.item == null)
+		{
+			this.container.fail( new ApiException("Item not found") );
+			return ;
+		}
+		
+		/* Transform items */
+		string model_name = this.getModelName();
+		BaseStruct item_data = this.item.toModel( model_name );
+		
+		/* Get item data */
+		string relation_name = static::getRelationName();
+		Dict item_pk = rtl::callMethod(relation_name, "getPrimaryFromData", [item_data]);
+		
+		/* Set answer */
+		this.container.success({
+			"data":
+			{
+				"pk": item_pk,
+				"item": item_data,
+				"dictionary": [],
+			}
+		});
+		
+		/* After event */
+		await this.backendEvent("actionItemAfter", {});
+	}
+	
+	
+	/**
+	 * Action save
+	 */
+	async void actionSave()
+	{
+		/* Init api */
+		await this.initApi("actionSave");
+		if (this.container.response.error_name != "") return;
+		
+		/* Before event */
+		await this.backendEvent("actionSaveBefore", {});
+		if (this.container.response.error_name != "") return;
+		
+		/* Find item */
+		Dict pk = this.post_data["pk"];
+		if (pk != null)
+		{
+			this.item = await this.findItem(pk);
+			if (this.item == null)
+			{
+				this.container.fail( new ApiException("Item not found") );
+				return;
+			}
+		}
+		else
+		{
+			this.item = await this.createItem();
+		}
+		
+		StructBuilder builder = this.getStruct();
+		if (builder == null)
+		{
+			throw new RuntimeException("Builder is null");
+		}
+		
+		/* Purify item */
+		Dict new_item = this.post_data["item"];
+		new_item = builder.purify( new_item );
+		
+		/* Validate new item */
+		await this.validateItem(builder, new_item);
+		if (this.container.response.error_name != "") return;
+		
+		/* Update item */
+		Dict update_item = builder.data(new_item);
+		await this.updateItem( this.item, update_item );
+		if (this.container.response.error_name != "") return;
+		
+		/* Get new pk */
+		Dict pk = this.item.getPrimaryKey();
+		
+		/* Find updated item */
+		this.item = await this.findItem(pk);
+		
+		/* Transform items */
+		string model_name = this.getModelName();
+		BaseStruct item_data = this.item.toModel( model_name );
+		
+		/* Get item data */
+		string relation_name = static::getRelationName();
+		Dict item_pk = rtl::callMethod(relation_name, "getPrimaryFromData", [item_data]);
+		
+		/* Set api result */
+		this.container.success({
+			"data":
+			{
+				"pk": item_pk,
+				"item": item_data,
+				"dictionary": [],
+			}
+		});
+		
+		/* After event */
+		await this.backendEvent("actionSaveAfter", {});
+	}
+	
+	
+	/**
+	 * Delete item
+	 */
+	async void deleteItem(Relation item)
+	{
+		Connection conn = this.getDatabaseConnection();
+		item.delete(conn);
+	}
+	
+	
+	/**
+	 * Action delete
+	 */
+	async void actionDelete()
+	{
+		/* Init api */
+		await this.initApi("actionDelete");
+		if (this.container.response.error_name != "") return;
+		
+		/* Before event */
+		await this.backendEvent("actionDeleteBefore", {});
+		if (this.container.response.error_name != "") return;
+		
+		/* Find item */
+		Dict pk = this.post_data["pk"];
+		this.item = await this.findItem(pk);
+		if (this.item == null)
+		{
+			this.container.fail( new ApiException("Item not found") );
+			return;
+		}
+		
+		/* Delete item */
+		await this.deleteItem(this.item);
+		if (this.container.response.error_name != "") return;
+		
+		/* Get item data */
+		string model_name = this.getModelName();
+		BaseStruct item_data = this.item.toModel( model_name );
+		string relation_name = static::getRelationName();
+		Dict item_pk = rtl::callMethod(relation_name, "getPrimaryFromData", [item_data]);
+		
+		/* Set api result */
+		this.container.success({
+			"data":
+			{
+				"pk": item_pk,
+				"item": item_data,
+				"dictionary": [],
+			}
+		});
+		
+		/* Before event */
+		await this.backendEvent("actionDeleteAfter", {});
+	}
+	
+}

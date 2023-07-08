@@ -19,7 +19,7 @@
 namespace Runtime.Web.Crud.Rules;
 
 use Runtime.BaseStruct;
-use Runtime.Web.Crud.CrudApi;
+use Runtime.Web.Crud.CrudPageApi;
 
 
 struct CrudRule extends BaseStruct
@@ -28,7 +28,7 @@ struct CrudRule extends BaseStruct
 	/**
 	 * Before search event
 	 */
-	async void onSearchBefore(CrudApi api)
+	async void onSearchBefore(CrudPageApi api)
 	{
 	}
 	
@@ -36,7 +36,7 @@ struct CrudRule extends BaseStruct
 	/**
 	 * Search after
 	 */
-	async void onSearchAfter(CrudApi api)
+	async void onSearchAfter(CrudPageApi api)
 	{
 	}
 	
@@ -44,7 +44,7 @@ struct CrudRule extends BaseStruct
 	/**
 	 * Before save event
 	 */
-	async void onSaveBefore(CrudApi api)
+	async void onSaveBefore(CrudPageApi api)
 	{
 	}
 	
@@ -52,7 +52,7 @@ struct CrudRule extends BaseStruct
 	/**
 	 * After save event
 	 */
-	async void onSaveAfter(CrudApi api)
+	async void onSaveAfter(CrudPageApi api)
 	{
 	}
 	
@@ -60,7 +60,7 @@ struct CrudRule extends BaseStruct
 	/**
 	 * Before delete event
 	 */
-	async void onDeleteBefore(CrudApi api)
+	async void onDeleteBefore(CrudPageApi api)
 	{
 	}
 	
@@ -68,7 +68,7 @@ struct CrudRule extends BaseStruct
 	/**
 	 * After delete event
 	 */
-	async void onDeleteAfter(CrudApi api)
+	async void onDeleteAfter(CrudPageApi api)
 	{
 	}
 }
