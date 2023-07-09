@@ -99,10 +99,10 @@
 	{
 		<center>
 			%render static::renderPageTitle(model.getPageTitle("delete"));
-			<div class="crud_page__delete_buttons"
-				@event:MouseClickEvent="onDeleteClick"
-			>
-				<Button type="danger">Delete</Button>
+			<div class="crud_page__delete_buttons">
+				<Button type="danger"
+					@event:MouseClickEvent="onDeleteClick"
+				>Delete</Button>
 			</div>
 			<div class="web_form__result" class={{ model.delete_form.getErrorClass() }} >
 				{{ model.delete_form.error_message }}

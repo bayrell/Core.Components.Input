@@ -422,7 +422,7 @@ struct CrudPageModel<T> extends BaseModel
 	{
 		/* Get post data */
 		CrudPageModel crud_model = model.data();
-		Dict post_data = crud_model.getItemData();
+		Dict post_data = crud_model.getCrudItemPostData();
 		
 		/* Process before */
 		Dict d = await static::event(model, "crudDeleteBefore", {
