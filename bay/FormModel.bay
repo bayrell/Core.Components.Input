@@ -35,6 +35,24 @@ struct FormModel<T> extends BaseStruct
 	
 	
 	/**
+	 * Returns primary key
+	 */
+	Dict getPrimaryKey()
+	{
+		return this.item_pk;
+	}
+	
+	
+	/**
+	 * Set primary key
+	 */
+	FormModel setPrimaryKey(Dict item_pk)
+	{
+		return this.clone({ "item_pk": item_pk });
+	}
+	
+	
+	/**
 	 * Set wait message
 	 */
 	FormModel setWaitMessage()
@@ -65,7 +83,7 @@ struct FormModel<T> extends BaseStruct
 	/**
 	 * Set api result
 	 */
-	FormModel setApiResult(string action, ApiResult res)
+	FormModel setApiResult(string event, ApiResult res)
 	{
 		if (res == null) return this;
 		

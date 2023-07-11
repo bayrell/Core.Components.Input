@@ -27,22 +27,16 @@ use Runtime.Web.Bus;
 use Runtime.Web.RenderContainer;
 use Runtime.Web.RouteInfo;
 use Runtime.Web.Crud.CrudModel;
+use Runtime.Web.Crud.CrudPageModel;
 use Runtime.Web.Crud.FormModel;
 
 
 class CrudRoute extends BaseRoute
 {
-	
 	/**
 	 * Returns layout name
 	 */
 	string getLayoutName() => "default";
-	
-	
-	/**
-	 * Returns data model name
-	 */
-	string getDataModelName() => "";
 	
 	
 	/**
@@ -58,6 +52,61 @@ class CrudRoute extends BaseRoute
 	
 	
 	/**
+	 * Returns id name for query
+	 */
+	pure string getQueryId() => "id";
+	
+	
+	/**
+	 * Returns id name
+	 */
+	pure string getNameId() => "id";
+	
+	
+	/**
+	 * Crud route before
+	 */
+	async void crudRouteBefore()
+	{
+		ModelProxy page_model = this.container.modelProxy();
+		CrudPageModel page_model_data = page_model.data();
+		ModelProxy model_item = page_model.proxy(page_model_data.getItemModelName());
+		string action = page_model_data.action;
+		
+		if (action == "add")
+		{
+			model_item.setAttr("item_pk", null);
+		}
+		else if (
+			action == "edit" or
+			action == "delete" or
+			action == "item"
+		)
+		{
+			string name_id = static::getNameId();
+			string query_id = static::getQueryId();
+			
+			model_item.setAttr("item_pk", null);
+			if (this.container.request.query.has( query_id ))
+			{
+				int value_id = (int)this.container.request.query.get( query_id );
+				Map m = new Map;
+				m.setValue(name_id, value_id);
+				model_item.commit("setPrimaryKey", m);
+			}
+		}
+	}
+	
+	
+	/**
+	 * Crud route after
+	 */
+	async void crudRouteAfter()
+	{
+	}
+	
+	
+	/**
 	 * Action index
 	 */
 	async void actionIndex()
@@ -65,16 +114,22 @@ class CrudRoute extends BaseRoute
 		string page_model_class_name = this.getPageModelName();
 		string page_name = this.getPageName();
 		
+		/* Setup layout */
 		this.container.setLayoutName( this.getLayoutName() );
 		this.container.setPageModel( rtl::newInstance(page_model_class_name) );
-		ModelProxy model = this.container.modelProxy();
+		
+		/* Get page and layout */
+		ModelProxy page_model = this.container.modelProxy();
+		ModelProxy layout = this.container.layoutProxy();
+		
+		/* Setup action */
+		page_model.commit("setAction", CrudPageModel::ACTION_INDEX);
+		page_model.commit("setPage", this.container.request.query.get("p", 1));
 		
 		/* Search items */
-		model.commit("setAction", "index");
-		model.setAttr("page", this.container.request.query.get("p", 1));
-		await model.commitAsync("crudRouteBefore", this.container);
-		await model.commitAsync("crudSearch");
-		await model.commitAsync("crudRouteAfter", this.container);
+		await this.crudRouteBefore();
+		await page_model.commitAsync("crudSearch");
+		await this.crudRouteAfter();
 		
 		/* Render page */
 		this.container.render( page_name );
@@ -89,20 +144,25 @@ class CrudRoute extends BaseRoute
 		string page_model_class_name = this.getPageModelName();
 		string page_name = this.getPageName();
 		
-		/* Create model */
+		/* Setup layout */
 		this.container.setLayoutName( this.getLayoutName() );
 		this.container.setPageModel( rtl::newInstance(page_model_class_name) );
-		ModelProxy model = this.container.modelProxy();
-		model.commit("setAction", "add");
+		
+		/* Get page and layout */
+		ModelProxy page_model = this.container.modelProxy();
+		ModelProxy layout = this.container.layoutProxy();
+		
+		/* Setup action */
+		page_model.commit("setAction", CrudPageModel::ACTION_ADD);
 		
 		/* Create save form */
-		ModelProxy save_form = model.proxy("save_form");
+		ModelProxy save_form = page_model.proxy("save_form");
 		save_form.setNewModel( new FormModel );
 		
-		/* Init form */
-		await model.commitAsync("crudRouteBefore", this.container);
-		await model.commitAsync("crudAdd");
-		await model.commitAsync("crudRouteAfter", this.container);
+		/* Call api */
+		await this.crudRouteBefore();
+		await page_model.commitAsync("crudAdd");
+		await this.crudRouteAfter();
 		
 		/* Render page */
 		this.container.render( page_name );
@@ -117,22 +177,25 @@ class CrudRoute extends BaseRoute
 		string page_model_class_name = this.getPageModelName();
 		string page_name = this.getPageName();
 		
+		/* Setup layout */
 		this.container.setLayoutName( this.getLayoutName() );
 		this.container.setPageModel( rtl::newInstance(page_model_class_name) );
-		ModelProxy model = this.container.modelProxy();
 		
-		/* Get item */
-		model.commit("setAction", "edit");
+		/* Get page and layout */
+		ModelProxy page_model = this.container.modelProxy();
+		ModelProxy layout = this.container.layoutProxy();
+		
+		/* Setup action */
+		page_model.commit("setAction", "edit");
 		
 		/* Create save form */
-		ModelProxy save_form = model.proxy("save_form");
-		save_form.setNewModel( new FormModel );
+		ModelProxy save_form = page_model.proxy("save_form");
 		
-		/* Find item */
-		await model.commitAsync("crudRouteBefore", this.container);
-		await model.commitAsync("crudItem");
+		/* Call api */
+		await this.crudRouteBefore();
+		await page_model.commitAsync("crudItem");
 		save_form.commit("clearErrorMessage");
-		await model.commitAsync("crudRouteAfter", this.container);
+		await this.crudRouteAfter();
 		
 		/* Render page */
 		this.container.render( page_name );
@@ -148,22 +211,25 @@ class CrudRoute extends BaseRoute
 		string page_model_class_name = this.getPageModelName();
 		string page_name = this.getPageName();
 		
+		/* Setup layout */
 		this.container.setLayoutName( this.getLayoutName() );
 		this.container.setPageModel( rtl::newInstance(page_model_class_name) );
-		ModelProxy model = this.container.modelProxy();
 		
-		/* Get item */
-		model.commit("setAction", "delete");
+		/* Get page and layout */
+		ModelProxy page_model = this.container.modelProxy();
+		ModelProxy layout = this.container.layoutProxy();
 		
-		/* Create save form */
-		ModelProxy delete_form = model.proxy("delete_form");
-		delete_form.setNewModel( new FormModel );
+		/* Setup action */
+		page_model.commit("setAction", "delete");
 		
-		/* Find item */
-		await model.commitAsync("crudRouteBefore", this.container);
-		await model.commitAsync("crudItem");
+		/* Create delete form */
+		ModelProxy delete_form = page_model.proxy("delete_form");
+		
+		/* Call api */
+		await this.crudRouteBefore();
+		await page_model.commitAsync("crudItem");
 		delete_form.commit("clearErrorMessage");
-		await model.commitAsync("crudRouteAfter", this.container);
+		await this.crudRouteAfter();
 		
 		/* Render page */
 		this.container.render( page_name );
