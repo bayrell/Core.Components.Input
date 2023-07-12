@@ -100,10 +100,10 @@ struct CrudPageModel<T> extends BaseModel
 	 */
 	string getItemModelName()
 	{
-		if (this.action == "add") return "save_form";
-		else if (this.action == "edit") return "save_form";
-		else if (this.action == "delete") return "delete_form";
-		else if (this.action == "item") return "item_form";
+		if (this.action == static::ACTION_ADD) return "save_form";
+		else if (this.action == static::ACTION_EDIT) return "save_form";
+		else if (this.action == static::ACTION_DELETE) return "delete_form";
+		else if (this.action == static::ACTION_ITEM) return "item_form";
 		return null;
 	}
 	

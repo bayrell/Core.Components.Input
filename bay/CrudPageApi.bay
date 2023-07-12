@@ -368,14 +368,9 @@ class CrudPageApi extends BaseApi
 		/* Search items */
 		await this.searchItems();
 		
-		/* Set answer */
-		int page = this.post_data["page"];
-		int pages = this.post_data["pages"];
-		Collection<Dict> items = this.post_data["items"];
-		
 		/* Get item data */
 		string relation_name = static::getRelationName();
-		Dict item_data = items[0];
+		Dict item_data = this.items[0];
 		Dict item_pk = rtl::callMethod(relation_name, "getPrimaryFromData", [item_data]);
 		
 		this.container.success({
