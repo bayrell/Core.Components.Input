@@ -36,7 +36,7 @@ class CrudRoute extends BaseRoute
 	/**
 	 * Returns layout name
 	 */
-	string getLayoutName() => "default";
+	string getLayoutName() => "";
 	
 	
 	/**
@@ -114,8 +114,7 @@ class CrudRoute extends BaseRoute
 		string page_model_class_name = this.getPageModelName();
 		string page_name = this.getPageName();
 		
-		/* Setup layout */
-		this.container.setLayoutName( this.getLayoutName() );
+		/* Setup page model */
 		this.container.setPageModel( rtl::newInstance(page_model_class_name) );
 		
 		/* Get page and layout */
