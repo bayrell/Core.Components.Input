@@ -127,7 +127,7 @@ class CrudRoute extends BaseRoute
 		
 		/* Search items */
 		await this.crudRouteBefore();
-		await page_model.commitAsync("crudSearch");
+		await page_model.commitAsync("callCrudSearch");
 		await this.crudRouteAfter();
 		
 		/* Render page */
@@ -160,7 +160,7 @@ class CrudRoute extends BaseRoute
 		
 		/* Call api */
 		await this.crudRouteBefore();
-		await page_model.commitAsync("crudAdd");
+		await page_model.commitAsync("callCrudItem");
 		await this.crudRouteAfter();
 		
 		/* Render page */
@@ -192,7 +192,7 @@ class CrudRoute extends BaseRoute
 		
 		/* Call api */
 		await this.crudRouteBefore();
-		await page_model.commitAsync("crudItem");
+		await page_model.commitAsync("callCrudItem");
 		save_form.commit("clearErrorMessage");
 		await this.crudRouteAfter();
 		
@@ -226,7 +226,7 @@ class CrudRoute extends BaseRoute
 		
 		/* Call api */
 		await this.crudRouteBefore();
-		await page_model.commitAsync("crudItem");
+		await page_model.commitAsync("callCrudItem");
 		delete_form.commit("clearErrorMessage");
 		await this.crudRouteAfter();
 		

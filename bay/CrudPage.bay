@@ -165,7 +165,7 @@ async void onFormEvent(Message<FormEvent> msg)
 		model.proxy("save_form").commit("setWaitMessage");
 		
 		/* Send save form */
-		await model.commitAsync("crudSave");
+		await model.commitAsync("callCrudSave");
 	}
 }
 
@@ -181,7 +181,7 @@ async void onDeleteClick(Message<MouseClickEvent> msg)
 	model.proxy("delete_form").commit("setWaitMessage");
 	
 	/* Send delete form */
-	await model.commitAsync("crudDelete");
+	await model.commitAsync("callCrudDelete");
 }
 
 

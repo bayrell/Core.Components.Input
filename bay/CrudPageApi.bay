@@ -111,16 +111,36 @@ class CrudPageApi extends BaseApi
 	
 	
 	/**
+	 * Returns default limit
+	 */
+	int getDefaultLimit()
+	{
+		return 10;
+	}
+	
+	
+	/**
+	 * Returns max limit
+	 */
+	int getMaxLimit()
+	{
+		return 100;
+	}
+	
+	
+	/**
 	 * Returns page limit
 	 */
 	list getPageLimit()
 	{
 		int page = (int)(this.post_data["page"] |> default string 1);
 		int limit = (int)(this.post_data["limit"] |> default string -1);
+		int limit_default = this.getDefaultLimit();
+		int limit_max = this.getMaxLimit();
 		
 		if (page <= 1) page = 1;
-		if (limit <= 0) limit = 10;
-		if (limit > 100) limit = 100;
+		if (limit < 0) limit = limit_default;
+		if (limit > limit_max) limit = limit_max;
 		
 		return [page, limit];
 	}
@@ -296,7 +316,22 @@ class CrudPageApi extends BaseApi
 			|> .select()
 			|> .page(page - 1, limit)
 		;
-		q = this.buildFilter( q);
+		
+		/* Setup calc found rows */
+		if (this.action == "actionSearchOne")
+		{
+			q = q.calcFoundRows(false);
+		}
+		else if (this.action == "actionSearch")
+		{
+			if (limit > 0)
+			{
+				q = q.calcFoundRows(true);
+			}
+		}
+		
+		/* Filter */
+		q = this.buildFilter(q);
 		q = this.buildSearchQuery(q);
 		
 		/* Execute query */

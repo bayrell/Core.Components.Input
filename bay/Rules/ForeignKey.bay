@@ -87,7 +87,7 @@ struct ForeignKey extends CrudRule
 		
 		/* Map items */
 		items = items.map(
-			Dict (Dict item) use (rule, rows, mapItem)
+			Dict (Dict item) use (api, rule, rows, mapItem)
 			{
 				Map d = new Map();
 				Vector res = new Vector();
@@ -111,7 +111,7 @@ struct ForeignKey extends CrudRule
 				}
 				else
 				{
-					item = mapItem(rule, item, d);
+					item = mapItem(api, rule, item, d);
 				}
 				
 				return item;
