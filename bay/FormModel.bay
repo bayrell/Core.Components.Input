@@ -53,6 +53,15 @@ struct FormModel<T> extends BaseStruct
 	
 	
 	/**
+	 * Set item
+	 */
+	FormModel setItem(T item)
+	{
+		return this.clone({ "item": item });
+	}
+	
+	
+	/**
 	 * Set wait message
 	 */
 	FormModel setWaitMessage()
