@@ -98,7 +98,7 @@ struct CrudPageModel<T> extends BaseModel
 	/**
 	 * Returns form model
 	 */
-	string getItemModelName()
+	string getFormModelName()
 	{
 		if (this.action == static::ACTION_ADD) return "save_form";
 		else if (this.action == static::ACTION_EDIT) return "save_form";
@@ -109,23 +109,23 @@ struct CrudPageModel<T> extends BaseModel
 	
 	
 	/**
-	 * Returns find item model
+	 * Returns find form model
 	 */
-	static ModelProxy getItemModelProxy(ModelProxy model)
+	static ModelProxy getFormModelProxy(ModelProxy model)
 	{
 		CrudPageModel page_model = model.data();
-		string model_name = page_model.getItemModelName();
+		string model_name = page_model.getFormModelName();
 		if (model_name) return model.proxy(model_name);
 		return null;
 	}
 	
 	
 	/**
-	 * Returns item model
+	 * Returns form model
 	 */
-	Dict getItemModel()
+	Dict getFormModel()
 	{
-		string model_name = this.getItemModelName();
+		string model_name = this.getFormModelName();
 		if (model_name) return this[model_name];
 		return null;
 	}
@@ -135,6 +135,18 @@ struct CrudPageModel<T> extends BaseModel
 	 * Set CRUD action
 	 */
 	CrudPageModel setAction(string action = "") => this.clone({ "action": action });
+	
+	
+	/**
+	 * Set search data
+	 */
+	CrudPageModel setSearchData(Dict search_data) => this.clone({ "search_data": search_data });
+	
+	
+	/**
+	 * Set item data
+	 */
+	CrudPageModel setItemData(Dict item_data) => this.clone({ "item_data": item_data });
 	
 	
 	/**
@@ -160,7 +172,7 @@ struct CrudPageModel<T> extends BaseModel
 		if (res == null) return this;
 		
 		CrudPageModel model = this;
-		string model_name = this.getItemModelName();
+		string model_name = this.getFormModelName();
 		FormModel form_model = this[model_name];
 		
 		if (res.isSuccess())
@@ -237,20 +249,20 @@ struct CrudPageModel<T> extends BaseModel
 	/**
 	 * Search items
 	 */
-	async static ApiResult callCrudSearchOne(ModelProxy model, Dict search_data = null)
+	async static ApiResult callCrudSearchOne(ModelProxy model)
 	{
-		model.setAttr("search_data", search_data);
+		CrudPageModel model_data = model.data();
+		Dict search_data = model_data.search_data;
 		
 		/* Extends search data */
 		Dict post_data = {
-			"page": model.data().page,
+			"page": model_data.page,
 		};
 		if (search_data != null) post_data = post_data.concat(search_data);
 		
 		/* Process event */
 		Dict d = await static::event(model, "crudSearchBefore", {
 			"post_data": post_data,
-			"search_data": search_data,
 		});
 		
 		/* Send api */
@@ -274,12 +286,13 @@ struct CrudPageModel<T> extends BaseModel
 	/**
 	 * Find item
 	 */
-	async static ApiResult callCrudItem(ModelProxy model, Dict item_data = null)
+	async static ApiResult callCrudItem(ModelProxy model)
 	{
-		ModelProxy model_item = static::getItemModelProxy(model);
-		FormModel model_item_data = model_item.data();
+		CrudPageModel model_data = model.data();
+		Dict item_data = model_data.item_data;
 		
-		model.setAttr("item_data", item_data);
+		ModelProxy model_item = static::getFormModelProxy(model);
+		FormModel model_item_data = model_item.data();
 		
 		Dict pk = model_item_data.getPrimaryKey();
 		if (pk == null)
@@ -289,7 +302,7 @@ struct CrudPageModel<T> extends BaseModel
 			});
 		
 			/* Set api result */
-			ModelProxy model_item = static::getItemModelProxy(model);
+			ModelProxy model_item = static::getFormModelProxy(model);
 			if (model_item)
 			{
 				string class_name = static::getModelName();
@@ -313,7 +326,6 @@ struct CrudPageModel<T> extends BaseModel
 			/* Process event */
 			Dict d = await static::event(model, "crudItemBefore", {
 				"pk": pk,
-				"item_data": item_data,
 				"post_data": post_data,
 			});
 			
@@ -342,7 +354,7 @@ struct CrudPageModel<T> extends BaseModel
 	 */
 	async static ApiResult callCrudSave(ModelProxy model)
 	{
-		ModelProxy model_item = static::getItemModelProxy(model);
+		ModelProxy model_item = static::getFormModelProxy(model);
 		FormModel model_item_data = model_item.data();
 		
 		/* Get post data */
@@ -392,7 +404,7 @@ struct CrudPageModel<T> extends BaseModel
 	 */
 	async static ApiResult callCrudDelete(ModelProxy model)
 	{
-		ModelProxy model_item = static::getItemModelProxy(model);
+		ModelProxy model_item = static::getFormModelProxy(model);
 		FormModel model_item_data = model_item.data();
 		
 		/* Get post data */

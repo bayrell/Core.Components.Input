@@ -149,7 +149,7 @@ class CrudPageApi extends BaseApi
 	/**
 	 * Backend event
 	 */
-	async void backendEvent(string event, Dict data)
+	async void event(string event, Dict data)
 	{
 		/* Search */
 		if (event == "actionSearchBefore" or
@@ -366,7 +366,7 @@ class CrudPageApi extends BaseApi
 		if (this.container.response.error_name != "") return;
 		
 		/* Search before event */
-		await this.backendEvent("actionSearchBefore", {});
+		await this.event("actionSearchBefore", {});
 		if (this.container.response.error_name != "") return;
 		
 		/* Search items */
@@ -383,7 +383,7 @@ class CrudPageApi extends BaseApi
 		});
 		
 		/* Search after event */
-		await this.backendEvent("actionSearchAfter", {});
+		await this.event("actionSearchAfter", {});
 	}
 	
 	
@@ -397,7 +397,7 @@ class CrudPageApi extends BaseApi
 		if (this.container.response.error_name != "") return;
 		
 		/* Search before event */
-		await this.backendEvent("actionSearchOneBefore", {});
+		await this.event("actionSearchOneBefore", {});
 		if (this.container.response.error_name != "") return;
 		
 		/* Search items */
@@ -418,7 +418,7 @@ class CrudPageApi extends BaseApi
 		});
 		
 		/* Search after event */
-		await this.backendEvent("actionSearchOneAfter", {});
+		await this.event("actionSearchOneAfter", {});
 	}
 	
 	
@@ -440,6 +440,7 @@ class CrudPageApi extends BaseApi
 			|> .filter(filter)
 		;
 		q = this.buildSearchQuery(q);
+		q = q.limit(1);
 		
 		/* Execute query */
 		Connection conn = this.getDatabaseConnection();
@@ -457,6 +458,48 @@ class CrudPageApi extends BaseApi
 	
 	
 	/**
+	 * Action item
+	 */
+	async void actionItem()
+	{
+		Dict pk = this.post_data["pk"];
+		
+		/* Init api */
+		await this.initApi("actionItem");
+		if (this.container.response.error_name != "") return;
+		
+		/* Before event */
+		await this.event("actionItemBefore", {});
+		if (this.container.response.error_name != "") return;
+		
+		/* Find item */
+		this.item = await this.findItem(pk);
+		if (this.item == null)
+		{
+			this.container.fail( new ApiException("Item not found") );
+			return ;
+		}
+		
+		/* Transform items */
+		BaseStruct model = this.item.toModel( this.getModelName() );
+		Dict item_pk = this.item.getPrimaryKey();
+		
+		/* Set answer */
+		this.container.success({
+			"data":
+			{
+				"pk": item_pk,
+				"item": model,
+				"dictionary": [],
+			}
+		});
+		
+		/* After event */
+		await this.event("actionItemAfter", {});
+	}
+	
+	
+	/**
 	 * Create item
 	 */
 	async Relation createItem()
@@ -465,15 +508,6 @@ class CrudPageApi extends BaseApi
 		string relation_name = static::getRelationName();
 		Relation item = rtl::newInstance(relation_name);
 		return item;
-	}
-	
-	
-	/**
-	 * Validate item
-	 */
-	async void validateItem(StructBuilder builder, Dict new_item)
-	{
-		this.container.response = builder.validateApi(this.container.response, new_item); 
 	}
 	
 	
@@ -498,47 +532,26 @@ class CrudPageApi extends BaseApi
 	
 	
 	/**
-	 * Action item
+	 * Validate item
 	 */
-	async void actionItem()
+	async Dict validateItem(Dict update_data)
 	{
-		/* Init api */
-		await this.initApi("actionItem");
-		if (this.container.response.error_name != "") return;
-		
-		/* Before event */
-		await this.backendEvent("actionItemBefore", {});
-		if (this.container.response.error_name != "") return;
-		
-		/* Find item */
-		Dict pk = this.post_data["pk"];
-		this.item = await this.findItem(pk);
-		if (this.item == null)
+		StructBuilder builder = this.getStruct();
+		if (builder == null)
 		{
-			this.container.fail( new ApiException("Item not found") );
-			return ;
+			throw new RuntimeException("Builder is null");
 		}
 		
-		/* Transform items */
-		string model_name = this.getModelName();
-		BaseStruct item_data = this.item.toModel( model_name );
+		/* Purify item */
+		update_data = builder.purify(update_data);
 		
-		/* Get item data */
-		string relation_name = static::getRelationName();
-		Dict item_pk = rtl::callMethod(relation_name, "getPrimaryFromData", [item_data]);
+		/* Validate new item */
+		this.container.response = builder.validateApi(this.container.response, update_data);
 		
-		/* Set answer */
-		this.container.success({
-			"data":
-			{
-				"pk": item_pk,
-				"item": item_data,
-				"dictionary": [],
-			}
-		});
+		/* Get updated data*/
+		update_data = builder.data(update_data);
 		
-		/* After event */
-		await this.backendEvent("actionItemAfter", {});
+		return update_data;
 	}
 	
 	
@@ -547,75 +560,61 @@ class CrudPageApi extends BaseApi
 	 */
 	async void actionSave()
 	{
+		Dict pk = this.post_data["pk"];
+		Dict update_data = this.post_data["item"];
+		
 		/* Init api */
 		await this.initApi("actionSave");
 		if (this.container.response.error_name != "") return;
 		
 		/* Before event */
-		await this.backendEvent("actionSaveBefore", {});
+		await this.event("actionSaveBefore", {});
+		if (this.container.response.error_name != "") return;
+		
+		/* Validate data */
+		update_data = await this.validateItem(update_data);
 		if (this.container.response.error_name != "") return;
 		
 		/* Find item */
-		Dict pk = this.post_data["pk"];
 		if (pk != null)
 		{
 			this.item = await this.findItem(pk);
-			if (this.item == null)
-			{
-				this.container.fail( new ApiException("Item not found") );
-				return;
-			}
 		}
 		else
 		{
 			this.item = await this.createItem();
 		}
 		
-		StructBuilder builder = this.getStruct();
-		if (builder == null)
+		/* Item not found */
+		if (this.item == null)
 		{
-			throw new RuntimeException("Builder is null");
+			this.container.fail( new ApiException("Item not found") );
+			return;
 		}
 		
-		/* Purify item */
-		Dict new_item = this.post_data["item"];
-		new_item = builder.purify( new_item );
-		
-		/* Validate new item */
-		await this.validateItem(builder, new_item);
-		if (this.container.response.error_name != "") return;
-		
 		/* Update item */
-		Dict update_item = builder.data(new_item);
-		await this.updateItem( this.item, update_item );
+		await this.updateItem(this.item, update_data);
 		if (this.container.response.error_name != "") return;
 		
-		/* Get new pk */
-		Dict pk = this.item.getPrimaryKey();
-		
-		/* Find updated item */
-		this.item = await this.findItem(pk);
+		/* Refresh item */
+		await item.refresh();
 		
 		/* Transform items */
-		string model_name = this.getModelName();
-		BaseStruct item_data = this.item.toModel( model_name );
-		
-		/* Get item data */
-		string relation_name = static::getRelationName();
-		Dict item_pk = rtl::callMethod(relation_name, "getPrimaryFromData", [item_data]);
+		BaseStruct model = this.item.toModel( this.getModelName() );
+		Dict item_pk = this.item.getPrimaryKey()
 		
 		/* Set api result */
 		this.container.success({
 			"data":
 			{
 				"pk": item_pk,
-				"item": item_data,
+				"item": model,
 				"dictionary": [],
 			}
 		});
 		
 		/* After event */
-		await this.backendEvent("actionSaveAfter", {});
+		await this.event("actionSaveAfter", {});
 	}
 	
 	
@@ -634,16 +633,17 @@ class CrudPageApi extends BaseApi
 	 */
 	async void actionDelete()
 	{
+		Dict pk = this.post_data["pk"];
+		
 		/* Init api */
 		await this.initApi("actionDelete");
 		if (this.container.response.error_name != "") return;
 		
 		/* Before event */
-		await this.backendEvent("actionDeleteBefore", {});
+		await this.event("actionDeleteBefore", {});
 		if (this.container.response.error_name != "") return;
 		
 		/* Find item */
-		Dict pk = this.post_data["pk"];
 		this.item = await this.findItem(pk);
 		if (this.item == null)
 		{
@@ -655,24 +655,22 @@ class CrudPageApi extends BaseApi
 		await this.deleteItem(this.item);
 		if (this.container.response.error_name != "") return;
 		
-		/* Get item data */
-		string model_name = this.getModelName();
-		BaseStruct item_data = this.item.toModel( model_name );
-		string relation_name = static::getRelationName();
-		Dict item_pk = rtl::callMethod(relation_name, "getPrimaryFromData", [item_data]);
+		/* Transform items */
+		BaseStruct model = this.item.toModel( this.getModelName() );
+		Dict item_pk = this.item.getPrimaryKey();
 		
 		/* Set api result */
 		this.container.success({
 			"data":
 			{
 				"pk": item_pk,
-				"item": item_data,
+				"item": model,
 				"dictionary": [],
 			}
 		});
 		
 		/* Before event */
-		await this.backendEvent("actionDeleteAfter", {});
+		await this.event("actionDeleteAfter", {});
 	}
 	
 }
