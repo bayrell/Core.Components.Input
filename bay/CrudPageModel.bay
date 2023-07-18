@@ -212,13 +212,14 @@ struct CrudPageModel<T> extends BaseModel
 	/**
 	 * Search items
 	 */
-	async static ApiResult callCrudSearch(ModelProxy model, Dict search_data = null)
+	async static ApiResult callCrudSearch(ModelProxy model)
 	{
-		model.setAttr("search_data", search_data);
+		CrudPageModel model_data = model.data();
+		Dict search_data = model_data.search_data;
 		
 		/* Extends search data */
 		Dict post_data = {
-			"page": model.data().page,
+			"page": model_data.page,
 		};
 		if (search_data != null) post_data = post_data.concat(search_data);
 		
