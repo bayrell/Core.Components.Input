@@ -38,7 +38,7 @@ struct ValidateEmail extends ValidationRule
 		if (email == null) return false;
 		if (not rtl::isString(email)) return false;
 		
-		bool is_match = re::match("^[\w\-]+@[\w\-\.]+\.[\w]+$", email);
+		bool is_match = re::match("^[\w\_\-\.]+@[\w\-\.]+\.[\w]+$", email);
 		if (not is_match) return false;
 		
 		is_match = re::match("\.[\.]+", email);
