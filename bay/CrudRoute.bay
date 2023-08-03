@@ -46,9 +46,21 @@ class CrudRoute extends BaseRoute
 	
 	
 	/**
-	 * Returns page name
+	 * Returns index page name
 	 */
-	string getPageName() => "";
+	string getIndexPageName() => "";
+	
+	
+	/**
+	 * Returns save page name
+	 */
+	string getSavePageName() => "";
+	
+	
+	/**
+	 * Returns delete page name
+	 */
+	string getDeletePageName() => "";
 	
 	
 	/**
@@ -76,7 +88,7 @@ class CrudRoute extends BaseRoute
 		
 		if (action == CrudPageModel::ACTION_ADD)
 		{
-			model_item.setAttr("item_pk", null);
+			model_item.commit("setPrimaryKey", null);
 		}
 		else if (
 			action == CrudPageModel::ACTION_EDIT or
@@ -87,7 +99,7 @@ class CrudRoute extends BaseRoute
 			string name_id = static::getNameId();
 			string query_id = static::getQueryId();
 			
-			model_item.setAttr("item_pk", null);
+			model_item.commit("setPrimaryKey", null);
 			if (this.container.request.query.has( query_id ))
 			{
 				int value_id = (int)this.container.request.query.get( query_id );
@@ -122,7 +134,7 @@ class CrudRoute extends BaseRoute
 		await this.crudRouteAfter();
 		
 		/* Render page */
-		this.container.render( this.getPageName() );
+		this.container.render( this.getIndexPageName() );
 	}
 	
 	
@@ -143,7 +155,7 @@ class CrudRoute extends BaseRoute
 		await this.crudRouteAfter();
 		
 		/* Render page */
-		this.container.render( this.getPageName() );
+		this.container.render( this.getSavePageName() );
 	}
 	
 	
@@ -165,9 +177,8 @@ class CrudRoute extends BaseRoute
 		await this.crudRouteAfter();
 		
 		/* Render page */
-		this.container.render( this.getPageName() );
+		this.container.render( this.getSavePageName() );
 	}
-	
 	
 	
 	/**
@@ -188,6 +199,6 @@ class CrudRoute extends BaseRoute
 		await this.crudRouteAfter();
 		
 		/* Render page */
-		this.container.render( this.getPageName() );
+		this.container.render( this.getDeletePageName() );
 	}
 }

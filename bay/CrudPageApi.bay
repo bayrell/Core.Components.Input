@@ -597,7 +597,7 @@ class CrudPageApi extends BaseApi
 		if (this.container.response.error_name != "") return;
 		
 		/* Refresh item */
-		await item.refresh();
+		await this.item.refresh();
 		
 		/* Transform items */
 		BaseStruct model = this.item.toModel( this.getModelName() );
