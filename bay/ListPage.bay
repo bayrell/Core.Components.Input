@@ -46,7 +46,7 @@ pure Dict<string> getLabels(Layout layout, BaseStruct model) => {
 </script>
 
 
-<template name="renderTitle">
+<template name="renderTop">
 	<h1>{{ model.getPageTitle( model.action ) }}</h1>
 </template>
 
@@ -144,16 +144,9 @@ pure Dict<string> getLabels(Layout layout, BaseStruct model) => {
 </template>
 
 
-<template name="renderList">
-	%render static::renderTitle();
-	%render static::renderTable();
-</template>
-
-
 <template>
-	<div class="crud_page">
-		%render static::renderList();
-	</div>
+	%render static::renderTop();
+	%render static::renderTable();
 </template>
 
 

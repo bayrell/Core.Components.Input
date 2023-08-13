@@ -16,6 +16,7 @@
 		"CrudPageModel.bay",
 		"CrudRoute.bay",
 		"CSS.bay",
+		"DeletePage.bay",
 		"Form.bay",
 		"FormEvent.bay",
 		"FormModel.bay",
@@ -35,7 +36,6 @@
 		"TabModel.bay",
 		"Tabs.bay",
 		"TextArea.bay",
-		"ValidationResult.bay",
 		"ModuleDescription.bay"
 	],
 	"src": "./bay",

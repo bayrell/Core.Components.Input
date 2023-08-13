@@ -32,6 +32,7 @@
 	border: 1px ${ vars["colors", "default", "border"] } solid;
 	outline: transparent;
 	line-height: normal;
+	min-height: 29px;
 }
 </style>
 

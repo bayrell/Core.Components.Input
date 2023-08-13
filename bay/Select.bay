@@ -43,7 +43,7 @@
 	%set string name = (render_params != null) ? render_params.get("name", "") : "";
 	%set string value = Helper::getValue(layout, model_path, render_params);
 	
-	<select class='select' @event:ChangeEvent="onChange" name={ name } value={ value }>
+	<select class='select' @event:ChangeEvent="onChange" name={ name }>
 	
 	%set Dict selected = {};
 	%set bool show_select_value = render_params["show_select_value"] |> default bool true;

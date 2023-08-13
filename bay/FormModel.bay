@@ -31,7 +31,7 @@ struct FormModel<T> extends BaseStruct
     Dict params = null;
 	int error_code = 0;
 	string error_message = "";
-	ValidationResult validation_result = null;
+	Dict field_result = null;
 	
 	
 	/**
@@ -111,14 +111,13 @@ struct FormModel<T> extends BaseStruct
 		}
 		
 		/* Set validation result */
-		if (res.data != null and res.data.has("validation_result"))
+		if (res.data != null and res.data.has("field_result"))
 		{
-			ValidationResult validation_result = new ValidationResult(res.data["validation_result"]);
-			model <= validation_result <= validation_result;
+			model <= field_result <= res.data["field_result"];
 		}
 		else
 		{
-			model <= validation_result <= null;
+			model <= field_result <= null;
 		}
 		
 		model <= error_message <= res.getErrorMessage();
@@ -145,8 +144,8 @@ struct FormModel<T> extends BaseStruct
 	 */
 	Collection<string> getFieldResult(string field_name)
 	{
-		if (this.validation_result == null) return [];
-		if (not this.validation_result.fields.has(field_name)) return [];
-		return this.validation_result.fields[field_name];
+		if (this.field_result == null) return [];
+		if (not this.field_result.has(field_name)) return [];
+		return this.field_result[field_name];
 	}
 }

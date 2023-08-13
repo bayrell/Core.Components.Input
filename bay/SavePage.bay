@@ -32,177 +32,94 @@
 <use name="Runtime.Web.Crud.Table" component="true" />
 
 
-<template name="renderPageTitle">
+<template name="renderTop">
 	<h1>{{ model.getPageTitle( model.action ) }}</h1>
 </template>
 
 
-<template name="renderIndex">
-	%set StructBuilder builder = static::getStruct();
+<template name="renderRow" args="Dict params">
 	
-	%render static::renderPageTitle();
+	%set string class_name = params["class_name"];
+	%set string field_name = params["field_name"];
+	%set Dict component_settings = params["component_settings"];
 	
-	<Table
-		builder={{ builder }}
-		page={{ model.page }}
-		pages={{ model.pages }}
-		@model=[]
-	>
-	</Table>
-	
-</template>
-
-
-<template name="renderSaveForm">
-	%set StructBuilder builder = static::getStruct();
-	<Form
-		@ref="save_form"
-		@model=["save_form"]
-		@event:FormEvent="onFormEvent"
-		builder={{ builder }}
-		buttons={{ static::getFormButtons(layout) }}
-	/>
-</template>
-
-
-<template name="renderSave">
-	
-	<div class="button_top">
-		<Button type="small" href={{ static::getBackHref(layout) }}>
-			Back
-		</Button>
-	</div>
-	
-	%if (model.save_form.item)
-	{
-		%render static::renderPageTitle(model.getPageTitle("edit"));
-		%render static::renderSaveForm();
-	}
-	
-	%else
-	{
-		<p>Item not found</p>
-	}
-	
-</template>
-
-
-<template name="renderDelete">
-	
-	<div class="button_top">
-		<Button type="small" href={{ static::getBackHref(layout) }}>
-			Back
-		</Button>
-	</div>
-	
-	%if (model.delete_form.item)
-	{
-		<center>
-			%render static::renderPageTitle(model.getPageTitle("delete"));
-			<div class="crud_page__delete_buttons">
-				<Button type="danger"
-					@event:MouseClickEvent="onDeleteClick"
-				>Delete</Button>
+	<div class="web_form__row" @key={{ field_name }}>
+		
+		<label class="web_form__row_label">{{ params["label"] }}</label>
+		
+		<{class_name}
+			name={{ params["@key"] }}
+			@model={{ ["save_form", "item"].concat( field_name ) }}
+			...component_settings
+		/>
+		
+		%set Collection<string> field_result = model.save_form.getFieldResult(field_name);
+		%if (field_result.count() == 0)
+		{
+			<div class="web_form__field_result" data-name={{ field_name }} @key="result1"></div>
+		}
+		%else
+		{
+			<div class="web_form__field_result" data-name={{ field_name }} @key="result2">
+				%for (int i=0; i<field_result.count(); i++)
+				{
+					<div>{{ field_result[i] }}</div>
+				}
 			</div>
-			<div class="web_form__result" class={{ model.delete_form.getErrorClass() }} >
-				{{ model.delete_form.error_message }}
-			</div>
-		</center>
-	}
-	
-	%else
-	{
-		<p>Item not found</p>
-	}
+		}
+		
+	</div>
 	
 </template>
 
 
-<template>
-	<div class="crud_page">
-	
-	%if (model.action == "index")
-	{
-		%render static::renderIndex();
-	}
-	
-	%else if (model.action == "add" or model.action == "edit")
-	{
-		%render static::renderSave();
-	}
-	
-	%else if (model.action == "delete")
-	{
-		%render static::renderDelete();
-	}
-	
+<template name="renderRows">
+</template>
+
+
+<template name="renderButtons">
+</template>
+
+
+<template name="renderForm">
+	<form class="form" method="POST" enctype="multipart/form-data" onsubmit="return false;">
+		%render static::renderRows();
+		%render static::renderButtons();
+		%render static::renderResult();
+	</form>
+</template>
+
+
+<template name="renderResult">
+	<div class="web_form__result" class={{ model.save_form.getErrorClass() }} >
+		{{ model.save_form.error_message }}
 	</div>
+</template>
+
+
+<template name="render">
+	%render static::renderTop();
+	%render static::renderForm();
 </template>
 
 
 <script>
 
-var save_form = null;
-
-
 /**
- * Returns back href
+ * Save click
  */
-pure string getBackHref(LayoutModel layout) => "";
-
-
-/**
- * Submit
- */
-async void onFormEvent(Message<FormEvent> msg)
-{
-	/* Register button click */
-	if (msg.event.kind == FormEvent::BUTTON_CLICK and msg.event.button_name == "save")
-	{
-		ModelProxy model = this.modelProxy();
-		
-		/* Set wait message */
-		model.proxy("save_form").commit("setWaitMessage");
-		
-		/* Send save form */
-		await model.commitAsync("callCrudSave");
-	}
-}
-
-
-/**
- * Submit
- */
-async void onDeleteClick(Message<MouseClickEvent> msg)
+async void onSaveClick(Message<MouseClickEvent> msg)
 {
 	ModelProxy model = this.modelProxy();
 	
 	/* Set wait message */
-	model.proxy("delete_form").commit("setWaitMessage");
+	model.proxy("save_form").commit("setWaitMessage");
 	
 	/* Send delete form */
-	await model.commitAsync("callCrudDelete");
+	await model.commitAsync("callCrudSave");
 }
 
-
-/**
- * Returns struct
- */
-pure memorize StructBuilder getStruct() => null;
-
-
-/**
- * Returns struct
- */
-pure Collection getFormButtons(LayoutModel layout) => [
-	{
-		"name": "save",
-		"label": "Save",
-		"type": "primary"
-	},
-];
-
-
 </script>
+
 
 </class>

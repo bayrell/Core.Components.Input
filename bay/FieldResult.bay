@@ -18,7 +18,7 @@
 
 namespace Runtime.Web.Crud;
 
-use Runtime.BaseStruct;
+use Runtime.BaseObject;
 use Runtime.Exceptions.ApiException;
 use Runtime.Web.ApiResult;
 use Runtime.Web.Bus;
@@ -27,9 +27,9 @@ use Runtime.Web.Crud.FieldInfo;
 use Runtime.Web.Crud.ValidationRule;
 
 
-struct ValidationResult extends BaseStruct
+class FieldResult extends BaseObject
 {
-	Dict<Collection<string>> fields = {};
+	Map<Vector<string>> fields = new Map;
 	
 	
 	/**
@@ -39,27 +39,16 @@ struct ValidationResult extends BaseStruct
 	
 	
 	/**
-	 * Append error message
+	 * Append field error
 	 */
-	ValidationResult appendErrorMessage(list message)
+	void appendFieldError(string field_name, string error_message)
 	{
-		ValidationResult res = this;
-		string error_message = message[0];
-		Collection<string> fields = message.removeFirstIm();
-		
-		for (int i=0; i<fields.count(); i++)
+		if (not this.fields.has(field_name))
 		{
-			string field_name = fields[i];
-			
-			if (not res.fields.has(field_name))
-			{
-				res <= fields <= { field_name } <= [];
-			}
-			
-			res <= fields <= { field_name } <= res.fields[field_name].pushIm(error_message);
+			this.fields.setValue(field_name, new Vector);
 		}
-		
-		return res;
+		Vector messages = this.fields[field_name];
+		messages.pushValue(error_message);
 	}
 	
 	
@@ -74,9 +63,20 @@ struct ValidationResult extends BaseStruct
 			"message": e.getErrorMessage(),
 			"error_name": e::getClassName(),
 			"data": {
-				"validation_result": this.toDict(),
+				"field_result": this.toDict(),
 			},
 		};
 	}
+	
+	
+	/**
+	 * To dict
+	 */
+	Dict toDict() => this.fields
+		.map(
+			Collection (Vector item) => item.toCollection()
+		)
+		.toDict()
+	;
 	
 }

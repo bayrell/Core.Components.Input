@@ -60,7 +60,7 @@ class AppHook extends BaseAppHook
 		/* primary */
 		d <= colors <= primary <= background <= "#2685b4";
 		d <= colors <= primary <= text <= "white";
-		d <= colors <= primary <= border <= "#ccc";
+		d <= colors <= primary <= border <= "#247eaa";
 		d <= colors <= primary <= hover_bg <= "#247eaa";
 		d <= colors <= primary <= hover_text <= "white";
 		

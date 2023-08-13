@@ -35,7 +35,7 @@ use Runtime.Web.BaseModel;
 use Runtime.Web.Bus;
 use Runtime.Web.RenderContainer;
 use Runtime.Web.Crud.FormModel;
-use Runtime.Web.Crud.StructBuilder;
+use Runtime.Web.Crud.FieldResult;
 use Runtime.Web.Crud.Rules.CrudRule;
 use Runtime.Web.Crud.Rules.Filter;
 
@@ -48,6 +48,7 @@ class CrudPageApi extends BaseApi
 	Collection items = null;
 	Collection rows = null;
 	Relation item = null;
+	FieldResult field_result = new FieldResult();
 	
 	
 	/**
@@ -75,23 +76,6 @@ class CrudPageApi extends BaseApi
 	 * Returns model name
 	 */
 	pure string getModelName() => "";
-	
-	
-	/**
-	 * Returns page type
-	 */
-	pure string getPageType() => "";
-	
-	
-	/**
-	 * Returns struct builder
-	 */
-	StructBuilder getStruct(fn build_fn = null)
-	{
-		string class_name = static::getModelName();
-		string kind = static::getPageType();
-		return StructBuilder::build(class_name, kind, build_fn);
-	}
 	
 	
 	/**
@@ -442,12 +426,11 @@ class CrudPageApi extends BaseApi
 		string table_name = static::getTableName();
 		
 		/* Get primary key */
-		fn getPrimaryFilter = rtl::method(table_name, "getPrimaryFilter");
-		Collection filter = getPrimaryFilter(pk, true);
+		Collection filter = Relation::getPrimaryFilter(table_name, pk, true);
 		
 		/* Build query */
-		Query q = rtl::method(table_name, "query")()
-			|> .select()
+		Query q = new Query
+			|> .select(table_name)
 			|> .filter(filter)
 		;
 		q = this.buildSearchQuery(q);
@@ -532,6 +515,9 @@ class CrudPageApi extends BaseApi
 			}
 			
 			await item.save(conn);
+			
+			/* Refresh item */
+			await item.refresh(conn);
 		}
 	}
 	
@@ -541,21 +527,6 @@ class CrudPageApi extends BaseApi
 	 */
 	async Dict validateItem(Dict update_data)
 	{
-		StructBuilder builder = this.getStruct();
-		if (builder == null)
-		{
-			throw new RuntimeException("Builder is null");
-		}
-		
-		/* Purify item */
-		update_data = builder.purify(update_data);
-		
-		/* Validate new item */
-		this.container.response = builder.validateApi(this.container.response, update_data);
-		
-		/* Get updated data*/
-		update_data = builder.data(update_data);
-		
 		return update_data;
 	}
 	
@@ -578,6 +549,11 @@ class CrudPageApi extends BaseApi
 		
 		/* Validate data */
 		update_data = await this.validateItem(update_data);
+		if (not this.field_result.isSuccess())
+		{
+			this.container.fail( this.field_result.getResult() );
+			return;
+		}
 		if (this.container.response.error_name != "") return;
 		
 		/* Find item */
@@ -601,12 +577,9 @@ class CrudPageApi extends BaseApi
 		await this.updateItem(this.item, update_data);
 		if (this.container.response.error_name != "") return;
 		
-		/* Refresh item */
-		await this.item.refresh();
-		
 		/* Transform items */
 		BaseStruct model = this.item.toModel( static::getModelName() );
-		Dict item_pk = this.item.getPrimaryKey()
+		Dict item_pk = this.item.getPrimaryKey();
 		
 		/* Set api result */
 		this.container.success({

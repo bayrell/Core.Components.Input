@@ -76,6 +76,12 @@ class CrudRoute extends BaseRoute
 	
 	
 	/**
+	 * Returns id location
+	 */
+	pure string getLocationId() => "matches";
+	
+	
+	/**
 	 * Crud route before
 	 */
 	async void crudRouteBefore()
@@ -98,9 +104,17 @@ class CrudRoute extends BaseRoute
 		{
 			string name_id = static::getNameId();
 			string query_id = static::getQueryId();
+			string location_id = static::getLocationId();
 			
 			model_item.commit("setPrimaryKey", null);
-			if (this.container.request.query.has( query_id ))
+			if (location_id == "matches" and this.container.route.matches.has( query_id ))
+			{
+				int value_id = (int)this.container.route.matches.get( query_id );
+				Map m = new Map;
+				m.setValue(name_id, value_id);
+				model_item.commit("setPrimaryKey", m);
+			}
+			else if (location_id == "query" and this.container.request.query.has( query_id ))
 			{
 				int value_id = (int)this.container.request.query.get( query_id );
 				Map m = new Map;
