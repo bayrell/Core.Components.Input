@@ -26,6 +26,8 @@ use Runtime.Exceptions.RuntimeException;
 use Runtime.ORM.Connection;
 use Runtime.ORM.Cursor;
 use Runtime.ORM.Query;
+use Runtime.Web.Relation;
+use Runtime.Web.RelationArray;
 use Runtime.ORM.Relation;
 use Runtime.Web.ApiResult;
 use Runtime.Web.BaseApi;
@@ -64,9 +66,9 @@ class CrudPageApi extends BaseApi
 	
 	
 	/**
-	 * Returns relation name
+	 * Returns table name
 	 */
-	pure string getRelationName() => "";
+	pure string getTableName() => "";
 	
 	
 	/**
@@ -272,7 +274,7 @@ class CrudPageApi extends BaseApi
 			}
 		}
 		
-		return q.filter( query_filter.toCollection() );
+		return q.filter(query_filter);
 	}
 	
 	
@@ -311,9 +313,9 @@ class CrudPageApi extends BaseApi
 		this.limit = limit;
 		
 		/* Build query */
-		string relation_name = static::getRelationName();
-		Query q = rtl::method(relation_name, "query")()
-			|> .select()
+		string table_name = static::getTableName();
+		Query q = new Query
+			|> .select(table_name)
 			|> .page(page - 1, limit)
 		;
 		
@@ -337,17 +339,13 @@ class CrudPageApi extends BaseApi
 		/* Execute query */
 		Connection conn = this.getDatabaseConnection();
 		Cursor c = await conn.execute(q, this.getDatabaseParams());
-		Collection items = await c.fetchAll();
+		RelationArray items = await c.fetchAll();
 		if (q._limit > 0)
 		{
 			page = await c.getPage() + 1;
 			pages = await c.getPages();
 		}
 		await c.close();
-		
-		/* Transform items */
-		string model_name = this.getModelName();
-		items = Relation::transformItems(items, model_name);
 		
 		this.page = page;
 		this.pages = pages;
@@ -372,12 +370,17 @@ class CrudPageApi extends BaseApi
 		/* Search items */
 		await this.searchItems();
 		
+		/* Transform items */
+		string model_name = static::getModelName();
+		Collection items = this.items.toModel(model_name);
+		
+		/* Set answer */
 		this.container.success({
 			"data":
 			{
 				"page": this.page,
 				"pages": this.pages,
-				"items": this.items,
+				"items": items,
 				"dictionary": [],
 			}
 		});
@@ -403,16 +406,24 @@ class CrudPageApi extends BaseApi
 		/* Search items */
 		await this.searchItems();
 		
-		/* Get item data */
-		string relation_name = static::getRelationName();
-		Dict item_data = this.items[0];
-		Dict item_pk = rtl::callMethod(relation_name, "getPrimaryFromData", [item_data]);
+		/* Get item */
+		this.item = this.items.count() > 0 ? this.items[0] : null;
+		if (this.item == null)
+		{
+			this.container.fail( new ApiException("Item not found") );
+			return ;
+		}
 		
+		/* Transform items */
+		BaseStruct model = this.item.toModel( static::getModelName() );
+		Dict item_pk = this.item.getPrimaryKey();
+		
+		/* Set answer */
 		this.container.success({
 			"data":
 			{
 				"pk": item_pk,
-				"item": item_data,
+				"item": model,
 				"dictionary": [],
 			}
 		});
@@ -428,14 +439,14 @@ class CrudPageApi extends BaseApi
 	async Relation findItem(Dict pk)
 	{
 		/* Query to database */
-		string relation_name = static::getRelationName();
+		string table_name = static::getTableName();
 		
 		/* Get primary key */
-		fn getPrimaryFilter = rtl::method(relation_name, "getPrimaryFilter");
+		fn getPrimaryFilter = rtl::method(table_name, "getPrimaryFilter");
 		Collection filter = getPrimaryFilter(pk, true);
 		
 		/* Build query */
-		Query q = rtl::method(relation_name, "query")()
+		Query q = rtl::method(table_name, "query")()
 			|> .select()
 			|> .filter(filter)
 		;
@@ -481,7 +492,7 @@ class CrudPageApi extends BaseApi
 		}
 		
 		/* Transform items */
-		BaseStruct model = this.item.toModel( this.getModelName() );
+		BaseStruct model = this.item.toModel( static::getModelName() );
 		Dict item_pk = this.item.getPrimaryKey();
 		
 		/* Set answer */
@@ -502,13 +513,7 @@ class CrudPageApi extends BaseApi
 	/**
 	 * Create item
 	 */
-	async Relation createItem()
-	{
-		/* Create relation */
-		string relation_name = static::getRelationName();
-		Relation item = rtl::newInstance(relation_name);
-		return item;
-	}
+	async Relation createItem() => rtl::newInstance( static::getTableName() );
 	
 	
 	/**
@@ -600,7 +605,7 @@ class CrudPageApi extends BaseApi
 		await this.item.refresh();
 		
 		/* Transform items */
-		BaseStruct model = this.item.toModel( this.getModelName() );
+		BaseStruct model = this.item.toModel( static::getModelName() );
 		Dict item_pk = this.item.getPrimaryKey()
 		
 		/* Set api result */
@@ -656,7 +661,7 @@ class CrudPageApi extends BaseApi
 		if (this.container.response.error_name != "") return;
 		
 		/* Transform items */
-		BaseStruct model = this.item.toModel( this.getModelName() );
+		BaseStruct model = this.item.toModel( static::getModelName() );
 		Dict item_pk = this.item.getPrimaryKey();
 		
 		/* Set api result */
