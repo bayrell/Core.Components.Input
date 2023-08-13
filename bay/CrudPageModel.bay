@@ -47,6 +47,7 @@ struct CrudPageModel<T> extends BaseModel
 	
 	int page = 0;
 	int pages = 0;
+	int limit = 10;
 	Collection<T> items = null;
 	Dict dictionary = {};
 	Dict item_data = null;
@@ -156,6 +157,12 @@ struct CrudPageModel<T> extends BaseModel
 	
 	
 	/**
+	 * Set limit
+	 */
+	CrudPageModel setLimit(int limit = 10) => this.clone({ "limit": limit });
+	
+	
+	/**
 	 * Event
 	 */
 	async static Dict event(ModelProxy model, string event, Dict data)
@@ -181,8 +188,9 @@ struct CrudPageModel<T> extends BaseModel
 			{
 				model = model.copy({
 					"items": res["data"]["items"],
-					"pages": res["data"]["pages"],
+					"limit": res["data"]["limit"],
 					"page": res["data"]["page"],
+					"pages": res["data"]["pages"],
 				});
 			}
 		}
@@ -220,6 +228,7 @@ struct CrudPageModel<T> extends BaseModel
 		/* Extends search data */
 		Dict post_data = {
 			"page": model_data.page,
+			"limit": model_data.limit,
 		};
 		if (search_data != null) post_data = post_data.concat(search_data);
 		

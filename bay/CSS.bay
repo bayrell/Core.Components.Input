@@ -1,0 +1,102 @@
+<!--
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2016-2023 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+-->
+
+<class name="Runtime.Web.Crud.CSS">
+
+<use name="Runtime.Web.Crud.Button" />
+<use name="Runtime.Web.Crud.Pagination" />
+
+
+<style global="true">
+.web_form{
+	
+}
+.web_form__row{
+	margin-bottom: 5px;
+}
+.web_form__field_result{
+	color: red;
+	font-size: 12px;
+}
+.web_form__row_label{
+	display: block;
+	font-weight: bold;
+	margin-bottom: 5px;
+}
+.web_form__buttons{
+	text-align: center;
+}
+.web_form__result{
+	text-align: center;
+	margin-top: 10px;
+}
+.web_form__result--hide{
+	display: none;
+}
+.web_form__result--success{
+	color: ${ vars["colors", "success", "background"] };
+}
+.web_form__result--error{
+	color: ${ vars["colors", "error", "background"] };
+}
+
+.web_table{
+	padding: 0; margin: 0;
+	border-spacing: 0;
+	border: 1px solid #ccc;
+}
+.web_table th{
+	background-color: white;
+}
+.web_table td, .web_table th{
+	text-align: center;
+	vertical-align: center;
+	border-bottom: 1px solid #ccc;
+	padding: 10px;
+}
+.web_table tr:last-child td{
+	border-bottom: 0px;
+}
+.web_table tr:nth-child(even){
+	background-color: #f0f0f0;
+}
+.web_table tr:nth-child(odd){
+	background-color: white;
+}
+.web_table__td--row_buttons > %(Button)web_button,
+.web_table__td--row_buttons > a{
+	display: inline-block;
+    vertical-align: middle;
+    margin-left: 2px;
+	margin-right: 2px;
+}
+.web_table__td--row_buttons > %(Button)web_button:first-child,
+.web_table__td--row_buttons > a:first-child{
+    margin-left: 0px;
+}
+.web_table__td--row_buttons > %(Button)web_button:last-child,
+.web_table__td--row_buttons > a:last-child{
+    margin-right: 0px;
+}
+.web_table__row_pagination %(Pagination)pagination{
+	padding: 0; margin: 0;
+}
+</style>
+
+
+</class>

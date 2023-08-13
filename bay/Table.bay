@@ -26,36 +26,6 @@
 <use name="Runtime.Web.Crud.StructBuilder" />
 
 
-<style>
-.web_table{
-	padding: 0; margin: 0;
-	border-spacing: 0;
-	border: 1px solid #ccc;
-}
-.web_table th{
-	background-color: white;
-}
-.web_table td, .web_table th{
-	text-align: center;
-	vertical-align: center;
-	border-bottom: 1px solid #ccc;
-	padding: 10px;
-}
-.web_table tr:last-child td{
-	border-bottom: 0px;
-}
-.web_table tr:nth-child(even){
-	background-color: #f0f0f0;
-}
-.web_table tr:nth-child(odd){
-	background-color: white;
-}
-.web_table__row_pagination %(Pagination)pagination{
-	padding: 0; margin: 0;
-}
-</style>
-
-
 <template name="renderRow" args="int index">
 	%set StructBuilder builder = render_params["builder"];
 	%set Collection items = model["items"];

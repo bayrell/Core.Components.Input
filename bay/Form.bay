@@ -27,41 +27,6 @@
 <use name="Runtime.Web.Events.MouseClickEvent" />
 
 
-<style global="true">
-.web_form{
-	
-}
-.web_form__row{
-	margin-bottom: 5px;
-}
-.web_form__field_result{
-	color: red;
-	font-size: 12px;
-}
-.web_form__row_label{
-	display: block;
-	font-weight: bold;
-	margin-bottom: 5px;
-}
-.web_form__buttons{
-	text-align: center;
-}
-.web_form__result{
-	text-align: center;
-	margin-top: 10px;
-}
-.web_form__result--hide{
-	display: none;
-}
-.web_form__result--success{
-	color: ${ vars["colors", "success", "background"] };
-}
-.web_form__result--error{
-	color: ${ vars["colors", "error", "background"] };
-}
-</style>
-
-
 <template name="renderRow" args="string field_name">
 
 	%set StructBuilder builder = render_params["builder"];

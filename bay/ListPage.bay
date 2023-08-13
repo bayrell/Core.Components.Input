@@ -18,191 +18,146 @@
 
 <class name="Runtime.Web.Crud.ListPage">
 
+<use name="Runtime.BaseStruct" />
 <use name="Runtime.ModelProxy" />
+<use name="Runtime.Web.Layout" />
 <use name="Runtime.Web.LayoutModel" />
 <use name="Runtime.Web.Message" />
 <use name="Runtime.Web.Events.MouseClickEvent" />
 <use name="Runtime.Web.Crud.Button" />
-<use name="Runtime.Web.Crud.FieldInfo" />
 <use name="Runtime.Web.Crud.Form" component="true" />
 <use name="Runtime.Web.Crud.FormEvent" />
+<use name="Runtime.Web.Crud.Pagination" component="true" />
 <use name="Runtime.Web.Crud.RowButtons" component="true" />
 <use name="Runtime.Web.Crud.RowNumber" component="true" />
-<use name="Runtime.Web.Crud.StructBuilder" />
 <use name="Runtime.Web.Crud.Table" component="true" />
 
 
-<template name="renderPageTitle">
+<script>
+
+pure Collection<string> getColumns(Layout layout, BaseStruct model) =>
+[
+];
+
+
+pure Dict<string> getLabels(Layout layout, BaseStruct model) => {
+};
+
+</script>
+
+
+<template name="renderTitle">
 	<h1>{{ model.getPageTitle( model.action ) }}</h1>
 </template>
 
 
-<template name="renderIndex">
-	%set StructBuilder builder = static::getStruct();
-	
-	%render static::renderPageTitle();
-	
-	<Table
-		builder={{ builder }}
-		page={{ model.page }}
-		pages={{ model.pages }}
-		@model=[]
-	>
-	</Table>
-	
+<template name="renderHeaderField" args="string field_name">
 </template>
 
 
-<template name="renderSaveForm">
-	%set StructBuilder builder = static::getStruct();
-	<Form
-		@ref="save_form"
-		@model=["save_form"]
-		@event:FormEvent="onFormEvent"
-		builder={{ builder }}
-		buttons={{ static::getFormButtons(layout) }}
-	/>
-</template>
-
-
-<template name="renderSave">
-	
-	<div class="button_top">
-		<Button type="small" href={{ static::getBackHref(layout) }}>
-			Back
-		</Button>
-	</div>
-	
-	%if (model.save_form.item)
+<template name="renderField" args="int row_number, string field_name, User item">
+	%if (field_name == "row_number")
 	{
-		%render static::renderPageTitle(model.getPageTitle("edit"));
-		%render static::renderSaveForm();
+		{{ model.limit * (model.page - 1) + row_number + 1 }}
 	}
-	
 	%else
 	{
-		<p>Item not found</p>
+		{{ item[field_name] }}
 	}
-	
 </template>
 
 
-<template name="renderDelete">
-	
-	<div class="button_top">
-		<Button type="small" href={{ static::getBackHref(layout) }}>
-			Back
-		</Button>
-	</div>
-	
-	%if (model.delete_form.item)
+<template name="renderHeader">
+	%set Collection<string> columns = static::getColumns(layout, model);
+	%set Dict<string> labels = static::getLabels(layout, model);
+	%if (columns)
 	{
-		<center>
-			%render static::renderPageTitle(model.getPageTitle("delete"));
-			<div class="crud_page__delete_buttons">
-				<Button type="danger"
-					@event:MouseClickEvent="onDeleteClick"
-				>Delete</Button>
-			</div>
-			<div class="web_form__result" class={{ model.delete_form.getErrorClass() }} >
-				{{ model.delete_form.error_message }}
-			</div>
-		</center>
+		<tr>
+			%for (int i=0; i<columns.count(); i++)
+			{
+				%set string field_name = columns[i];
+				%if (labels.has(field_name))
+				{
+					<th class={{ "web_table__th--" ~ field_name }}>
+						{{ labels[field_name] }}
+					</th>
+				}
+				%else
+				{
+					<th class={{ "web_table__th--" ~ field_name }}>
+						%render static::renderHeaderField(field_name);
+					</th>
+				}
+			}
+		</tr>
 	}
-	
-	%else
+</template>
+
+
+<template name="renderRow" args="int row_number">
+	%set Collection<string> columns = static::getColumns(layout, model);
+	%set Collection items = model["items"];
+	%set BaseStruct item = items[row_number];
+	<tr>
+		%for (int i=0; i<columns.count(); i++)
+		{
+			%set string field_name = columns[i];
+			<td class={{ "web_table__td--" ~ field_name }}>
+				%render static::renderField(row_number, field_name, item);
+			</td>
+		}
+	</tr>
+</template>
+
+
+<template name="renderTable">
+	%set Collection items = model["items"];
+	<table class="web_table">
+		%render static::renderHeader();
+		%if (items)
+		{
+			%for (int i=0; i<items.count(); i++)
+			{
+				%render static::renderRow(i);
+			}
+		}
+		%render static::renderPagination();
+	</table>
+</template>
+
+
+<template name="renderPagination">
+	%set int page = model["page"];
+	%set int pages = model["pages"];
+	%if (pages > 1)
 	{
-		<p>Item not found</p>
+		%set Collection<string> columns = static::getColumns(layout, model);
+		<tr>
+			<td colspan={{ columns.count() }} class="web_table__row_pagination">
+				<Pagination
+					page={{ page }}
+					pages={{ pages }}
+				/>
+			</td>
+		</tr>
 	}
-	
+</template>
+
+
+<template name="renderList">
+	%render static::renderTitle();
+	%render static::renderTable();
 </template>
 
 
 <template>
 	<div class="crud_page">
-	
-	%if (model.action == "index")
-	{
-		%render static::renderIndex();
-	}
-	
-	%else if (model.action == "add" or model.action == "edit")
-	{
-		%render static::renderSave();
-	}
-	
-	%else if (model.action == "delete")
-	{
-		%render static::renderDelete();
-	}
-	
+		%render static::renderList();
 	</div>
 </template>
 
 
 <script>
-
-var save_form = null;
-
-
-/**
- * Returns back href
- */
-pure string getBackHref(LayoutModel layout) => "";
-
-
-/**
- * Submit
- */
-async void onFormEvent(Message<FormEvent> msg)
-{
-	/* Register button click */
-	if (msg.event.kind == FormEvent::BUTTON_CLICK and msg.event.button_name == "save")
-	{
-		ModelProxy model = this.modelProxy();
-		
-		/* Set wait message */
-		model.proxy("save_form").commit("setWaitMessage");
-		
-		/* Send save form */
-		await model.commitAsync("callCrudSave");
-	}
-}
-
-
-/**
- * Submit
- */
-async void onDeleteClick(Message<MouseClickEvent> msg)
-{
-	ModelProxy model = this.modelProxy();
-	
-	/* Set wait message */
-	model.proxy("delete_form").commit("setWaitMessage");
-	
-	/* Send delete form */
-	await model.commitAsync("callCrudDelete");
-}
-
-
-/**
- * Returns struct
- */
-pure memorize StructBuilder getStruct() => null;
-
-
-/**
- * Returns struct
- */
-pure Collection getFormButtons(LayoutModel layout) => [
-	{
-		"name": "save",
-		"label": "Save",
-		"type": "primary"
-	},
-];
-
-
 </script>
 
 </class>

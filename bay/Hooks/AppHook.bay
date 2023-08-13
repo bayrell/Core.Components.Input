@@ -40,13 +40,7 @@ class AppHook extends BaseAppHook
 	Dict css_class_names(Dict d)
 	{
 		Vector<string> css_class_names = d["css_class_names"];
-		
-		css_class_names.pushValue("Runtime.Web.Crud.Button");
-		css_class_names.pushValue("Runtime.Web.Crud.Form");
-		css_class_names.pushValue("Runtime.Web.Crud.Input");
-		css_class_names.pushValue("Runtime.Web.Crud.Select");
-		css_class_names.pushValue("Runtime.Web.Crud.TextArea");
-		
+		css_class_names.pushValue("Runtime.Web.Crud.CSS");
 		return d;
 	}
 	

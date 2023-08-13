@@ -15,6 +15,7 @@
 		"CrudPage.bay",
 		"CrudPageModel.bay",
 		"CrudRoute.bay",
+		"CSS.bay",
 		"Form.bay",
 		"FormEvent.bay",
 		"FormModel.bay",
