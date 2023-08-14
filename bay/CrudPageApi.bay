@@ -496,7 +496,19 @@ class CrudPageApi extends BaseApi
 	/**
 	 * Create item
 	 */
-	async Relation createItem() => rtl::newInstance( static::getTableName() );
+	async Relation createItem() => new Relation( static::getTableName() );
+	
+	
+	/**
+	 * Before save
+	 */
+	async void beforeSave(Relation item, Dict update_data){}
+	
+	
+	/**
+	 * After save
+	 */
+	async void afterSave(Relation item, Dict update_data){}
 	
 	
 	/**
@@ -514,10 +526,17 @@ class CrudPageApi extends BaseApi
 				item.set(field_name, update_data[field_name]);
 			}
 			
+			/* Before item */
+			await this.beforeSave(item, update_data);
+			
+			/* Save item */
 			await item.save(conn);
 			
 			/* Refresh item */
 			await item.refresh(conn);
+			
+			/* Before item */
+			await this.afterSave(item, update_data);
 		}
 	}
 	

@@ -56,6 +56,7 @@ class AppHook extends BaseAppHook
 		d <= colors <= default <= border <= "#ccc";
 		d <= colors <= default <= hover_bg <= "white";
 		d <= colors <= default <= hover_text <= "black";
+		d <= colors <= default <= hover_border <= "#ccc";
 		
 		/* primary */
 		d <= colors <= primary <= background <= "#2685b4";
@@ -63,6 +64,7 @@ class AppHook extends BaseAppHook
 		d <= colors <= primary <= border <= "#247eaa";
 		d <= colors <= primary <= hover_bg <= "#247eaa";
 		d <= colors <= primary <= hover_text <= "white";
+		d <= colors <= primary <= hover_border <= "#247eaa";
 		
 		/* danger */
 		d <= colors <= danger <= background <= "#dc4c44";
@@ -70,9 +72,15 @@ class AppHook extends BaseAppHook
 		d <= colors <= danger <= border <= "#dc4c44";
 		d <= colors <= danger <= hover_bg <= "#d14b42";
 		d <= colors <= danger <= hover_text <= "white";
+		d <= colors <= danger <= hover_border <= "#dc4c44";
 		
 		/* success */
-		d <= colors <= success <= background <= "green";
+		d <= colors <= success <= background <= "#090";
+		d <= colors <= success <= text <= "white";
+		d <= colors <= success <= border <= "green";
+		d <= colors <= success <= hover_bg <= "green";
+		d <= colors <= success <= hover_text <= "white";
+		d <= colors <= success <= hover_border <= "green";
 		
 		/* error */
 		d <= colors <= error <= background <= "#dc4c44";
