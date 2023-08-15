@@ -147,6 +147,10 @@ class CrudRoute extends BaseRoute
 		await this.page_model_proxy.commitAsync("callCrudSearch");
 		await this.crudRouteAfter();
 		
+		/* Set title */
+		CrudPageModel model = this.page_model_proxy.data();
+		this.setPageTitle( model.getPageTitle( model.action ) );
+		
 		/* Render page */
 		this.container.render( this.getIndexPageName() );
 	}
@@ -167,6 +171,10 @@ class CrudRoute extends BaseRoute
 		await this.crudRouteBefore();
 		await this.page_model_proxy.commitAsync("callCrudItem");
 		await this.crudRouteAfter();
+		
+		/* Set title */
+		CrudPageModel model = this.page_model_proxy.data();
+		this.setPageTitle( model.getPageTitle( model.action ) );
 		
 		/* Render page */
 		this.container.render( this.getSavePageName() );
@@ -190,6 +198,10 @@ class CrudRoute extends BaseRoute
 		save_form.commit("clearErrorMessage");
 		await this.crudRouteAfter();
 		
+		/* Set title */
+		CrudPageModel model = this.page_model_proxy.data();
+		this.setPageTitle( model.getPageTitle( model.action ) );
+		
 		/* Render page */
 		this.container.render( this.getSavePageName() );
 	}
@@ -211,6 +223,10 @@ class CrudRoute extends BaseRoute
 		await this.page_model_proxy.commitAsync("callCrudItem");
 		delete_form.commit("clearErrorMessage");
 		await this.crudRouteAfter();
+		
+		/* Set title */
+		CrudPageModel model = this.page_model_proxy.data();
+		this.setPageTitle( model.getPageTitle( model.action ) );
 		
 		/* Render page */
 		this.container.render( this.getDeletePageName() );

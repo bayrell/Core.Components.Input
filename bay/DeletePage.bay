@@ -18,14 +18,81 @@
 
 <class name="Runtime.Web.Crud.DeletePage">
 
+<use name="Runtime.ModelProxy" />
+<use name="Runtime.Web.Events.MouseClickEvent" component="true" />
+<use name="Runtime.Web.Crud.Button" component="true" />
+<use name="Runtime.Web.Message" />
+
 
 <template name="renderTop">
 	<h1>{{ model.getPageTitle( model.action ) }}</h1>
 </template>
 
 
-<template>
+<template name="renderContent">
+	<div class="web_form__content">
+		{{ model.getPageTitle("delete_content") }}
+	</div>
 </template>
+
+
+<template name="renderButtons">
+	<div class="web_form__buttons">
+		<Button type="danger" @event:MouseClickEvent="onDelete">Delete</Button>
+	</div>
+</template>
+
+
+<template name="renderForm">
+	%if (model.delete_form.item != null)
+	{
+		<form class="web_form web_form--delete" method="POST"
+			enctype="multipart/form-data" onsubmit="return false;"
+		>
+			%render static::renderContent();
+			%render static::renderButtons();
+			%render static::renderResult();
+		</form>
+	}
+	%else
+	{
+		<div class="web_form__item_not_found">
+			Item not found
+		</div>
+	}
+</template>
+
+
+<template name="renderResult">
+	<div class="web_form__result" class={{ model.delete_form.getErrorClass() }} >
+		{{ model.delete_form.error_message }}
+	</div>
+</template>
+
+
+<template>
+	%render static::renderTop();
+	%render static::renderForm();
+</template>
+
+
+<script>
+
+/**
+ * Delete click
+ */
+async void onDelete(Message<MouseClickEvent> msg)
+{
+	ModelProxy model = this.modelProxy();
+	
+	/* Set wait message */
+	model.proxy("delete_form").commit("setWaitMessage");
+	
+	/* Send delete form */
+	await model.commitAsync("callCrudDelete");
+}
+
+</script>
 
 
 </class>

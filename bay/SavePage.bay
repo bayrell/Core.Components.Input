@@ -73,17 +73,23 @@
 </template>
 
 
-<template name="renderRows">
+<template name="renderContent">
+	<div class="web_form__content">
+	</div>
 </template>
 
 
 <template name="renderButtons">
+	<div class="web_form__buttons">
+	</div>
 </template>
 
 
 <template name="renderForm">
-	<form class="form" method="POST" enctype="multipart/form-data" onsubmit="return false;">
-		%render static::renderRows();
+	<form class="web_form web_form--save" method="POST"
+		enctype="multipart/form-data" onsubmit="return false;"
+	>
+		%render static::renderContent();
 		%render static::renderButtons();
 		%render static::renderResult();
 	</form>

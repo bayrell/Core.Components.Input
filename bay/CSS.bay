@@ -69,8 +69,14 @@
 }
 .web_form{
 }
+.web_form__content{
+	margin-bottom: 20px;
+}
 .web_form__row{
 	margin-bottom: 20px;
+}
+.web_form__row:last-child{
+	margin-bottom: 00px;
 }
 .web_form__field_result{
 	color: red;
@@ -96,6 +102,14 @@
 }
 .web_form__result--error{
 	color: ${ vars["colors", "error", "background"] };
+}
+.web_form--delete .web_form__content{
+	text-align: center;
+	font-size: 18px;
+}
+.web_form__item_not_found{
+	text-align: center;
+	font-size: 16px;
 }
 </style>
 

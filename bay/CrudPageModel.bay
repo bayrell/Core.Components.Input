@@ -93,7 +93,30 @@ struct CrudPageModel<T> extends BaseModel
 	/**
 	 * Returns page title
 	 */
-	string getPageTitle(string action) => "";
+	string getPageTitle(string action)
+	{
+		if (action == "index")
+		{
+			return "List";
+		}
+		else if (action == "add")
+		{
+			return "Add";
+		}
+		else if (action == "edit")
+		{
+			return "Edit";
+		}
+		else if (action == "delete")
+		{
+			return "Delete";
+		}
+		else if (action == "delete_content")
+		{
+			return "Delete item ?";
+		}
+		return "";
+	}
 	
 	
 	/**

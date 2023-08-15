@@ -12,7 +12,6 @@
 		"Rules/ValidateRegEx.bay",
 		"Button.bay",
 		"CrudModel.bay",
-		"CrudPage.bay",
 		"CrudPageModel.bay",
 		"CrudRoute.bay",
 		"CSS.bay",
