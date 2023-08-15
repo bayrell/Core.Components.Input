@@ -38,7 +38,7 @@
 
 <template name="renderButtons">
 	<div class="web_form__buttons">
-		<Button type="danger" @event:MouseClickEvent="onDelete">Delete</Button>
+		<Button type="danger" @event:MouseClickEvent="onDeleteClick">Delete</Button>
 	</div>
 </template>
 
@@ -81,7 +81,7 @@
 /**
  * Delete click
  */
-async void onDelete(Message<MouseClickEvent> msg)
+async void onDeleteClick(Message<MouseClickEvent> msg)
 {
 	ModelProxy model = this.modelProxy();
 	

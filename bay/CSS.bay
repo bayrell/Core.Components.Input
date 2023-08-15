@@ -78,6 +78,10 @@
 .web_form__row:last-child{
 	margin-bottom: 00px;
 }
+.web_table__row_buttons %(Button)web_button{
+	margin-left: 5px;
+	margin-right: 5px;
+}
 .web_form__field_result{
 	color: red;
 	font-size: 12px;

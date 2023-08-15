@@ -86,13 +86,22 @@
 
 
 <template name="renderForm">
-	<form class="web_form web_form--save" method="POST"
-		enctype="multipart/form-data" onsubmit="return false;"
-	>
-		%render static::renderContent();
-		%render static::renderButtons();
-		%render static::renderResult();
-	</form>
+	%if (model.save_form.item != null)
+	{
+		<form class="web_form web_form--save" method="POST"
+			enctype="multipart/form-data" onsubmit="return false;"
+		>
+			%render static::renderContent();
+			%render static::renderButtons();
+			%render static::renderResult();
+		</form>
+	}
+	%else
+	{
+		<div class="web_form__item_not_found">
+			Item not found
+		</div>
+	}
 </template>
 
 
