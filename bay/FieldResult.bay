@@ -39,9 +39,9 @@ class FieldResult extends BaseObject
 	
 	
 	/**
-	 * Append field error
+	 * Add field error
 	 */
-	void appendFieldError(string field_name, string error_message)
+	void addFieldError(string field_name, string error_message)
 	{
 		if (not this.fields.has(field_name))
 		{
@@ -57,7 +57,7 @@ class FieldResult extends BaseObject
 	 */
 	Dict getResult()
 	{
-		ApiException e = new ApiException("Ошибка. Проверьте корректность данных");
+		ApiException e = new ApiException("Error. Check forms data");
 		return {
 			"code": e.getErrorCode(),
 			"message": e.getErrorMessage(),

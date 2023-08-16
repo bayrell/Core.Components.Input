@@ -25,34 +25,28 @@ use Runtime.Web.Crud.Rules.ValidationRule;
 
 struct ValidateRegEx extends ValidationRule
 {
-	string field_name = "";
+	string name = "";
 	string match = "";
 	string message = "";
 	
 	
 	/**
-	 * Validate field_name in item
+	 * Validate item
 	 */
-	bool validate(Dict item)
+	async Dict validateItem(CrudPageApi api, Dict update_data)
 	{
-		var value = item[this.field_name];
-		
+		var value = update_data[this.name];
 		bool is_match = re::match(this.match, value);
-		if (not is_match) return false;
 		
-		return true;
-	}
-	
-	
-	/**
-	 * Returns error message
-	 */
-	list getErrorMessage(Dict item)
-	{
-		return [
-			this.message,
-			this.field_name
-		];
+		if (not is_match)
+		{
+			api.field_result.addFieldError(
+				this.name,
+				this.message
+			);
+		}
+		
+		return update_data;
 	}
 	
 }

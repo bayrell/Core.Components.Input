@@ -18,20 +18,28 @@
 
 namespace Runtime.Web.Crud.Rules;
 
+use Runtime.re;
 use Runtime.BaseStruct;
+use Runtime.Web.Crud.CrudPageApi;
+use Runtime.Web.Crud.Rules.CrudRule;
 
 
-struct ValidationRule extends BaseStruct
+struct Required extends CrudRule
 {
-	
-	/**
-	 * Validate field_name in item
-	 */
-	bool validate(Dict item) => true;
+	string name = "";
 	
 	
 	/**
-	 * Returns error message
+	 * Validate item
 	 */
-	list getErrorMessage(Dict item) => [""];
+	async Dict validateItem(CrudPageApi api, Dict update_data)
+	{
+		var value = update_data[this.name];
+		if (not update_data.has(this.name) or value === "" or value === null)
+		{
+			api.field_result.addFieldError(this.name, "Field is required");
+		}
+		return update_data;
+	}
+	
 }

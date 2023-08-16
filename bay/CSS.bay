@@ -85,6 +85,7 @@
 .web_form__field_result{
 	color: red;
 	font-size: 12px;
+	padding-top: 5px;
 }
 .web_form__row_label{
 	display: block;

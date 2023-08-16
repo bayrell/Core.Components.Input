@@ -19,6 +19,7 @@
 namespace Runtime.Web.Crud.Rules;
 
 use Runtime.BaseStruct;
+use Runtime.ORM.Relation;
 use Runtime.Web.Crud.CrudPageApi;
 
 
@@ -70,5 +71,32 @@ struct CrudRule extends BaseStruct
 	 */
 	async void onDeleteAfter(CrudPageApi api)
 	{
+	}
+	
+	
+	/**
+	 * Validate item
+	 */
+	async Dict validateItem(CrudPageApi api, Dict update_data)
+	{
+		return update_data;
+	}
+	
+	
+	/**
+	 * Before update item
+	 */
+	async void onBeforeUpdateItem(CrudPageApi api, Relation item, Dict update_data)
+	{
+		
+	}
+	
+	
+	/**
+	 * After update item
+	 */
+	async void onAfterUpdateItem(CrudPageApi api, Relation item, Dict update_data)
+	{
+		
 	}
 }

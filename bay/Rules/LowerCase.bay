@@ -19,20 +19,24 @@
 namespace Runtime.Web.Crud.Rules;
 
 use Runtime.BaseStruct;
+use Runtime.Web.Crud.CrudPageApi;
+use Runtime.Web.Crud.Rules.CrudRule;
 
 
-struct LowerCase extends BaseStruct
+struct LowerCase extends CrudRule
 {
-    string field_name = "";
+    string name = "";
     
     
 	/**
-	 * Purify item
+	 * Validate item
 	 */
-	bool purify(Dict item)
+	async Dict validateItem(CrudPageApi api, Dict update_data)
 	{
-		item <= { this.field_name } <= rs::strtolower( item[this.field_name] );
-		return item;
+		var value = update_data[this.name];
+		value = rs::strtolower(value);
+		update_data <= { this.name } <= value;
+		return update_data;
 	}
-    
+	
 }

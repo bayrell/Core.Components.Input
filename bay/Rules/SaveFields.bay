@@ -18,15 +18,33 @@
 
 namespace Runtime.Web.Crud.Rules;
 
+use Runtime.re;
 use Runtime.BaseStruct;
+use Runtime.Web.Crud.CrudPageApi;
+use Runtime.Web.Crud.Rules.CrudRule;
 
 
-struct PurifyRule extends BaseStruct
+struct SaveFields extends CrudRule
 {
-    
+	Collection<string> fields = null;
+	
+	
 	/**
-	 * Purify item
+	 * Validate item
 	 */
-	bool purify(Dict item) => item;
-    
+	async Dict validateItem(CrudPageApi api, Dict update_data)
+	{
+		Map res = new Map;
+		if (this.fields != null)
+		{
+			for (int i=0; i<this.fields.count(); i++)
+			{
+				string field_name = this.fields[i];
+				var value = update_data[field_name];
+				res.setValue(field_name, value);
+			}
+		}
+		return res.toDict();
+	}
+	
 }

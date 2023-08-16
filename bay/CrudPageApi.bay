@@ -500,15 +500,31 @@ class CrudPageApi extends BaseApi
 	
 	
 	/**
-	 * Before save
+	 * Before update item
 	 */
-	async void beforeSave(Relation item, Dict update_data){}
+	async void beforeUpdateItem(Relation item, Dict update_data)
+	{
+		Collection<CrudRule> rules = this.getRules();
+		for (int i=0; i<rules.count(); i++)
+		{
+			CrudRule rule = rules[i];
+			await rule.onBeforeUpdateItem(this, item, update_data);
+		}
+	}
 	
 	
 	/**
-	 * After save
+	 * After update item
 	 */
-	async void afterSave(Relation item, Dict update_data){}
+	async void afterUpdateItem(Relation item, Dict update_data)
+	{
+		Collection<CrudRule> rules = this.getRules();
+		for (int i=0; i<rules.count(); i++)
+		{
+			CrudRule rule = rules[i];
+			await rule.onAfterUpdateItem(this, item, update_data);
+		}
+	}
 	
 	
 	/**
@@ -527,7 +543,8 @@ class CrudPageApi extends BaseApi
 			}
 			
 			/* Before item */
-			await this.beforeSave(item, update_data);
+			await this.beforeUpdateItem(item, update_data);
+			if (this.container.response.error_name != "") return;
 			
 			/* Save item */
 			await item.save(conn);
@@ -536,7 +553,7 @@ class CrudPageApi extends BaseApi
 			await item.refresh(conn);
 			
 			/* Before item */
-			await this.afterSave(item, update_data);
+			await this.afterUpdateItem(item, update_data);
 		}
 	}
 	
@@ -546,6 +563,12 @@ class CrudPageApi extends BaseApi
 	 */
 	async Dict validateItem(Dict update_data)
 	{
+		Collection<CrudRule> rules = this.getRules();
+		for (int i=0; i<rules.count(); i++)
+		{
+			CrudRule rule = rules[i];
+			update_data = await rule.validateItem(this, update_data);
+		}
 		return update_data;
 	}
 	

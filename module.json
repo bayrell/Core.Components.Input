@@ -3,13 +3,6 @@
 	"assets":
 	[
 		"Hooks/AppHook.bay",
-		"Rules/ValidationRule.bay",
-		"Rules/PurifyRule.bay",
-		"Rules/EqualPasswords.bay",
-		"Rules/LowerCase.bay",
-		"Rules/Sanitize.bay",
-		"Rules/ValidateEmail.bay",
-		"Rules/ValidateRegEx.bay",
 		"Button.bay",
 		"CrudModel.bay",
 		"CrudPageModel.bay",

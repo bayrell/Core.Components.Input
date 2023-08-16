@@ -20,31 +20,14 @@ namespace Runtime.Web.Crud.Rules;
 
 use Runtime.re;
 use Runtime.BaseStruct;
+use Runtime.ORM.Relation;
 use Runtime.Web.Crud.CrudPageApi;
 use Runtime.Web.Crud.Rules.CrudRule;
 
 
-struct ValidateEmail extends CrudRule
+struct Unique extends CrudRule
 {
 	string name = "";
-	
-	
-	/**
-	 * Validate field_name in item
-	 */
-	bool validate(string email)
-	{
-		if (email == null) return false;
-		if (not rtl::isString(email)) return false;
-		
-		bool is_match = re::match("^[\w\_\-\.]+@[\w\-\.]+\.[\w]+$", email);
-		if (not is_match) return false;
-		
-		is_match = re::match("\.[\.]+", email);
-		if (is_match) return false;
-		
-		return true;
-	}
 	
 	
 	/**
@@ -52,18 +35,16 @@ struct ValidateEmail extends CrudRule
 	 */
 	async Dict validateItem(CrudPageApi api, Dict update_data)
 	{
-		string email = update_data[this.name];
-		
-		if (not this.validate(email))
-		{
-			api.field_result.addFieldError(
-				this.name,
-				"wrong email"
-			);
-		}
-		
 		return update_data;
 	}
 	
+	
+	/**
+	 * Before update item
+	 */
+	async void onBeforeUpdateItem(CrudPageApi api, Relation item, Dict update_data)
+	{
+		/* Throw error if item is not unique */
+	}
 	
 }

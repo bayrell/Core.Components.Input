@@ -20,22 +20,34 @@ namespace Runtime.Web.Crud.Rules;
 
 use Runtime.re;
 use Runtime.BaseStruct;
+use Runtime.Web.Crud.CrudPageApi;
+use Runtime.Web.Crud.Rules.CrudRule;
 
 
-struct Sanitize extends BaseStruct
+struct Purify extends CrudRule
 {
-    string field_name = "";
-    
-    
+	string name = "";
+	
+	
 	/**
 	 * Purify item
 	 */
-	bool purify(Dict item)
-    {
-        string value = item[this.field_name];
-        value = re::replace("^[a-z0-9_\-\.\@]$", "", value);
-        item <= { this.field_name } <= value;
-        return item;
-    }
-    
+	string purify(string value)
+	{
+		value = re::replace("^[a-z0-9_\-\.\@]$", "", value);
+		return value;
+	}
+	
+	
+	/**
+	 * Validate item
+	 */
+	async Dict validateItem(CrudPageApi api, Dict update_data)
+	{
+		var value = update_data[this.name];
+		value = this.purify(value);
+		update_data <= { this.name } <= value;
+		return update_data;
+	}
+	
 }
