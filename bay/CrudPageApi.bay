@@ -545,6 +545,11 @@ class CrudPageApi extends BaseApi
 			/* Before item */
 			await this.beforeUpdateItem(item, update_data);
 			if (this.container.response.error_name != "") return;
+			if (not this.field_result.isSuccess())
+			{
+				this.container.fail( this.field_result.getResult() );
+				return;
+			}
 			
 			/* Save item */
 			await item.save(conn);

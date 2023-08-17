@@ -57,7 +57,7 @@ class FieldResult extends BaseObject
 	 */
 	Dict getResult()
 	{
-		ApiException e = new ApiException("Error. Check forms data");
+		ApiException e = new ApiException("Form error");
 		return {
 			"code": e.getErrorCode(),
 			"message": e.getErrorMessage(),
