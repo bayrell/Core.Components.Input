@@ -258,7 +258,7 @@ class CrudPageApi extends BaseApi
 			}
 		}
 		
-		return q.filter(query_filter);
+		return q.setFilter(query_filter);
 	}
 	
 	
@@ -432,7 +432,7 @@ class CrudPageApi extends BaseApi
 		/* Build query */
 		Query q = new Query
 			|> .select(table_name)
-			|> .filter(filter)
+			|> .setFilter(filter)
 		;
 		q = this.buildSearchQuery(q);
 		q = q.limit(1);

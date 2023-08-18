@@ -23,6 +23,7 @@ use Runtime.BaseStruct;
 use Runtime.Exceptions.RuntimeException;
 use Runtime.ORM.Connection;
 use Runtime.ORM.Query;
+use Runtime.ORM.QueryFilter;
 use Runtime.ORM.Relation;
 use Runtime.Web.Crud.CrudPageApi;
 use Runtime.Web.Crud.Rules.CrudRule;
@@ -30,7 +31,7 @@ use Runtime.Web.Crud.Rules.CrudRule;
 
 struct Unique extends CrudRule
 {
-	string name = "";
+	Collection<string> keys = null;
 	
 	
 	/**
@@ -52,18 +53,28 @@ struct Unique extends CrudRule
 		
 		Query q = new Query
 			|> .select(api::getTableName())
-			|> .where(this.name, "=", value)
 			|> .limit(1)
 		;
+		
+		if (this.keys)
+		{
+			for (int i=0; i<this.keys.count(); i++)
+			{
+				string field_name = this.keys.get(i);
+				string value = item.get(field_name);
+				q.where(field_name, "=", value);
+			}
+		}
 		
 		if (item != null)
 		{
 			Collection filter = Relation::getPrimaryFilter( api::getTableName(), item.data(), true );
 			for (int i=0; i<filter.count(); i++)
 			{
-				filter <= { i } <= 1 <= "!=";
+				QueryFilter item = filter[i];
+				item.op = "!=";
+				q.addFilter(item);
 			}
-			q.addFilter(filter);
 		}
 		
 		Relation find_item = await conn.fetch(q);
