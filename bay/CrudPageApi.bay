@@ -364,6 +364,7 @@ class CrudPageApi extends BaseApi
 			{
 				"page": this.page,
 				"pages": this.pages,
+				"limit": this.limit,
 				"items": items,
 				"dictionary": [],
 			}

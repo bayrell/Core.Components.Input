@@ -140,7 +140,7 @@ class CrudRoute extends BaseRoute
 	{
 		/* Setup action */
 		this.page_model_proxy.commit("setAction", CrudPageModel::ACTION_INDEX);
-		this.page_model_proxy.commit("setPage", this.container.request.query.get("p", 1));
+		this.page_model_proxy.commit("setPage", this.container.request.query.get("page", 1));
 		
 		/* Search items */
 		await this.crudRouteBefore();

@@ -128,7 +128,7 @@
 pure int getPageUrl(Layout layout, int page)
 {
 	string uri = layout.request_full_uri;
-	return rs::url_get_add(uri, "p", page);
+	return rs::url_get_add(uri, "page", page);
 }
 
 </script>

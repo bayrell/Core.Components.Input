@@ -25,7 +25,6 @@
 <use name="Runtime.Web.Message" />
 <use name="Runtime.Web.Events.MouseClickEvent" />
 <use name="Runtime.Web.Crud.Button" />
-<use name="Runtime.Web.Crud.Form" component="true" />
 <use name="Runtime.Web.Crud.FormEvent" />
 <use name="Runtime.Web.Crud.Pagination" component="true" />
 <use name="Runtime.Web.Crud.RowButtons" component="true" />

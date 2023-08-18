@@ -33,7 +33,7 @@
 }
 .web_table td, .web_table th{
 	text-align: center;
-	vertical-align: center;
+	vertical-align: middle;
 	border-bottom: 1px solid #ccc;
 	padding: 10px;
 }
