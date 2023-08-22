@@ -56,7 +56,8 @@
 		%set Collection<string> field_result = model.save_form.getFieldResult(field_name);
 		%if (field_result.count() == 0)
 		{
-			<div class="web_form__field_result" data-name={{ field_name }} @key="result1"></div>
+			<div class="web_form__field_result web_form__field_result--hide"
+				data-name={{ field_name }} @key="result1"></div>
 		}
 		%else
 		{

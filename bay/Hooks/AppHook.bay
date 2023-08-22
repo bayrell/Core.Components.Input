@@ -101,10 +101,11 @@ class AppHook extends BaseAppHook
 		
 		/* Error */
 		d <= colors <= error <= "#dc4c44";
-		d <= colors <= table_row_hover <= rs::brightness("#fff", -10);
-		d <= colors <= table_row_header <= "#ddd";
+		d <= colors <= table_row_hover <= rs::brightness("#fff", -3);
+		d <= colors <= table_row_header <= "#eee";
 		d <= colors <= table_row_even <= "white";
-		d <= colors <= table_row_odd <= rs::brightness("#fff", -5);
+		d <= colors <= table_row_odd <= "white";
+		/*d <= colors <= table_row_odd <= rs::brightness("#fff", -5);*/
 		
 		return d;
 	}

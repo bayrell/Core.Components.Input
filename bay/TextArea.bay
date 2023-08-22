@@ -30,6 +30,7 @@
 	max-width: 100%;
 	min-height: 400px;
 	padding: 6px 12px;
+	font-size: 1rem;
 	background-color: ${ vars["button", "default", "background"] };
 	border: 1px ${ vars["button", "default", "border"] } solid;
 	outline: transparent;

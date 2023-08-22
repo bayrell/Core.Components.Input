@@ -24,7 +24,8 @@
 
 <style>
 .web_button{
-	padding: 6px 12px;
+	padding: 0.5em 1em;
+	font-size: 1rem;
 	cursor: pointer;
 	background-color: ${ vars["button", "default", "background"] };
 	border: 1px ${ vars["button", "default", "border"] } solid;
@@ -82,12 +83,12 @@
 	color: ${ vars["button", "green", "hover_text"] };
 }
 .web_button.small{
-	padding: 4px 8px;
-	font-size: 0.97em;
+	padding: 0.35rem 0.7rem;
+	font-size: 0.95rem;
 }
 .web_button.large{
-	padding: 10px 20px;
-	font-size: 1.2em;
+	padding: 0.75em 1.5em;
+	font-size: 1.2rem;
 }
 </style>
 
