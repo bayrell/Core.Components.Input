@@ -38,7 +38,7 @@
 
 <template name="renderButtons">
 	<div class="web_form__buttons">
-		<Button type="danger" @event:MouseClickEvent="onDeleteClick">Delete</Button>
+		<Button type="danger large" @event:MouseClickEvent="onDeleteClick">Delete</Button>
 	</div>
 </template>
 

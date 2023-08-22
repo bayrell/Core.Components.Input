@@ -24,71 +24,70 @@
 
 <style>
 .web_button{
-	padding: 10px 20px;
+	padding: 6px 12px;
 	cursor: pointer;
-	background-color: ${ vars["colors", "default", "background"] };
-	border: 1px ${ vars["colors", "default", "border"] } solid;
-	color: ${ vars["colors", "default", "text"] };
+	background-color: ${ vars["button", "default", "background"] };
+	border: 1px ${ vars["button", "default", "border"] } solid;
+	color: ${ vars["button", "default", "text"] };
 	/*box-shadow: 0px 2px 5px 0px rgba(0,0,0,0.25);*/
 	outline: 0;
-	font-size: 1.2em;
 	line-height: normal;
 }
 .web_button:hover{
-	background-color: ${ vars["colors", "default", "hover_bg"] };
-	border: 1px ${ vars["colors", "default", "border"] } solid;
-	color: ${ vars["colors", "default", "hover_text"] };
+	background-color: ${ vars["button", "default", "hover_bg"] };
+	border: 1px ${ vars["button", "default", "border"] } solid;
+	color: ${ vars["button", "default", "hover_text"] };
 }
 .web_button:active{
 	box-shadow: inset 0px 2px 5px 0px rgba(0,0,0,0.25);
 }
 .web_button.primary{
-	background-color: ${ vars["colors", "primary", "background"] };
-	border: 1px ${ vars["colors", "primary", "border"] } solid;
-	color: ${ vars["colors", "primary", "text"] };
+	background-color: ${ vars["button", "primary", "background"] };
+	border: 1px ${ vars["button", "primary", "border"] } solid;
+	color: ${ vars["button", "primary", "text"] };
 }
 .web_button.primary:hover{
-	background-color: ${ vars["colors", "primary", "hover_bg"] };
-	border: 1px ${ vars["colors", "primary", "hover_border"] } solid;
-	color: ${ vars["colors", "primary", "hover_text"] };
+	background-color: ${ vars["button", "primary", "hover_bg"] };
+	border: 1px ${ vars["button", "primary", "hover_border"] } solid;
+	color: ${ vars["button", "primary", "hover_text"] };
 }
 .web_button.danger{
-	background-color: ${ vars["colors", "danger", "background"] };
-	border: 1px ${ vars["colors", "danger", "border"] } solid;
-	color: ${ vars["colors", "danger", "text"] };
+	background-color: ${ vars["button", "danger", "background"] };
+	border: 1px ${ vars["button", "danger", "border"] } solid;
+	color: ${ vars["button", "danger", "text"] };
 }
 .web_button.danger:hover{
-	background-color: ${ vars["colors", "danger", "hover_bg"] };
-	border: 1px ${ vars["colors", "danger", "hover_border"] } solid;
-	color: ${ vars["colors", "danger", "hover_text"] };
+	background-color: ${ vars["button", "danger", "hover_bg"] };
+	border: 1px ${ vars["button", "danger", "hover_border"] } solid;
+	color: ${ vars["button", "danger", "hover_text"] };
 }
 .web_button.success{
-	background-color: ${ vars["colors", "success", "background"] };
-	border: 1px ${ vars["colors", "success", "border"] } solid;
-	color: ${ vars["colors", "success", "text"] };
+	background-color: ${ vars["button", "success", "background"] };
+	border: 1px ${ vars["button", "success", "border"] } solid;
+	color: ${ vars["button", "success", "text"] };
 }
 .web_button.success:hover{
-	background-color: ${ vars["colors", "success", "hover_bg"] };
-	border: 1px ${ vars["colors", "success", "hover_border"] } solid;
-	color: ${ vars["colors", "success", "hover_text"] };
+	background-color: ${ vars["button", "success", "hover_bg"] };
+	border: 1px ${ vars["button", "success", "hover_border"] } solid;
+	color: ${ vars["button", "success", "hover_text"] };
 }
 .web_button.green{
-	background-color: ${ vars["colors", "green", "background"] };
-	border: 1px ${ vars["colors", "green", "border"] } solid;
-	color: ${ vars["colors", "green", "text"] };
+	background-color: ${ vars["button", "green", "background"] };
+	border: 1px ${ vars["button", "green", "border"] } solid;
+	color: ${ vars["button", "green", "text"] };
 }
 .web_button.green:hover{
-	background-color: ${ vars["colors", "green", "hover_bg"] };
-	border: 1px ${ vars["colors", "green", "hover_border"] } solid;
-	color: ${ vars["colors", "green", "hover_text"] };
+	background-color: ${ vars["button", "green", "hover_bg"] };
+	border: 1px ${ vars["button", "green", "hover_border"] } solid;
+	color: ${ vars["button", "green", "hover_text"] };
 }
 .web_button.small{
 	padding: 4px 8px;
 	font-size: 0.97em;
 }
-.web_button.middle{
-	padding: 6px 12px;
-	font-size: 0.97em;
+.web_button.large{
+	padding: 10px 20px;
+	font-size: 1.2em;
 }
 </style>
 

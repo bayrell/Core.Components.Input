@@ -16,7 +16,7 @@
  *  limitations under the License.
 -->
 
-<class name="Runtime.Web.Crud.ListPage">
+<class name="Runtime.Web.Crud.TablePage">
 
 <use name="Runtime.BaseStruct" />
 <use name="Runtime.ModelProxy" />
@@ -71,7 +71,7 @@ pure Dict<string> getLabels(Layout layout, BaseStruct model) => {
 	%set Dict<string> labels = static::getLabels(layout, model);
 	%if (columns)
 	{
-		<tr>
+		<tr class="web_table__row_header">
 			%for (int i=0; i<columns.count(); i++)
 			{
 				%set string field_name = columns[i];
@@ -97,7 +97,7 @@ pure Dict<string> getLabels(Layout layout, BaseStruct model) => {
 	%set Collection<string> columns = static::getColumns(layout, model);
 	%set Collection items = model["items"];
 	%set BaseStruct item = items[row_number];
-	<tr>
+	<tr class="web_table__row_item">
 		%for (int i=0; i<columns.count(); i++)
 		{
 			%set string field_name = columns[i];

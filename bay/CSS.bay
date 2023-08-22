@@ -28,9 +28,6 @@
 	border-spacing: 0;
 	border: 1px solid #ccc;
 }
-.web_table th{
-	background-color: white;
-}
 .web_table td, .web_table th{
 	text-align: center;
 	vertical-align: middle;
@@ -40,11 +37,17 @@
 .web_table tr:last-child td{
 	border-bottom: 0px;
 }
-.web_table tr:nth-child(even){
-	background-color: #f0f0f0;
-}
 .web_table tr:nth-child(odd){
-	background-color: white;
+	background-color: ${ vars["colors", "table_row_odd"] };
+}
+.web_table tr:nth-child(even){
+	background-color: ${ vars["colors", "table_row_even"] };
+}
+.web_table tr.web_table__row_header{
+	background-color: ${ vars["colors", "table_row_header"] };
+}
+.web_table tr.web_table__row_item:hover{
+	/*background-color: ${ vars["colors", "table_row_hover"] };*/
 }
 .web_table__td--row_buttons > %(Button)web_button,
 .web_table__td--row_buttons > a{
@@ -76,7 +79,7 @@
 	margin-bottom: 20px;
 }
 .web_form__row:last-child{
-	margin-bottom: 00px;
+	margin-bottom: 0px;
 }
 .web_table__row_buttons %(Button)web_button{
 	margin-left: 5px;
@@ -103,10 +106,10 @@
 	display: none;
 }
 .web_form__result--success{
-	color: ${ vars["colors", "success", "background"] };
+	color: ${ vars["button", "success", "background"] };
 }
 .web_form__result--error{
-	color: ${ vars["colors", "error", "background"] };
+	color: ${ vars["colors", "error"] };
 }
 .web_form--delete .web_form__content{
 	text-align: center;

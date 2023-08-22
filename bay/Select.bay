@@ -29,9 +29,9 @@
 .select{
 	width: 100%;
 	max-width: 100%;
-	padding: 5px 8px;
-	background-color: ${ vars["colors", "default", "background"] };
-	border: 1px ${ vars["colors", "default", "border"] } solid;
+	padding: 8px 10px;
+	background-color: ${ vars["button", "default", "background"] };
+	border: 1px ${ vars["button", "default", "border"] } solid;
 	outline: transparent;
 	line-height: normal;
 }

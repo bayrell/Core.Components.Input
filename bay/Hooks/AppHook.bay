@@ -19,6 +19,7 @@
 namespace Runtime.Web.Crud.Hooks;
 
 use Runtime.Web.AppHook as BaseAppHook;
+use Runtime.Web.Component;
 
 
 class AppHook extends BaseAppHook
@@ -50,40 +51,60 @@ class AppHook extends BaseAppHook
 	 */
 	Dict css_vars(Dict d)
 	{
-		/* default */
-		d <= colors <= default <= background <= "white";
-		d <= colors <= default <= text <= "black";
-		d <= colors <= default <= border <= "#ccc";
-		d <= colors <= default <= hover_bg <= "white";
-		d <= colors <= default <= hover_text <= "black";
-		d <= colors <= default <= hover_border <= "#ccc";
+		/* Default */
+		d <= button <= default <= background <= "#fff";
+		d <= button <= default <= text <= "black";
+		d <= button <= default <= border <= "#ccc";
+		d <= button <= default <= hover_bg <= rs::brightness("#fff", -5);
+		d <= button <= default <= hover_text <= "black";
+		d <= button <= default <= hover_border <= rs::brightness("#ccc", -5);
 		
-		/* primary */
-		d <= colors <= primary <= background <= "#2685b4";
-		d <= colors <= primary <= text <= "white";
-		d <= colors <= primary <= border <= "#247eaa";
-		d <= colors <= primary <= hover_bg <= "#247eaa";
-		d <= colors <= primary <= hover_text <= "white";
-		d <= colors <= primary <= hover_border <= "#247eaa";
+		/* Primary */
+		d <= button <= primary <= background <= "#2685b4";
+		d <= button <= primary <= text <= "white";
+		d <= button <= primary <= border <= "#247eaa";
+		d <= button <= primary <= hover_bg <= rs::brightness("#2685b4", -10);
+		d <= button <= primary <= hover_text <= "white";
+		d <= button <= primary <= hover_border <= rs::brightness("#247eaa", -10);
 		
-		/* danger */
-		d <= colors <= danger <= background <= "#dc4c44";
-		d <= colors <= danger <= text <= "white";
-		d <= colors <= danger <= border <= "#dc4c44";
-		d <= colors <= danger <= hover_bg <= "#d14b42";
-		d <= colors <= danger <= hover_text <= "white";
-		d <= colors <= danger <= hover_border <= "#dc4c44";
+		/* Secondary */
+		d <= button <= secondary <= background <= "#222";
+		d <= button <= secondary <= text <= "white";
+		d <= button <= secondary <= border <= "#222";
+		d <= button <= secondary <= hover_bg <= rs::brightness("#222", -10);
+		d <= button <= secondary <= hover_text <= "white";
+		d <= button <= secondary <= hover_border <= rs::brightness("#222", -10);
 		
-		/* success */
-		d <= colors <= success <= background <= "#090";
-		d <= colors <= success <= text <= "white";
-		d <= colors <= success <= border <= "green";
-		d <= colors <= success <= hover_bg <= "green";
-		d <= colors <= success <= hover_text <= "white";
-		d <= colors <= success <= hover_border <= "green";
+		/* Success */
+		d <= button <= success <= background <= "#090";
+		d <= button <= success <= text <= "white";
+		d <= button <= success <= border <= "#008800";
+		d <= button <= success <= hover_bg <= rs::brightness("#090", -10);
+		d <= button <= success <= hover_text <= "white";
+		d <= button <= success <= hover_border <= rs::brightness("#008800", -10);
 		
-		/* error */
-		d <= colors <= error <= background <= "#dc4c44";
+		/* Danger */
+		d <= button <= danger <= background <= "#dc4c44";
+		d <= button <= danger <= text <= "white";
+		d <= button <= danger <= border <= "#dc4c44";
+		d <= button <= danger <= hover_bg <= rs::brightness("#dc4c44", -10);
+		d <= button <= danger <= hover_text <= "white";
+		d <= button <= danger <= hover_border <= rs::brightness("#dc4c44", -10);
+		
+		/* Warning */
+		d <= button <= warning <= background <= "#ffff00";
+		d <= button <= warning <= text <= "black";
+		d <= button <= warning <= border <= "#ffff00";
+		d <= button <= warning <= hover_bg <= rs::brightness("#ffff00", -10);
+		d <= button <= warning <= hover_text <= "black";
+		d <= button <= warning <= hover_border <= rs::brightness("#ffff00", -10);
+		
+		/* Error */
+		d <= colors <= error <= "#dc4c44";
+		d <= colors <= table_row_hover <= rs::brightness("#fff", -10);
+		d <= colors <= table_row_header <= "#ddd";
+		d <= colors <= table_row_even <= "white";
+		d <= colors <= table_row_odd <= rs::brightness("#fff", -5);
 		
 		return d;
 	}

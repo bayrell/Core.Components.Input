@@ -81,6 +81,7 @@
 
 <template name="renderButtons">
 	<div class="web_form__buttons">
+		<Button type="primary large" @event:MouseClickEvent="onSaveClick">Save</Button>
 	</div>
 </template>
 
