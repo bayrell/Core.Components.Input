@@ -24,6 +24,7 @@
 <use name="Runtime.Web.Events.MouseClickEvent" />
 <use name="Runtime.Web.Crud.Button" />
 <use name="Runtime.Web.Crud.FieldInfo" />
+<use name="Runtime.Web.Crud.FieldInfo" />
 <use name="Runtime.Web.Crud.Form" component="true" />
 <use name="Runtime.Web.Crud.FormEvent" />
 <use name="Runtime.Web.Crud.RowButtons" component="true" />
@@ -37,18 +38,17 @@
 </template>
 
 
-<template name="renderRow" args="Dict params">
+<template name="renderRow" args="string class_name, FieldInfo params">
 	
-	%set string class_name = params["class_name"];
-	%set string field_name = params["field_name"];
-	%set Dict component_settings = params["component_settings"];
+	%set string field_name = params.field_name;
+	%set Dict component_settings = params.component_settings;
 	
 	<div class="web_form__row" @key={{ field_name }}>
 		
-		<label class="web_form__row_label">{{ params["label"] }}</label>
+		<label class="web_form__row_label">{{ params.label }}</label>
 		
 		<{class_name}
-			name={{ params["@key"] }}
+			name={{ field_name }}
 			@model={{ ["save_form", "item"].concat( field_name ) }}
 			...component_settings
 		/>

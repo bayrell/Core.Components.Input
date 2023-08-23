@@ -9,6 +9,7 @@
 		"CrudRoute.bay",
 		"CSS.bay",
 		"DeletePage.bay",
+		"FieldInfo.bay",
 		"FormEvent.bay",
 		"FormModel.bay",
 		"Helper.bay",
