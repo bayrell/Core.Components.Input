@@ -34,4 +34,15 @@ struct FieldInfo extends BaseStruct
     
     /* Options for select */
 	Collection<Dict> options = null;
+	
+	
+	/**
+	 * Returns options label
+	 */
+	string getOptionLabel(var value)
+	{
+		Dict option = this.options.findItem( lib::equalAttr("value", value) );
+		if (option == null) return "";
+		return option["label"];
+	}
 }

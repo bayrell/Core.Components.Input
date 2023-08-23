@@ -41,6 +41,7 @@
 <template name="renderRow" args="string class_name, FieldInfo params">
 	
 	%set string field_name = params.field_name;
+	%set Collection options = params.options;
 	%set Dict component_settings = params.component_settings;
 	
 	<div class="web_form__row" @key={{ field_name }}>
@@ -49,6 +50,7 @@
 		
 		<{class_name}
 			name={{ field_name }}
+			options={{ options }}
 			@model={{ ["save_form", "item"].concat( field_name ) }}
 			...component_settings
 		/>
