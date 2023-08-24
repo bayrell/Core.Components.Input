@@ -45,10 +45,10 @@ class CrudPageApi extends BaseApi
 	string action = "";
 	int page = 0;
 	int pages = 0;
-	Collection items = null;
-	Collection rows = null;
+	RelationArray items = null;
 	Relation item = null;
 	FieldResult field_result = new FieldResult();
+	Map<RelationArray> dictionary = new Map;
 	
 	
 	/**
@@ -286,7 +286,6 @@ class CrudPageApi extends BaseApi
 		int page = res[0];
 		int limit = res[1];
 		int pages = 0;
-		int rows = 0;
 		
 		if (this.action == "actionSearchOne")
 		{
@@ -334,7 +333,6 @@ class CrudPageApi extends BaseApi
 		this.page = page;
 		this.pages = pages;
 		this.items = items;
-		this.rows = rows;
 	}
 	
 	
@@ -366,7 +364,7 @@ class CrudPageApi extends BaseApi
 				"pages": this.pages,
 				"limit": this.limit,
 				"items": items,
-				"dictionary": [],
+				"dictionary": {},
 			}
 		});
 		
@@ -409,7 +407,7 @@ class CrudPageApi extends BaseApi
 			{
 				"pk": item_pk,
 				"item": model,
-				"dictionary": [],
+				"dictionary": {},
 			}
 		});
 		
@@ -474,6 +472,7 @@ class CrudPageApi extends BaseApi
 			this.container.fail( new ApiException("Item not found") );
 			return ;
 		}
+		this.items = [ this.item ];
 		
 		/* Transform items */
 		BaseStruct model = this.item.toModel( static::getModelName() );
@@ -485,7 +484,7 @@ class CrudPageApi extends BaseApi
 			{
 				"pk": item_pk,
 				"item": model,
-				"dictionary": [],
+				"dictionary": {},
 			}
 		});
 		
@@ -635,7 +634,7 @@ class CrudPageApi extends BaseApi
 			{
 				"pk": item_pk,
 				"item": model,
-				"dictionary": [],
+				"dictionary": {},
 			}
 		});
 		
@@ -691,7 +690,7 @@ class CrudPageApi extends BaseApi
 			{
 				"pk": item_pk,
 				"item": model,
-				"dictionary": [],
+				"dictionary": {},
 			}
 		});
 		

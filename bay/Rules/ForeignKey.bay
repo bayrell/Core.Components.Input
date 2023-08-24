@@ -20,107 +20,66 @@ namespace Runtime.Web.Crud.Rules;
 
 use Runtime.lib;
 use Runtime.BaseStruct;
-use Runtime.ORM.Cursor;
-use Runtime.ORM.Database;
-use Runtime.ORM.Query;
+use Runtime.ORM.Connection;
+use Runtime.ORM.Relation;
+use Runtime.ORM.RelationArray;
+use Runtime.ORM.Annotations.ForeignKey as ForeignKeyORM;
 use Runtime.Web.ApiResult;
-use Runtime.Web.RenderContainer;
-use Runtime.Web.Crud.Rules.CrudRule;
 use Runtime.Web.Crud.CrudPageApi;
+use Runtime.Web.Crud.Rules.CrudRule;
 
 
 struct ForeignKey extends CrudRule
 {
-	string api_name = "";
-	string primary_key = "";
-	string foreign_key = "";
-	fn checkSearch = null;
-	fn getItems = null;
-	fn mapItem = null;
+	string name = "";
+	string dictionary_name = "";
+	string model_name = "";
 	
 	
 	/**
 	 * Search after
 	 */
-	void onSearchAfter(CrudPageApi api)
+	async void onSearchAfter(CrudPageApi api)
 	{
-		ForeignKey rule = this;
-		ApiResult api_result = api.container.response;
-		Collection<Dict> items = [];
-		
-		string action = api.action;
+		if (this.name == "") return ;
+		if (this.dictionary_name == "") return ;
 		
 		/* Check action */
-		if (action != "actionSearch" and action != "actionItem")
+		if (api.action != "actionSearch" and api.action != "actionItem")
 		{
 			return;
 		}
-		if (action == "actionSearch") items = api_result.data["items"];
-		if (action == "actionItem")
+		
+		ForeignKeyORM foreign_key = Relation::getForeignKey(this.name);
+		if (foreign_key == null) return;
+		
+		Connection conn = api.getDatabaseConnection();
+		RelationArray result = null;
+		
+		/* Search items */
+		if (api.action == "actionSearch")
 		{
-			Dict item = api_result.data["item"];
-			if (item == null)
-			{
-				return;
-			}
-			items = [ item ];
+			result = await foreign_key.resolve(conn, api.items);
+			api.dictionary.setValue(this.dictionary_name, result);
 		}
 		
-		/* Check search rule */
-		if (rule.checkSearch)
+		/* Get item */
+		else if (api.action == "actionItem")
 		{
-			fn checkSearch = rule.checkSearch;
-			if ( not checkSearch(rule) )
-			{
-				return;
-			}
+			result = await foreign_key.resolveAll(conn);
+			api.dictionary.setValue(this.dictionary_name, result);
 		}
 		
-		fn getItems = rule.getItems;
-		fn mapItem = rule.mapItem;
-		
-		/* Get primary keys */
-		Collection<int> pk_ids = items.map( lib::attr(rule.foreign_key) );
-		
-		/* Load rows from database */
-		Dict rows = await getItems(api, rule, pk_ids);
-		
-		/* Map items */
-		items = items.map(
-			Dict (Dict item) use (api, rule, rows, mapItem)
-			{
-				Map d = new Map();
-				Vector res = new Vector();
-				d.setValue("res", res);
+		/* Transform items */
+		Collection items = null;
+		if (result and this.model_name != "")
+		{
+			items = result.toModel(this.model_name);
 			
-				for (int j=0; j<rows.count(); j++)
-				{
-					Dict row = rows[j];
-					if (item.get(rule.foreign_key) == row.get(rule.primary_key))
-					{
-						res.pushValue( row );
-					}
-				}
-				
-				if (mapItem == null)
-				{
-					if (rule.api_name)
-					{
-						item <= { rule.api_name } <= res.toCollection();
-					}
-				}
-				else
-				{
-					item = mapItem(api, rule, item, d);
-				}
-				
-				return item;
-			}
-		);
-		
-		if (action == "actionSearch") api_result <= data <= items <= items;
-		if (action == "actionItem") api_result <= data <= item <= items[0];
-		
-		api.container.response = api_result;
+			/* Set response */
+			ApiResult api_result = api.container.response;
+			api_result <= data <= dictionary <= { this.dictionary_name } <= items;
+			api.container.response = api_result;
+		}
 	}
 }

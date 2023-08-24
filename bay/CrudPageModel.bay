@@ -215,6 +215,7 @@ struct CrudPageModel<T> extends BaseModel
 					"limit": res["data"]["limit"],
 					"page": res["data"]["page"],
 					"pages": res["data"]["pages"],
+					"dictionary": res["data"]["dictionary"],
 				});
 			}
 		}
@@ -222,16 +223,19 @@ struct CrudPageModel<T> extends BaseModel
 		if (event == "crudSearchOne" or event == "crudItem")
 		{
 			model <= { model_name } <= form_model.setApiResult(event, res);
+			model <= dictionary <= res["data"]["dictionary"];
 		}
 		
 		else if (event == "crudSave")
 		{
 			model <= { model_name } <= form_model.setApiResult(event, res);
+			model <= dictionary <= res["data"]["dictionary"];
 		}
 		
 		else if (event == "crudDelete")
 		{
 			model <= { model_name } <= form_model.setApiResult(event, res);
+			model <= dictionary <= res["data"]["dictionary"];
 		}
 		
 		model <= error_message <= res.getErrorMessage();
