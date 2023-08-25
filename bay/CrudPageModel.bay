@@ -31,6 +31,7 @@ use Runtime.Web.ApiResult;
 use Runtime.Web.BaseModel;
 use Runtime.Web.Bus;
 use Runtime.Web.RenderContainer;
+use Runtime.Web.Crud.DialogModel;
 use Runtime.Web.Crud.FormModel;
 use Runtime.Web.Crud.StructBuilder;
 use Runtime.Web.Crud.Rules.CrudRule;
@@ -54,8 +55,16 @@ struct CrudPageModel<T> extends BaseModel
 	Dict item_data = null;
 	Dict search_data = null;
 	FormModel item_form = new FormModel;
-	FormModel save_form = new FormModel;
-	FormModel delete_form = new FormModel;
+	DialogModel save_dialog = new DialogModel{
+		"auto_hide": false,
+		"is_modal": true,
+		"style": DialogModel::STYLE_CONTENT,
+	};
+	DialogModel delete_dialog = new DialogModel{
+		"auto_hide": false,
+		"is_modal": true,
+		"style": DialogModel::STYLE_CONTENT,	
+	};
 	int error_code = 0;
 	string error_message = "";
 	string search = "";
@@ -121,42 +130,6 @@ struct CrudPageModel<T> extends BaseModel
 	
 	
 	/**
-	 * Returns form model
-	 */
-	string getFormModelName()
-	{
-		if (this.action == static::ACTION_ADD) return "save_form";
-		else if (this.action == static::ACTION_EDIT) return "save_form";
-		else if (this.action == static::ACTION_DELETE) return "delete_form";
-		else if (this.action == static::ACTION_ITEM) return "item_form";
-		return null;
-	}
-	
-	
-	/**
-	 * Returns find form model
-	 */
-	static ModelProxy getFormModelProxy(ModelProxy model)
-	{
-		CrudPageModel page_model = model.data();
-		string model_name = page_model.getFormModelName();
-		if (model_name) return model.proxy(model_name);
-		return null;
-	}
-	
-	
-	/**
-	 * Returns form model
-	 */
-	Dict getFormModel()
-	{
-		string model_name = this.getFormModelName();
-		if (model_name) return this[model_name];
-		return null;
-	}
-	
-		
-	/**
 	 * Set CRUD action
 	 */
 	CrudPageModel setAction(string action = "") => this.clone({ "action": action });
@@ -187,6 +160,18 @@ struct CrudPageModel<T> extends BaseModel
 	
 	
 	/**
+	 * Clear item
+	 */
+	CrudPageModel clearItem()
+	{
+		string class_name = static::getModelName();
+		return this.copy{
+			"item_form": this.item_form.setItem( rtl::newInstance(class_name) )
+		}
+	}
+	
+	
+	/**
 	 * Event
 	 */
 	async static Dict event(ModelProxy model, string event, Dict data)
@@ -203,8 +188,6 @@ struct CrudPageModel<T> extends BaseModel
 		if (res == null) return this;
 		
 		CrudPageModel model = this;
-		string model_name = this.getFormModelName();
-		FormModel form_model = this[model_name];
 		
 		if (res.isSuccess())
 		{
@@ -222,20 +205,18 @@ struct CrudPageModel<T> extends BaseModel
 		
 		if (event == "crudSearchOne" or event == "crudItem")
 		{
-			model <= { model_name } <= form_model.setApiResult(event, res);
+			model <= item_form <= model.item_form.setApiResult(event, res);
 			model <= dictionary <= res["data"]["dictionary"];
 		}
 		
 		else if (event == "crudSave")
 		{
-			model <= { model_name } <= form_model.setApiResult(event, res);
-			model <= dictionary <= res["data"]["dictionary"];
+			model <= item_form <= model.item_form.setApiResult(event, res);
 		}
 		
 		else if (event == "crudDelete")
 		{
-			model <= { model_name } <= form_model.setApiResult(event, res);
-			model <= dictionary <= res["data"]["dictionary"];
+			model <= item_form <= model.item_form.setApiResult(event, res);
 		}
 		
 		model <= error_message <= res.getErrorMessage();
@@ -320,7 +301,7 @@ struct CrudPageModel<T> extends BaseModel
 		return res;
 	}
 	
-	
+		
 	/**
 	 * Find item
 	 */
@@ -329,23 +310,18 @@ struct CrudPageModel<T> extends BaseModel
 		CrudPageModel model_data = model.data();
 		Dict item_data = model_data.item_data;
 		
-		ModelProxy model_item = static::getFormModelProxy(model);
-		FormModel model_item_data = model_item.data();
+		ModelProxy item_form = model.proxy("item_form");
+		FormModel item_form_data = item_form.data();
 		
-		Dict pk = model_item_data.getPrimaryKey();
+		Dict pk = item_form_data.getPrimaryKey();
 		if (pk == null)
 		{
 			await static::event(model, "crudItemBefore", {
 				"pk": null,
 			});
-		
-			/* Set api result */
-			ModelProxy model_item = static::getFormModelProxy(model);
-			if (model_item)
-			{
-				string class_name = static::getModelName();
-				model_item.setAttr("item", rtl::newInstance(class_name));
-			}
+			
+			/* Set clear item */
+			model.commit("clearItem");
 			
 			await static::event(model, "crudItemAfter", {
 				"pk": null,
@@ -392,13 +368,13 @@ struct CrudPageModel<T> extends BaseModel
 	 */
 	async static ApiResult callCrudSave(ModelProxy model)
 	{
-		ModelProxy model_item = static::getFormModelProxy(model);
-		FormModel model_item_data = model_item.data();
+		ModelProxy item_form = model.proxy("item_form");
+		FormModel item_form_data = item_form.data();
 		
 		/* Get post data */
 		Dict post_data = {
-			"pk": model_item_data.getPrimaryKey(),
-			"item": model_item_data.item.toDict(),
+			"pk": item_form_data.getPrimaryKey(),
+			"item": item_form_data.item.toDict(),
 		};
 		
 		/* Process before */
@@ -417,7 +393,7 @@ struct CrudPageModel<T> extends BaseModel
 		/* Set pk */
 		if (res.isSuccess())
 		{
-			if (model.data().save_form.item_pk != null)
+			if (model.data().item_form.item_pk != null)
 			{
 				model.setAttr("action", "edit");
 			}
@@ -442,12 +418,12 @@ struct CrudPageModel<T> extends BaseModel
 	 */
 	async static ApiResult callCrudDelete(ModelProxy model)
 	{
-		ModelProxy model_item = static::getFormModelProxy(model);
-		FormModel model_item_data = model_item.data();
+		ModelProxy item_form = model.proxy("item_form");
+		FormModel item_form_data = item_form.data();
 		
 		/* Get post data */
 		Dict post_data = {
-			"pk": model_item_data.getPrimaryKey(),
+			"pk": item_form_data.getPrimaryKey(),
 		};
 		
 		/* Process before */

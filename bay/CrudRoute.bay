@@ -64,21 +64,13 @@ class CrudRoute extends BaseRoute
 	
 	
 	/**
-	 * Returns id name for query
-	 */
-	pure string getQueryId() => "id";
-	
-	
-	/**
-	 * Returns id field name
-	 */
-	pure string getFieldNameId() => "id";
-	
-	
-	/**
 	 * Returns id location
 	 */
-	pure string getLocationId() => "matches";
+	Dict getPrimaryKey() =>
+		this.container.route.matches.has("id") ? {
+			"id": this.container.route.matches.get("id")
+		} : null
+	;
 	
 	
 	/**
@@ -90,11 +82,11 @@ class CrudRoute extends BaseRoute
 		string action = page_model_data.action;
 		
 		/* Get form model */
-		ModelProxy<FormModel> model_item = CrudPageModel::getFormModelProxy(this.page_model_proxy);
+		ModelProxy<FormModel> item_form = this.page_model_proxy.proxy("item_form");
 		
 		if (action == CrudPageModel::ACTION_ADD)
 		{
-			model_item.commit("setPrimaryKey", null);
+			item_form.commit("setPrimaryKey", null);
 		}
 		else if (
 			action == CrudPageModel::ACTION_EDIT or
@@ -102,25 +94,8 @@ class CrudRoute extends BaseRoute
 			action == CrudPageModel::ACTION_ITEM
 		)
 		{
-			string name_id = static::getFieldNameId();
-			string query_id = static::getQueryId();
-			string location_id = static::getLocationId();
-			
-			model_item.commit("setPrimaryKey", null);
-			if (location_id == "matches" and this.container.route.matches.has( query_id ))
-			{
-				int value_id = this.container.route.matches.get( query_id );
-				Map m = new Map;
-				m.setValue(name_id, value_id);
-				model_item.commit("setPrimaryKey", m);
-			}
-			else if (location_id == "query" and this.container.request.query.has( query_id ))
-			{
-				int value_id = this.container.request.query.get( query_id );
-				Map m = new Map;
-				m.setValue(name_id, value_id);
-				model_item.commit("setPrimaryKey", m);
-			}
+			Dict pk = this.getPrimaryKey();
+			item_form.commit("setPrimaryKey", pk);
 		}
 	}
 	
@@ -165,7 +140,7 @@ class CrudRoute extends BaseRoute
 		this.page_model_proxy.commit("setAction", CrudPageModel::ACTION_ADD);
 		
 		/* Create save form */
-		ModelProxy<FormModel> save_form = CrudPageModel::getFormModelProxy(this.page_model_proxy);
+		ModelProxy<FormModel> save_form = this.page_model_proxy.proxy("item_form");
 		
 		/* Call api */
 		await this.crudRouteBefore();
@@ -190,7 +165,7 @@ class CrudRoute extends BaseRoute
 		this.page_model_proxy.commit("setAction", CrudPageModel::ACTION_EDIT);
 		
 		/* Create save form */
-		ModelProxy<FormModel> save_form = CrudPageModel::getFormModelProxy(this.page_model_proxy);
+		ModelProxy<FormModel> save_form = this.page_model_proxy.proxy("item_form");
 		
 		/* Call api */
 		await this.crudRouteBefore();
@@ -216,7 +191,7 @@ class CrudRoute extends BaseRoute
 		this.page_model_proxy.commit("setAction", CrudPageModel::ACTION_DELETE);
 		
 		/* Create delete form */
-		ModelProxy delete_form = CrudPageModel::getFormModelProxy(this.page_model_proxy);
+		ModelProxy delete_form = this.page_model_proxy.proxy("item_form");
 		
 		/* Call api */
 		await this.crudRouteBefore();

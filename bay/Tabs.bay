@@ -63,37 +63,50 @@
 %tabs__content{
 	margin-top: 20px;
 }
+%tabs--style1 %tabs__header_item{
+	z-index: 2;
+	position: relative;
+	top: 1px;
+}
 </style>
 
 
 <template>
 
 %set Collection tabs = render_params["tabs"];
-%set Collection labels = render_params["labels"];
-%set Collection href = render_params["href"];
+%set Collection<string> class_style = render_params["style"];
+%if (class_style != null)
+{
+	%set class_style = rs::join(" ", class_style.map( string (string item) => "tabs--" ~ item ));
+}
 
-<div class="tabs">
+<div class="tabs" class={{ class_style ? class_style : "" }}>
 	
 	<div class="tabs__header">
 	%for (int i=0; i<tabs.count(); i++){
-		%set bool is_active = (model != null and tabs[i] == model.active);
 		
-		%if (href == null)
+		%set Dict tab = tabs[i];
+		%set string tab_name = tab["name"];
+		%set string tab_label = tab["label"];
+		%set string tab_href = tab["href"];
+		%set bool is_active = (model != null and tab_name == model.active);
+		
+		%if (tab_href == null)
 		{
 			<div class="tabs__header_item" class={{ is_active ? "tabs__header_item--active" : "" }}
-				data-name={{ tabs[i] }}
+				data-name={{ tab_name }}
 				@event:MouseClickEvent="onClick"
 			>
-				{{ labels[i] }}
+				{{ tab_label }}
 			</div>
 		}
 		%else
 		{
 			<a class="tabs__header_item" class={{ is_active ? "tabs__header_item--active" : "" }}
-				data-name={{ tabs[i] }} href={{ href[i] }}
+				data-name={{ tab_name }} href={{tab_href }}
 				@event:MouseClickEvent="onClick"
 			>
-				{{ labels[i] }}
+				{{ tab_label }}
 			</a>
 		}
 	}
@@ -111,7 +124,7 @@
 
 void onClick(Message<MouseClickEvent> msg)
 {
-	if (not this.params.has("href"))
+	if (not msg.sender.params.has("href"))
 	{
 		string name = msg.sender.params["data-name"];
 		this.commit("setActive", name);

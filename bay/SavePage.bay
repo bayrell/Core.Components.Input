@@ -16,7 +16,7 @@
  *  limitations under the License.
 -->
 
-<class name="Runtime.Web.Crud.SavePage">
+<class name="Runtime.Web.Crud.SavePage" extends="Runtime.Web.Crud.Form">
 
 <use name="Runtime.ModelProxy" />
 <use name="Runtime.Web.LayoutModel" />
@@ -38,107 +38,10 @@
 </template>
 
 
-<template name="renderRow" args="string class_name, FieldInfo params">
-	
-	%set string field_name = params.field_name;
-	%set Collection options = params.options;
-	%set Dict component_settings = params.component_settings;
-	
-	<div class="web_form__row" @key={{ field_name }}>
-		
-		<label class="web_form__row_label">{{ params.label }}</label>
-		
-		<{class_name}
-			name={{ field_name }}
-			options={{ options }}
-			@model={{ ["save_form", "item"].concat( field_name ) }}
-			...component_settings
-		/>
-		
-		%set Collection<string> field_result = model.save_form.getFieldResult(field_name);
-		%if (field_result.count() == 0)
-		{
-			<div class="web_form__field_result web_form__field_result--hide"
-				data-name={{ field_name }} @key="result1"></div>
-		}
-		%else
-		{
-			<div class="web_form__field_result" data-name={{ field_name }} @key="result2">
-				%for (int i=0; i<field_result.count(); i++)
-				{
-					<div>{{ field_result[i] }}</div>
-				}
-			</div>
-		}
-		
-	</div>
-	
-</template>
-
-
-<template name="renderContent">
-	<div class="web_form__content">
-	</div>
-</template>
-
-
-<template name="renderButtons">
-	<div class="web_form__buttons">
-		<Button type="primary large" @event:MouseClickEvent="onSaveClick">Save</Button>
-	</div>
-</template>
-
-
-<template name="renderForm">
-	%if (model.save_form.item != null)
-	{
-		<form class="web_form web_form--save" method="POST"
-			enctype="multipart/form-data" onsubmit="return false;"
-		>
-			%render static::renderContent();
-			%render static::renderButtons();
-			%render static::renderResult();
-		</form>
-	}
-	%else
-	{
-		<div class="web_form__item_not_found">
-			Item not found
-		</div>
-	}
-</template>
-
-
-<template name="renderResult">
-	<div class="web_form__result" class={{ model.save_form.getErrorClass() }} >
-		{{ model.save_form.error_message }}
-	</div>
-</template>
-
-
 <template name="render">
 	%render static::renderTop();
 	%render static::renderForm();
 </template>
-
-
-<script>
-
-/**
- * Save click
- */
-async void onSaveClick(Message<MouseClickEvent> msg)
-{
-	ModelProxy model = this.modelProxy();
-	
-	/* Set wait message */
-	model.proxy("save_form").commit("setWaitMessage");
-	
-	/* Send delete form */
-	await model.commitAsync("callCrudSave");
-}
-
-</script>
 
 
 </class>

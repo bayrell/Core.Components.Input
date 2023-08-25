@@ -25,6 +25,9 @@
 <use name="Runtime.Web.Message" />
 <use name="Runtime.Web.Events.MouseClickEvent" />
 <use name="Runtime.Web.Crud.Button" />
+<use name="Runtime.Web.Crud.CrudPageModel" />
+<use name="Runtime.Web.Crud.Dialog" component="true" />
+<use name="Runtime.Web.Crud.DialogEvent" />
 <use name="Runtime.Web.Crud.FormEvent" />
 <use name="Runtime.Web.Crud.Pagination" component="true" />
 <use name="Runtime.Web.Crud.RowButtons" component="true" />
@@ -143,13 +146,138 @@ pure Dict<string> getLabels(Layout layout, BaseStruct model) => {
 </template>
 
 
+<template name="renderSaveDialogContent"></template>
+<template name="renderDeleteDialogContent"></template>
+
+
+<template name="renderSaveDialog">
+	<Dialog @ref="save_dialog" @model="save_dialog" @event:DialogEvent="onSaveDialogEvent">
+		%render static::renderSaveDialogContent();
+	</Dialog>
+</template>
+
+
+<template name="renderDeleteDialog">
+	<Dialog @ref="delete_dialog" @model="delete_dialog" @event:DialogEvent="onDeleteDialogEvent">
+		%render static::renderDeleteDialogContent();
+	</Dialog>
+</template>
+
+
+<template name="renderDialogs">
+	%render static::renderSaveDialog();
+	%render static::renderDeleteDialog();
+</template>
+
+
 <template>
 	%render static::renderTop();
 	%render static::renderTable();
+	%render static::renderDialogs();
 </template>
 
 
 <script>
+
+var save_dialog;
+var delete_dialog;
+
+
+/**
+ * Returns primary key
+ */
+Dict getDialogPrimaryKey(Message<MouseClickEvent> msg)
+{
+	if (msg.params.has("data-id"))
+	{
+		return {
+			"id": msg.params.get("data-id"),
+		};
+	}
+	
+	return null;
+}
+
+
+/**
+ * Add click
+ */
+async void onAddClick(Message<MouseClickEvent> msg)
+{
+	ModelProxy page_model = this.modelProxy();
+	ModelProxy save_dialog = this.modelProxy("save_dialog");
+	
+	page_model.commit("clearItem");
+	
+	save_dialog.commit("setTitle", "Add item");
+	this.save_dialog.component.show();
+}
+
+
+/**
+ * Edit click
+ */
+async void onEditClick(Message<MouseClickEvent> msg)
+{
+	ModelProxy save_form = this.modelProxy("save_form");
+	ModelProxy save_dialog = this.modelProxy("save_dialog");
+	ModelProxy page_model = this.modelProxy();
+	
+	save_form.commit("setLoading");
+	save_form.commit("setPrimaryKey", this.getDialogPrimaryKey(msg));
+	save_dialog.commit("setTitle", "Edit item");
+	this.save_dialog.component.show();
+	
+	page_model.commit("clearItem");
+	await page_model.commitAsync("callCrudItem");
+}
+
+
+/**
+ * Delete click
+ */
+async void onDeleteClick(Message<MouseClickEvent> msg)
+{
+	ModelProxy delete_form = this.modelProxy("delete_form");
+	ModelProxy delete_dialog = this.modelProxy("delete_dialog");
+	ModelProxy page_model = this.modelProxy();
+	
+	delete_form.commit("setLoading");
+	delete_form.commit("setItem", null);
+	delete_form.commit("setPrimaryKey", this.getDialogPrimaryKey(msg));
+	delete_dialog.commit("setTitle", "Delete item");
+	this.delete_dialog.component.show();
+	
+	page_model.commit("clearItem");
+	await page_model.commitAsync("callCrudItem");
+}
+
+
+/**
+ * Save dialog event
+ */
+async void onSaveDialogEvent(Message<DialogEvent> msg)
+{
+	if (msg.event.button_result == "cancel")
+	{
+		this.save_dialog.component.hide();
+		return;
+	}
+}
+
+
+/**
+ * Delete dialog event
+ */
+async void onDeleteDialogEvent(Message<DialogEvent> msg)
+{
+	if (msg.event.button_result == "cancel")
+	{
+		this.save_dialog.component.hide();
+		return;
+	}
+}
+
 </script>
 
 </class>

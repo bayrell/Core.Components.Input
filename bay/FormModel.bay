@@ -32,6 +32,7 @@ struct FormModel<T> extends BaseStruct
 	int error_code = 0;
 	string error_message = "";
 	Dict field_result = null;
+	bool is_loading = false;
 	
 	
 	/**
