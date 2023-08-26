@@ -91,6 +91,35 @@ struct FormModel<T> extends BaseStruct
 	
 	
 	/**
+	 * Message
+	 */
+	FormModel setMessage(string error_message) => this.copy
+	{
+		"error_message": error_message,
+	};
+	
+	
+	/**
+	 * Success
+	 */
+	FormModel setSuccess(string error_message, int error_code = 1) => this.copy
+	{
+		"error_message": error_message,
+		"error_code": error_code,
+	};
+	
+	
+	/**
+	 * Error
+	 */
+	FormModel setError(string error_message, int error_code = -1) => this.copy
+	{
+		"error_message": error_message,
+		"error_code": error_code,
+	};
+	
+	
+	/**
 	 * Returns true if error
 	 */
 	bool isError() => this.error_code < 0;

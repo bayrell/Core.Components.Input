@@ -147,7 +147,14 @@ pure Dict<string> getLabels(Layout layout, BaseStruct model) => {
 
 
 <template name="renderSaveDialogContent"></template>
-<template name="renderDeleteDialogContent"></template>
+<template name="renderDeleteDialogContent">
+	%if (model.item_form.item != null)
+	{
+		<div class="web_table__delete_dialog_content">
+			{{ model.getPageTitle("delete_content") }}
+		</div>
+	}
+</template>
 
 
 <template name="renderSaveDialog">
@@ -307,6 +314,17 @@ async void onDeleteDialogEvent(Message<DialogEvent> msg)
 	/* Delete item */
 	if (msg.event.button_result == "ok")
 	{
+		ModelProxy model = this.proxy();
+		delete_dialog.commit("setWaitMessage");
+		await model.commitAsync("callCrudDelete");
+		
+		/* Check if success */
+		if (delete_dialog.call("isSuccess"))
+		{
+			delete_dialog.commit("hide");
+			await model.commitAsync("callCrudSearch");
+		}
+		
 		return;
 	}
 }

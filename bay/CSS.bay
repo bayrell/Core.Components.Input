@@ -73,6 +73,12 @@
 .web_table__top{
 	padding-bottom: 1em;
 }
+.web_table__delete_dialog_content{
+	margin-top: 1rem;
+	margin-bottom: 1rem;
+	text-align: center;
+	line-height: 1.5em;
+}
 .web_form{
 }
 .web_form__content{

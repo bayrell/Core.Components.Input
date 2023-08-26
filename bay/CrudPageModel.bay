@@ -135,6 +135,15 @@ struct CrudPageModel<T> extends BaseModel
 	
 	
 	/**
+	 * Set error
+	 */
+	CrudPageModel setError(string error_message, int error_code = 1) => this.clone({
+		"error_message": error_message
+		"error_code": error_code
+	});
+	
+	
+	/**
 	 * Setup default values
 	 */
 	BaseStruct defaultValues(BaseStruct item) => item;
@@ -155,6 +164,48 @@ struct CrudPageModel<T> extends BaseModel
 	
 	
 	/**
+	 * Set items
+	 */
+	CrudPageModel setItems(Dict params) => this.clone
+	{
+		"items": params.has("items") ? params["items"] : this.items,
+		"limit": params.has("limit") ? params["limit"] : this.limit,
+		"page": params.has("page") ? params["page"] : this.page,
+		"pages": params.has("pages") ? params["pages"] : this.pages,
+	};
+	
+	
+	/**
+	 * Set fields
+	 */
+	CrudPageModel setFields(Dict fields) => this.clone{ "fields": fields };
+	
+	
+	/**
+	 * Extends dictionary
+	 */
+	CrudPageModel extendDictionary(Dict new_dictionary)
+	{
+		Map dictionary = this.dictionary.toMap();
+		Collection keys = new_dictionary.keys();
+		
+		for (int i=0; i<keys.count(); i++)
+		{
+			string field_name = keys[i];
+			Collection items = new_dictionary[field_name];
+			if (not dictionary.has(field_name))
+			{
+				dictionary.setValue(field_name, items);
+			}
+		}
+		
+		return this.clone{
+			"dictionary": dictionary.toDict(),
+		}
+	}
+	
+	
+	/**
 	 * Event
 	 */
 	async static Dict event(ModelProxy model, string event, Dict data)
@@ -166,52 +217,64 @@ struct CrudPageModel<T> extends BaseModel
 	/**
 	 * Set api result
 	 */
-	CrudPageModel setApiResult(string event, ApiResult res)
+	static void setApiResult(ModelProxy model, string event, ApiResult res)
 	{
-		if (res == null) return this;
-		
-		CrudPageModel model = this;
+		ModelProxy item_form = model.proxy("item_form");
 		
 		if (res.isSuccess())
 		{
 			if (event == "crudSearch")
 			{
-				model = model.copy({
+				model.commit("setItems", {
 					"items": res["data"]["items"],
 					"limit": res["data"]["limit"],
 					"page": res["data"]["page"],
 					"pages": res["data"]["pages"],
-					"dictionary": res["data"]["dictionary"],
 				});
 			}
 		}
 		
-		if (event == "crudSearchOne" or event == "crudItem")
+		if (
+			event == "crudSearchOne" or
+			event == "crudItem" or
+			event == "crudSave" or
+			event == "crudDelete"
+		)
 		{
-			model <= item_form <= model.item_form.setApiResult(event, res);
-			model <= dictionary <= res["data"]["dictionary"];
+			item_form.commit("setApiResult", event, res);
 		}
 		
-		else if (event == "crudSave")
+		if (event == "crudSave")
 		{
-			model <= item_form <= model.item_form.setApiResult(event, res);
-			if (model.save_dialog)
+			if (model.data("save_dialog"))
 			{
-				model <= save_dialog <= model.save_dialog.setApiResult(event, res);
+				model.proxy("save_dialog").commit("setApiResult", event, res);
 			}
 		}
 		
 		else if (event == "crudDelete")
 		{
-			model <= item_form <= model.item_form.setApiResult(event, res);
-			if (model.delete_dialog)
+			if (model.data("delete_dialog"))
 			{
-				model <= delete_dialog <= model.delete_dialog.setApiResult(event, res);
+				model.proxy("delete_dialog").commit("setApiResult", event, res);
 			}
 		}
 		
-		model <= error_message <= res.getErrorMessage();
-		model <= error_code <= res.getErrorCode();
+		if (
+			res.isSuccess() and (
+				event == "crudSearch" or
+				event == "crudSearchOne" or
+				event == "crudItem"
+			)
+		)
+		{
+			if (res.isSuccess())
+			{
+				model.commit("extendDictionary", res["data"]["dictionary"]);
+			}
+		}
+		
+		model.commit("setError", res.getErrorMessage(), res.getErrorCode());
 		
 		return model;
 	}
