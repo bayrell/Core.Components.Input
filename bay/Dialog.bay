@@ -290,9 +290,9 @@ pure string getStyle(DialogModel model, Dict render_params)
  */
 pure string getResultClass(DialogModel model)
 {
-	if (model.error_code == 0) return "dialog_result--hide";
-	if (model.error_code < 0) return "dialog_result--success";
-	if (model.error_code > 0) return "dialog_result--error";
+	if (model.error_code == 0 and model.error_message == "") return "dialog_result--hide";
+	if (model.error_code < 0) return "dialog_result--error";
+	if (model.error_code > 0) return "dialog_result--success";
 	return "";
 }
 
@@ -372,26 +372,27 @@ public async void pressButton(string value)
 }
 
 
-/**
- * Show dialog
- */
-void show(Dict params = null)
-{
-	ModelProxy model = this.modelProxy();
-	model.commit("show", params);
-	document.body.classList.add('scroll-lock');
-	this.reset_scroll = true;
-}
+string is_open = "";
 
 
 /**
- * Hide dialog
+ * Returns true if component is changed and need to repaint
  */
-void hide(string button_result = "")
+bool isChanged(var model, Dict params, var content)
 {
-	ModelProxy model = this.modelProxy();
-	model.commit("hide", button_result);
-	document.body.classList.remove('scroll-lock');
+	bool res = parent::isChanged(model, params, content);
+	if (!res) return false;
+	
+	if (this.old_model.is_open == false and model.is_open == true)
+	{
+		this.do_open = "show";
+	}
+	else if (this.old_model.is_open == true and model.is_open == false)
+	{
+		this.do_open = "hide";
+	}
+	
+	return true;
 }
 
 
@@ -400,9 +401,16 @@ void hide(string button_result = "")
  */
 void onRepaint()
 {
-	if (this.reset_scroll)
+	if (this.do_open == "show")
 	{
+		document.body.classList.add('scroll-lock');
 		this.dialog_box.elem.scrollTop = 0;
+		this.do_open = "";
+	}
+	if (this.do_open == "hide")
+	{
+		document.body.classList.remove('scroll-lock');
+		this.do_open = "";
 	}
 }
 

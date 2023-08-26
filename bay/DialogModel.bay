@@ -131,6 +131,18 @@ struct DialogModel extends BaseStruct
 	
 	
 	/**
+	 * Returns true if error
+	 */
+	bool isError() => this.error_code < 0;
+	
+	
+	/**
+	 * Returns true if success
+	 */
+	bool isSuccess() => this.error_code > 0;
+	
+	
+	/**
 	 * Set api result
 	 */
 	DialogModel setApiResult(string event, ApiResult res)

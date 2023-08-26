@@ -78,11 +78,11 @@ class CrudRoute extends BaseRoute
 	 */
 	async void crudRouteBefore()
 	{
-		CrudPageModel page_model_data = this.page_model_proxy.data();
+		CrudPageModel page_model_data = this.page_model.data();
 		string action = page_model_data.action;
 		
 		/* Get form model */
-		ModelProxy<FormModel> item_form = this.page_model_proxy.proxy("item_form");
+		ModelProxy<FormModel> item_form = this.page_model.proxy("item_form");
 		
 		if (action == CrudPageModel::ACTION_ADD)
 		{
@@ -114,16 +114,16 @@ class CrudRoute extends BaseRoute
 	async void actionIndex()
 	{
 		/* Setup action */
-		this.page_model_proxy.commit("setAction", CrudPageModel::ACTION_INDEX);
-		this.page_model_proxy.commit("setPage", this.container.request.query.get("page", 1));
+		this.page_model.commit("setAction", CrudPageModel::ACTION_INDEX);
+		this.page_model.commit("setPage", this.container.request.query.get("page", 1));
 		
 		/* Search items */
 		await this.crudRouteBefore();
-		await this.page_model_proxy.commitAsync("callCrudSearch");
+		await this.page_model.commitAsync("callCrudSearch");
 		await this.crudRouteAfter();
 		
 		/* Set title */
-		CrudPageModel model = this.page_model_proxy.data();
+		CrudPageModel model = this.page_model.data();
 		this.setPageTitle( model.getPageTitle( model.action ) );
 		
 		/* Render page */
@@ -137,18 +137,18 @@ class CrudRoute extends BaseRoute
 	async void actionAdd()
 	{		
 		/* Setup action */
-		this.page_model_proxy.commit("setAction", CrudPageModel::ACTION_ADD);
+		this.page_model.commit("setAction", CrudPageModel::ACTION_ADD);
 		
 		/* Create save form */
-		ModelProxy<FormModel> save_form = this.page_model_proxy.proxy("item_form");
+		ModelProxy<FormModel> save_form = this.page_model.proxy("item_form");
 		
 		/* Call api */
 		await this.crudRouteBefore();
-		await this.page_model_proxy.commitAsync("callCrudItem");
+		await this.page_model.commitAsync("callCrudItem");
 		await this.crudRouteAfter();
 		
 		/* Set title */
-		CrudPageModel model = this.page_model_proxy.data();
+		CrudPageModel model = this.page_model.data();
 		this.setPageTitle( model.getPageTitle( model.action ) );
 		
 		/* Render page */
@@ -162,19 +162,19 @@ class CrudRoute extends BaseRoute
 	async void actionEdit()
 	{
 		/* Setup action */
-		this.page_model_proxy.commit("setAction", CrudPageModel::ACTION_EDIT);
+		this.page_model.commit("setAction", CrudPageModel::ACTION_EDIT);
 		
 		/* Create save form */
-		ModelProxy<FormModel> save_form = this.page_model_proxy.proxy("item_form");
+		ModelProxy<FormModel> save_form = this.page_model.proxy("item_form");
 		
 		/* Call api */
 		await this.crudRouteBefore();
-		await this.page_model_proxy.commitAsync("callCrudItem");
+		await this.page_model.commitAsync("callCrudItem");
 		save_form.commit("clearErrorMessage");
 		await this.crudRouteAfter();
 		
 		/* Set title */
-		CrudPageModel model = this.page_model_proxy.data();
+		CrudPageModel model = this.page_model.data();
 		this.setPageTitle( model.getPageTitle( model.action ) );
 		
 		/* Render page */
@@ -188,19 +188,19 @@ class CrudRoute extends BaseRoute
 	async void actionDelete()
 	{
 		/* Setup action */
-		this.page_model_proxy.commit("setAction", CrudPageModel::ACTION_DELETE);
+		this.page_model.commit("setAction", CrudPageModel::ACTION_DELETE);
 		
 		/* Create delete form */
-		ModelProxy delete_form = this.page_model_proxy.proxy("item_form");
+		ModelProxy delete_form = this.page_model.proxy("item_form");
 		
 		/* Call api */
 		await this.crudRouteBefore();
-		await this.page_model_proxy.commitAsync("callCrudItem");
+		await this.page_model.commitAsync("callCrudItem");
 		delete_form.commit("clearErrorMessage");
 		await this.crudRouteAfter();
 		
 		/* Set title */
-		CrudPageModel model = this.page_model_proxy.data();
+		CrudPageModel model = this.page_model.data();
 		this.setPageTitle( model.getPageTitle( model.action ) );
 		
 		/* Render page */

@@ -151,16 +151,22 @@ pure Dict<string> getLabels(Layout layout, BaseStruct model) => {
 
 
 <template name="renderSaveDialog">
-	<Dialog @ref="save_dialog" @model="save_dialog" @event:DialogEvent="onSaveDialogEvent">
-		%render static::renderSaveDialogContent();
-	</Dialog>
+	%if (model.save_dialog != null)
+	{
+		<Dialog @ref="save_dialog" @model="save_dialog" @event:DialogEvent="onSaveDialogEvent">
+			%render static::renderSaveDialogContent();
+		</Dialog>
+	}
 </template>
 
 
 <template name="renderDeleteDialog">
-	<Dialog @ref="delete_dialog" @model="delete_dialog" @event:DialogEvent="onDeleteDialogEvent">
-		%render static::renderDeleteDialogContent();
-	</Dialog>
+	%if (model.delete_dialog != null)
+	{
+		<Dialog @ref="delete_dialog" @model="delete_dialog" @event:DialogEvent="onDeleteDialogEvent">
+			%render static::renderDeleteDialogContent();
+		</Dialog>
+	}
 </template>
 
 
@@ -188,10 +194,10 @@ var delete_dialog;
  */
 Dict getDialogPrimaryKey(Message<MouseClickEvent> msg)
 {
-	if (msg.params.has("data-id"))
+	if (msg.sender.params.has("data-id"))
 	{
 		return {
-			"id": msg.params.get("data-id"),
+			"id": msg.sender.params.get("data-id"),
 		};
 	}
 	
@@ -204,13 +210,13 @@ Dict getDialogPrimaryKey(Message<MouseClickEvent> msg)
  */
 async void onAddClick(Message<MouseClickEvent> msg)
 {
-	ModelProxy page_model = this.modelProxy();
-	ModelProxy save_dialog = this.modelProxy("save_dialog");
+	ModelProxy page_model = this.proxy();
+	ModelProxy save_dialog = this.proxy("save_dialog");
 	
 	page_model.commit("clearItem");
 	
 	save_dialog.commit("setTitle", "Add item");
-	this.save_dialog.component.show();
+	save_dialog.commit("show");
 }
 
 
@@ -219,14 +225,14 @@ async void onAddClick(Message<MouseClickEvent> msg)
  */
 async void onEditClick(Message<MouseClickEvent> msg)
 {
-	ModelProxy save_form = this.modelProxy("save_form");
-	ModelProxy save_dialog = this.modelProxy("save_dialog");
-	ModelProxy page_model = this.modelProxy();
+	ModelProxy item_form = this.proxy("item_form");
+	ModelProxy save_dialog = this.proxy("save_dialog");
+	ModelProxy page_model = this.proxy();
 	
-	save_form.commit("setLoading");
-	save_form.commit("setPrimaryKey", this.getDialogPrimaryKey(msg));
+	/*item_form.commit("setLoading");*/
+	item_form.commit("setPrimaryKey", this.getDialogPrimaryKey(msg));
 	save_dialog.commit("setTitle", "Edit item");
-	this.save_dialog.component.show();
+	save_dialog.commit("show");
 	
 	page_model.commit("clearItem");
 	await page_model.commitAsync("callCrudItem");
@@ -238,15 +244,15 @@ async void onEditClick(Message<MouseClickEvent> msg)
  */
 async void onDeleteClick(Message<MouseClickEvent> msg)
 {
-	ModelProxy delete_form = this.modelProxy("delete_form");
-	ModelProxy delete_dialog = this.modelProxy("delete_dialog");
-	ModelProxy page_model = this.modelProxy();
+	ModelProxy item_form = this.proxy("item_form");
+	ModelProxy delete_dialog = this.proxy("delete_dialog");
+	ModelProxy page_model = this.proxy();
 	
-	delete_form.commit("setLoading");
-	delete_form.commit("setItem", null);
-	delete_form.commit("setPrimaryKey", this.getDialogPrimaryKey(msg));
+	/*item_form.commit("setLoading");*/
+	item_form.commit("setItem", null);
+	item_form.commit("setPrimaryKey", this.getDialogPrimaryKey(msg));
 	delete_dialog.commit("setTitle", "Delete item");
-	this.delete_dialog.component.show();
+	delete_dialog.commit("show");
 	
 	page_model.commit("clearItem");
 	await page_model.commitAsync("callCrudItem");
@@ -258,9 +264,28 @@ async void onDeleteClick(Message<MouseClickEvent> msg)
  */
 async void onSaveDialogEvent(Message<DialogEvent> msg)
 {
+	ModelProxy save_dialog = this.proxy("save_dialog");
+	
 	if (msg.event.button_result == "cancel")
 	{
-		this.save_dialog.component.hide();
+		save_dialog.commit("hide");
+		return;
+	}
+	
+	/* Save item */
+	if (msg.event.button_result == "ok")
+	{
+		ModelProxy model = this.proxy();
+		save_dialog.commit("setWaitMessage");
+		await model.commitAsync("callCrudSave");
+		
+		/* Check if success */
+		if (save_dialog.call("isSuccess"))
+		{
+			save_dialog.commit("hide");
+			await model.commitAsync("callCrudSearch");
+		}
+		
 		return;
 	}
 }
@@ -271,9 +296,17 @@ async void onSaveDialogEvent(Message<DialogEvent> msg)
  */
 async void onDeleteDialogEvent(Message<DialogEvent> msg)
 {
+	ModelProxy delete_dialog = this.proxy("delete_dialog");
+	
 	if (msg.event.button_result == "cancel")
 	{
-		this.save_dialog.component.hide();
+		delete_dialog.commit("hide");
+		return;
+	}
+	
+	/* Delete item */
+	if (msg.event.button_result == "ok")
+	{
 		return;
 	}
 }
