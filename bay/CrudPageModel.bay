@@ -76,6 +76,12 @@ struct CrudPageModel<T> extends BaseModel
 	
 	
 	/**
+	 * Returns page type
+	 */
+	pure string getPageType() => "default";
+	
+	
+	/**
 	 * Returns page title
 	 */
 	string getPageTitle(string action)
@@ -291,6 +297,7 @@ struct CrudPageModel<T> extends BaseModel
 		
 		/* Extends search data */
 		Dict post_data = {
+			"page_type": static::getPageType(),
 			"page": page,
 			"limit": limit,
 		};
@@ -303,9 +310,7 @@ struct CrudPageModel<T> extends BaseModel
 		});
 		
 		/* Send api */
-		ApiResult res = await Bus::callApi(
-			static::getApiName() ~ "::crud.search", d["post_data"]
-		);
+		ApiResult res = await static::callSearch(model, d["post_data"]);
 		
 		/* Set api result */
 		model.commit("setApiResult", "crudSearch", res);
@@ -321,6 +326,15 @@ struct CrudPageModel<T> extends BaseModel
 	
 	
 	/**
+	 * Call api search
+	 */
+	async static ApiResult callSearch(ModelProxy model, Dict post_data)
+	{
+		return await Bus::callApi(static::getApiName() ~ "::crud.search", post_data);
+	}
+	
+	
+	/**
 	 * Search items
 	 */
 	async static ApiResult callCrudSearchOne(ModelProxy model)
@@ -330,6 +344,7 @@ struct CrudPageModel<T> extends BaseModel
 		
 		/* Extends search data */
 		Dict post_data = {
+			"page_type": static::getPageType(),
 			"page": page,
 		};
 		if (search_data != null) post_data = post_data.concat(search_data);
@@ -340,9 +355,7 @@ struct CrudPageModel<T> extends BaseModel
 		});
 		
 		/* Send api */
-		ApiResult res = await Bus::callApi(
-			static::getApiName() ~ "::crud.search_one", d["post_data"]
-		);
+		ApiResult res = await static::callSearchOne(model, d["post_data"]);
 		
 		/* Set api result */
 		model.commit("setApiResult", "crudSearchOne", res);
@@ -354,6 +367,15 @@ struct CrudPageModel<T> extends BaseModel
 		});
 		
 		return res;
+	}
+	
+	
+	/**
+	 * Call api search one
+	 */
+	async static ApiResult callSearchOne(ModelProxy model, Dict post_data)
+	{
+		return await Bus::callApi(static::getApiName() ~ "::crud.search_one", post_data);
 	}
 	
 		
@@ -385,6 +407,7 @@ struct CrudPageModel<T> extends BaseModel
 			/* Get post data */
 			Dict item_data = model.data("item_data");
 			Dict post_data = {
+				"page_type": static::getPageType(),
 				"pk": pk,
 			};
 			if (item_data != null) post_data = post_data.concat(item_data);
@@ -396,9 +419,7 @@ struct CrudPageModel<T> extends BaseModel
 			});
 			
 			/* Send api */
-			ApiResult res = await Bus::callApi(
-				static::getApiName() ~ "::crud.item", d["post_data"]
-			);
+			ApiResult res = await static::callApiItem(model, d["post_data"]);
 			
 			/* Set api result */
 			model.commit("setApiResult", "crudItem", res);
@@ -416,6 +437,15 @@ struct CrudPageModel<T> extends BaseModel
 	
 	
 	/**
+	 * Call api item
+	 */
+	async static ApiResult callApiItem(ModelProxy model, Dict post_data)
+	{
+		return await Bus::callApi(static::getApiName() ~ "::crud.item", post_data);
+	}
+	
+	
+	/**
 	 * Save form
 	 */
 	async static ApiResult callCrudSave(ModelProxy model)
@@ -426,6 +456,7 @@ struct CrudPageModel<T> extends BaseModel
 		
 		/* Get post data */
 		Dict post_data = {
+			"page_type": static::getPageType(),
 			"pk": pk,
 			"item": item.toDict(),
 		};
@@ -436,9 +467,7 @@ struct CrudPageModel<T> extends BaseModel
 		});
 		
 		/* Send api */
-		ApiResult res = await Bus::callApi(
-			static::getApiName() ~ "::crud.save", d["post_data"]
-		);
+		ApiResult res = await static::callApiSave(model, d["post_data"]);
 		
 		/* Set api result */
 		model.commit("setApiResult", "crudSave", res);
@@ -446,7 +475,7 @@ struct CrudPageModel<T> extends BaseModel
 		/* Set pk */
 		if (res.isSuccess())
 		{
-			if (model.data(["item_form", "pk"]) != null)
+			if (model.data(["item_form", "item_pk"]) != null)
 			{
 				model.commit("setAction", "edit");
 			}
@@ -467,6 +496,15 @@ struct CrudPageModel<T> extends BaseModel
 	
 	
 	/**
+	 * Call api save
+	 */
+	async static ApiResult callApiSave(ModelProxy model, Dict post_data)
+	{
+		return await Bus::callApi(static::getApiName() ~ "::crud.save", post_data);
+	}
+	
+	
+	/**
 	 * Delete
 	 */
 	async static ApiResult callCrudDelete(ModelProxy model)
@@ -476,6 +514,7 @@ struct CrudPageModel<T> extends BaseModel
 		
 		/* Get post data */
 		Dict post_data = {
+			"page_type": static::getPageType(),
 			"pk":pk,
 		};
 		
@@ -485,9 +524,7 @@ struct CrudPageModel<T> extends BaseModel
 		});
 		
 		/* Send api */
-		ApiResult res = await Bus::callApi(
-			static::getApiName() ~ "::crud.delete", d["post_data"]
-		);
+		ApiResult res = await static::callApiDelete(model, d["post_data"]);
 		
 		/* Set api result */
 		model.commit("setApiResult", "crudDelete", res);
@@ -499,6 +536,15 @@ struct CrudPageModel<T> extends BaseModel
 		});
 		
 		return res;
+	}
+	
+	
+	/**
+	 * Call api delete
+	 */
+	async static ApiResult callApiDelete(ModelProxy model, Dict post_data)
+	{
+		return await Bus::callApi(static::getApiName() ~ "::crud.delete", post_data);
 	}
 	
 }

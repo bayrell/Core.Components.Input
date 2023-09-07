@@ -44,7 +44,7 @@
 
 
 <template name="renderForm">
-	%if (model.delete_form.item != null)
+	%if (model.item_form.item != null)
 	{
 		<form class="web_form web_form--delete" method="POST"
 			enctype="multipart/form-data" onsubmit="return false;"
@@ -64,8 +64,8 @@
 
 
 <template name="renderResult">
-	<div class="web_form__result" class={{ model.delete_form.getErrorClass() }} >
-		{{ model.delete_form.error_message }}
+	<div class="web_form__result" class={{ model.item_form.getErrorClass() }} >
+		{{ model.item_form.error_message }}
 	</div>
 </template>
 
@@ -86,7 +86,7 @@ async void onDeleteClick(Message<MouseClickEvent> msg)
 	ModelProxy model = this.modelProxy();
 	
 	/* Set wait message */
-	model.proxy("delete_form").commit("setWaitMessage");
+	model.proxy("item_form").commit("setWaitMessage");
 	
 	/* Send delete form */
 	await model.commitAsync("callCrudDelete");

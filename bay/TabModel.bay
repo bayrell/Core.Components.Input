@@ -25,11 +25,11 @@ struct TabModel extends BaseStruct
 {
     string active = "";
     
+    
     /**
      * Set active
      */
-    TabModel setActive(string active) => this.clone{
-        "active": active,
-    };
+    TabModel setActive(string active) => this.clone{"active": active};
+    TabModel setTab(string active) => this.clone{"active": active}; 
     
 }

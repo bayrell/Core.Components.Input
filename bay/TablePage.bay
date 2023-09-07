@@ -217,10 +217,13 @@ Dict getDialogPrimaryKey(Message<MouseClickEvent> msg)
  */
 async void onAddClick(Message<MouseClickEvent> msg)
 {
+	ModelProxy item_form = this.proxy("item_form");
 	ModelProxy page_model = this.proxy();
 	ModelProxy save_dialog = this.proxy("save_dialog");
 	
+	item_form.commit("setPrimaryKey", null);
 	page_model.commit("clearItem");
+	await page_model.commitAsync("callCrudItem");
 	
 	save_dialog.commit("setTitle", "Add item");
 	save_dialog.commit("show");
