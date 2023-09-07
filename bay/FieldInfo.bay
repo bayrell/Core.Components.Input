@@ -28,6 +28,7 @@ struct FieldInfo extends BaseStruct
 	string description = "";
 	string field_name = "";
 	string label = "";
+	var default = null;
 
 	/* Field component settings */
 	Dict component_settings = {};

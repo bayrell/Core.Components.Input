@@ -32,6 +32,7 @@ use Runtime.Web.BaseModel;
 use Runtime.Web.Bus;
 use Runtime.Web.RenderContainer;
 use Runtime.Web.Crud.DialogModel;
+use Runtime.Web.Crud.FieldInfo;
 use Runtime.Web.Crud.FormModel;
 use Runtime.Web.Crud.StructBuilder;
 use Runtime.Web.Crud.Rules.CrudRule;
@@ -152,7 +153,20 @@ struct CrudPageModel<T> extends BaseModel
 	/**
 	 * Setup default values
 	 */
-	BaseStruct defaultValues(BaseStruct item) => item;
+	BaseStruct defaultValues(BaseStruct item)
+	{
+		Collection fields = this.fields.keys();
+		for (int i=0; i<fields.count(); i++)
+		{
+			string field_name = fields[i];
+			FieldInfo field = this.fields.get(field_name);
+			if (field.default !== null)
+			{
+				item <= { field_name } <= field.default;
+			}
+		}
+		return item;
+	}
 	
 	
 	/**
