@@ -217,6 +217,10 @@ struct CrudPageModel<T> extends BaseModel
 			{
 				dictionary.setValue(field_name, items);
 			}
+			else
+			{
+				dictionary.setValue(field_name, items);
+			}
 		}
 		
 		return this.clone{
