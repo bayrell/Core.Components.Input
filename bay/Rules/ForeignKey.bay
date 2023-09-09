@@ -37,9 +37,9 @@ struct ForeignKey extends CrudRule
 	
 	
 	/**
-	 * Search after
+	 * Search final event
 	 */
-	async void onSearchAfter(CrudPageApi api)
+	async void onSearchFinal(CrudPageApi api)
 	{
 		if (this.name == "") return ;
 		if (this.dictionary_name == "") return ;

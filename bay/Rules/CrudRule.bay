@@ -27,49 +27,49 @@ struct CrudRule extends BaseStruct
 {
 	
 	/**
-	 * Before search event
+	 * Search init event
 	 */
-	async void onSearchBefore(CrudPageApi api)
+	async void onSearchInit(CrudPageApi api)
 	{
 	}
 	
 	
 	/**
-	 * Search after
+	 * Search final event
 	 */
-	async void onSearchAfter(CrudPageApi api)
+	async void onSearchFinal(CrudPageApi api)
 	{
 	}
 	
 	
 	/**
-	 * Before save event
+	 * Save init event
 	 */
-	async void onSaveBefore(CrudPageApi api)
+	async void onSaveInit(CrudPageApi api)
 	{
 	}
 	
 	
 	/**
-	 * After save event
+	 * Save final event
 	 */
-	async void onSaveAfter(CrudPageApi api)
+	async void onSaveFinal(CrudPageApi api)
 	{
 	}
 	
 	
 	/**
-	 * Before delete event
+	 * Delete init event
 	 */
-	async void onDeleteBefore(CrudPageApi api)
+	async void onDeleteInit(CrudPageApi api)
 	{
 	}
 	
 	
 	/**
-	 * After delete event
+	 * Delete final event
 	 */
-	async void onDeleteAfter(CrudPageApi api)
+	async void onDeleteFinal(CrudPageApi api)
 	{
 	}
 	
@@ -84,18 +84,18 @@ struct CrudRule extends BaseStruct
 	
 	
 	/**
-	 * Before update item
+	 * Before save item
 	 */
-	async void onBeforeUpdateItem(CrudPageApi api, Relation item, Dict update_data)
+	async void onSaveBefore(CrudPageApi api, Relation item, Dict update_data)
 	{
 		
 	}
 	
 	
 	/**
-	 * After update item
+	 * After save item
 	 */
-	async void onAfterUpdateItem(CrudPageApi api, Relation item, Dict update_data)
+	async void onSaveAfter(CrudPageApi api, Relation item, Dict update_data)
 	{
 		
 	}

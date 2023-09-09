@@ -44,11 +44,10 @@ struct Unique extends CrudRule
 	
 	
 	/**
-	 * Before update item
+	 * Before save item
 	 */
-	async void onBeforeUpdateItem(CrudPageApi api, Relation item, Dict update_data)
+	async void onSaveBefore(CrudPageApi api, Relation item, Dict update_data)
 	{
-		string value = item.get(this.name);
 		Connection conn = api.getDatabaseConnection();
 		
 		Query q = new Query

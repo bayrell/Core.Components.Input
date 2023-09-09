@@ -133,80 +133,86 @@ class CrudPageApi extends BaseApi
 	
 	
 	/**
-	 * Backend event
+	 * Search init event
 	 */
-	async void event(string event, Dict data)
+	async void onSearchInit()
 	{
-		/* Search */
-		if (event == "actionSearchBefore" or
-			event == "actionSearchOneBefore" or
-			event == "actionItemBefore"
-		)
+		Collection<CrudRule> rules = this.getRules();
+		for (int i=0; i<rules.count(); i++)
 		{
-			Collection<CrudRule> rules = this.getRules();
-			for (int i=0; i<rules.count(); i++)
-			{
-				CrudRule rule = rules[i];
-				await rule.onSearchBefore(this);
-			}
+			CrudRule rule = rules[i];
+			await rule.onSearchInit(this);
 		}
-		
-		else if (event == "actionSearchAfter" or
-			event == "actionSearchOneAfter" or
-			event == "actionItemAfter"
-		)
+	}
+	
+	
+	/**
+	 * Search final event
+	 */
+	async void onSearchFinal()
+	{
+		Collection<CrudRule> rules = this.getRules();
+		for (int i=0; i<rules.count(); i++)
 		{
-			Collection<CrudRule> rules = this.getRules();
-			for (int i=0; i<rules.count(); i++)
-			{
-				CrudRule rule = rules[i];
-				await rule.onSearchAfter(this);
-			}
+			CrudRule rule = rules[i];
+			await rule.onSearchFinal(this);
 		}
-		
-		/* Save */
-		else if (event == "actionSaveBefore")
+	}
+	
+	
+	/**
+	 * Save init event
+	 */
+	async void onSaveInit()
+	{
+		Collection<CrudRule> rules = this.getRules();
+		for (int i=0; i<rules.count(); i++)
 		{
-			Collection<CrudRule> rules = this.getRules();
-			for (int i=0; i<rules.count(); i++)
-			{
-				CrudRule rule = rules[i];
-				await rule.onSaveBefore(this);
-			}
+			CrudRule rule = rules[i];
+			await rule.onSaveInit(this);
 		}
-		
-		else if (event == "actionSaveAfter")
+	}
+	
+	
+	/**
+	 * Save final event
+	 */
+	async void onSaveFinal()
+	{
+		Collection<CrudRule> rules = this.getRules();
+		for (int i=0; i<rules.count(); i++)
 		{
-			Collection<CrudRule> rules = this.getRules();
-			for (int i=0; i<rules.count(); i++)
-			{
-				CrudRule rule = rules[i];
-				await rule.onSaveAfter(this);
-			}
+			CrudRule rule = rules[i];
+			await rule.onSaveFinal(this);
 		}
-		
-		/* Delete */
-		else if (event == "actionDeleteBefore")
+	}
+	
+	
+	/**
+	 * Delete init event
+	 */
+	async void onDeleteInit()
+	{
+		Collection<CrudRule> rules = this.getRules();
+		for (int i=0; i<rules.count(); i++)
 		{
-			Collection<CrudRule> rules = this.getRules();
-			for (int i=0; i<rules.count(); i++)
-			{
-				CrudRule rule = rules[i];
-				await rule.onDeleteBefore(this);
-			}
+			CrudRule rule = rules[i];
+			await rule.onDeleteInit(this);
 		}
-		
-		else if (event == "actionDeleteAfter")
+	}
+	
+	
+	/**
+	 * Delete final event
+	 */
+	async void onDeleteFinal()
+	{
+		Collection<CrudRule> rules = this.getRules();
+		for (int i=0; i<rules.count(); i++)
 		{
-			Collection<CrudRule> rules = this.getRules();
-			for (int i=0; i<rules.count(); i++)
-			{
-				CrudRule rule = rules[i];
-				await rule.onDeleteAfter(this);
-			}
+			CrudRule rule = rules[i];
+			await rule.onDeleteFinal(this);
 		}
-		
-		return data;
 	}
 	
 	
@@ -346,7 +352,7 @@ class CrudPageApi extends BaseApi
 		if (this.container.response.error_name != "") return;
 		
 		/* Search before event */
-		await this.event("actionSearchBefore", {});
+		await this.onSearchInit();
 		if (this.container.response.error_name != "") return;
 		
 		/* Search items */
@@ -369,7 +375,7 @@ class CrudPageApi extends BaseApi
 		});
 		
 		/* Search after event */
-		await this.event("actionSearchAfter", {});
+		await this.onSearchFinal();
 	}
 	
 	
@@ -383,7 +389,7 @@ class CrudPageApi extends BaseApi
 		if (this.container.response.error_name != "") return;
 		
 		/* Search before event */
-		await this.event("actionSearchOneBefore", {});
+		await this.onSearchInit();
 		if (this.container.response.error_name != "") return;
 		
 		/* Search items */
@@ -412,7 +418,7 @@ class CrudPageApi extends BaseApi
 		});
 		
 		/* Search after event */
-		await this.event("actionSearchOneAfter", {});
+		await this.onSearchFinal();
 	}
 	
 	
@@ -462,7 +468,7 @@ class CrudPageApi extends BaseApi
 		if (this.container.response.error_name != "") return;
 		
 		/* Before event */
-		await this.event("actionItemBefore", {});
+		await this.onSearchInit();
 		if (this.container.response.error_name != "") return;
 		
 		/* Find item */
@@ -489,7 +495,7 @@ class CrudPageApi extends BaseApi
 		});
 		
 		/* After event */
-		await this.event("actionItemAfter", {});
+		await this.onSearchFinal();
 	}
 	
 	
@@ -500,29 +506,29 @@ class CrudPageApi extends BaseApi
 	
 	
 	/**
-	 * Before update item
+	 * Before update item event
 	 */
-	async void beforeUpdateItem(Relation item, Dict update_data)
+	async void onSaveBefore(Relation item, Dict update_data)
 	{
 		Collection<CrudRule> rules = this.getRules();
 		for (int i=0; i<rules.count(); i++)
 		{
 			CrudRule rule = rules[i];
-			await rule.onBeforeUpdateItem(this, item, update_data);
+			await rule.onSaveBefore(this, item, update_data);
 		}
 	}
 	
 	
 	/**
-	 * After update item
+	 * After update item event
 	 */
-	async void afterUpdateItem(Relation item, Dict update_data)
+	async void onSaveAfter(Relation item, Dict update_data)
 	{
 		Collection<CrudRule> rules = this.getRules();
 		for (int i=0; i<rules.count(); i++)
 		{
 			CrudRule rule = rules[i];
-			await rule.onAfterUpdateItem(this, item, update_data);
+			await rule.onSaveAfter(this, item, update_data);
 		}
 	}
 	
@@ -543,7 +549,7 @@ class CrudPageApi extends BaseApi
 			}
 			
 			/* Before item */
-			await this.beforeUpdateItem(item, update_data);
+			await this.onSaveBefore(item, update_data);
 			if (this.container.response.error_name != "") return;
 			if (not this.field_result.isSuccess())
 			{
@@ -558,7 +564,7 @@ class CrudPageApi extends BaseApi
 			await item.refresh(conn);
 			
 			/* Before item */
-			await this.afterUpdateItem(item, update_data);
+			await this.onSaveAfter(item, update_data);
 		}
 	}
 	
@@ -591,7 +597,7 @@ class CrudPageApi extends BaseApi
 		if (this.container.response.error_name != "") return;
 		
 		/* Before event */
-		await this.event("actionSaveBefore", {});
+		await this.onSaveInit();
 		if (this.container.response.error_name != "") return;
 		
 		/* Validate data */
@@ -639,7 +645,7 @@ class CrudPageApi extends BaseApi
 		});
 		
 		/* After event */
-		await this.event("actionSaveAfter", {});
+		await this.onSaveFinal();
 	}
 	
 	
@@ -665,7 +671,7 @@ class CrudPageApi extends BaseApi
 		if (this.container.response.error_name != "") return;
 		
 		/* Before event */
-		await this.event("actionDeleteBefore", {});
+		await this.onDeleteInit();
 		if (this.container.response.error_name != "") return;
 		
 		/* Find item */
@@ -695,7 +701,7 @@ class CrudPageApi extends BaseApi
 		});
 		
 		/* Before event */
-		await this.event("actionDeleteAfter", {});
+		await this.onDeleteFinal();
 	}
 	
 }
