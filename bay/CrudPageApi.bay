@@ -444,7 +444,7 @@ class CrudPageApi extends BaseApi
 		/* Execute query */
 		Connection conn = this.getDatabaseConnection();
 		Cursor c = await conn.execute(q, this.getDatabaseParams());
-		Relation item = await c.fetch();
+		Relation item = await c.fetchRelation();
 		await c.close();
 		
 		if (!item)
