@@ -31,6 +31,7 @@ use Runtime.Web.ApiResult;
 use Runtime.Web.BaseModel;
 use Runtime.Web.Bus;
 use Runtime.Web.RenderContainer;
+use Runtime.Web.Crud.CrudRoute;
 use Runtime.Web.Crud.DialogModel;
 use Runtime.Web.Crud.FieldInfo;
 use Runtime.Web.Crud.FormModel;
@@ -301,6 +302,56 @@ struct CrudPageModel<T> extends BaseModel
 		model.commit("setError", res.getErrorMessage(), res.getErrorCode());
 		
 		return model;
+	}
+	
+	
+	/**
+	 * Returns id location
+	 */
+	static Dict getRoutePrimaryKey(CrudRoute crud_route) =>
+		crud_route.container.route.matches.has("id") ? {
+			"id": crud_route.container.route.matches.get("id")
+		} : null
+	;
+	
+	
+	/**
+	 * Route before
+	 */
+	async static void crudRouteBefore(ModelProxy model, CrudRoute crud_route, string action)
+	{
+		/* Get form model */
+		ModelProxy<FormModel> item_form = model.proxy("item_form");
+		
+		if (action == CrudPageModel::ACTION_ADD)
+		{
+			item_form.commit("setPrimaryKey", null);
+		}
+		else if (
+			action == CrudPageModel::ACTION_EDIT or
+			action == CrudPageModel::ACTION_DELETE or
+			action == CrudPageModel::ACTION_ITEM
+		)
+		{
+			Dict pk = static::getRoutePrimaryKey(crud_route);
+			item_form.commit("setPrimaryKey", pk);
+		}
+	}
+	
+	
+	/**
+	 * Route after
+	 */
+	async static void crudRouteAfter(ModelProxy model, CrudRoute crud_route, string action)
+	{
+		if (
+			action == CrudPageModel::ACTION_EDIT or
+			action == CrudPageModel::ACTION_DELETE
+		)
+		{
+			ModelProxy<FormModel> item_form = model.proxy("item_form");
+			item_form.commit("clearErrorMessage");
+		}
 	}
 	
 	
