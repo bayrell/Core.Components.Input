@@ -223,6 +223,7 @@ async void onAddClick(Message<MouseClickEvent> msg)
 	
 	item_form.commit("setPrimaryKey", null);
 	page_model.commit("clearItem");
+	page_model.commit("setAction", "add");
 	await page_model.commitAsync("callCrudItem");
 	
 	save_dialog.commit("setTitle", "Add item");
@@ -245,6 +246,7 @@ async void onEditClick(Message<MouseClickEvent> msg)
 	save_dialog.commit("show");
 	
 	page_model.commit("clearItem");
+	page_model.commit("setAction", "edit");
 	await page_model.commitAsync("callCrudItem");
 }
 
@@ -265,6 +267,7 @@ async void onDeleteClick(Message<MouseClickEvent> msg)
 	delete_dialog.commit("show");
 	
 	page_model.commit("clearItem");
+	page_model.commit("setAction", "delete");
 	await page_model.commitAsync("callCrudItem");
 }
 

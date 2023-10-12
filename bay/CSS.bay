@@ -73,6 +73,9 @@
 .web_table__top{
 	padding-bottom: 1em;
 }
+.web_table__top %(Button)web_button{
+	margin-right: 5px;
+}
 .web_table__delete_dialog_content{
 	margin-top: 1rem;
 	margin-bottom: 1rem;

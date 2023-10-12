@@ -21,6 +21,7 @@
 <use name="Runtime.ModelProxy" />
 <use name="Runtime.Web.LayoutModel" />
 <use name="Runtime.Web.Message" />
+<use name="Runtime.Web.Events.ChangeEvent" />
 <use name="Runtime.Web.Events.MouseClickEvent" />
 <use name="Runtime.Web.Crud.Button" />
 <use name="Runtime.Web.Crud.FieldInfo" />
@@ -42,6 +43,7 @@
 		name={{ field_name }}
 		options={{ options }}
 		@model={{ ["item_form", "item"].concat( field_name ) }}
+		@event:ChangeEvent="onFieldChange"
 		...component_settings
 	/>
 	
@@ -139,6 +141,15 @@ async void onSaveClick(Message<MouseClickEvent> msg)
 	/* Send delete form */
 	await model.commitAsync("callCrudSave");
 }
+
+
+/**
+ * On change event
+ */
+async void onFieldChange(Message<MouseClickEvent> msg)
+{
+}
+
 
 </script>
 

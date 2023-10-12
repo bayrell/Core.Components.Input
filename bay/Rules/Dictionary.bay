@@ -21,6 +21,7 @@ namespace Runtime.Web.Crud.Rules;
 use Runtime.lib;
 use Runtime.BaseStruct;
 use Runtime.ORM.Connection;
+use Runtime.ORM.Query;
 use Runtime.ORM.Relation;
 use Runtime.ORM.RelationArray;
 use Runtime.ORM.Annotations.ForeignKey as ForeignKeyORM;
@@ -29,11 +30,12 @@ use Runtime.Web.Crud.CrudPageApi;
 use Runtime.Web.Crud.Rules.CrudRule;
 
 
-struct ForeignKey extends CrudRule
+struct Dictionary extends CrudRule
 {
-	string name = "";
 	string dictionary_name = "";
+	string table_name = "";
 	string model_name = "";
+	fn query = null;
 	
 	
 	/**
@@ -41,7 +43,6 @@ struct ForeignKey extends CrudRule
 	 */
 	async void onSearchFinal(CrudPageApi api)
 	{
-		if (this.name == "") return ;
 		if (this.dictionary_name == "") return ;
 		
 		/* Check action */
@@ -50,23 +51,23 @@ struct ForeignKey extends CrudRule
 			return;
 		}
 		
-		ForeignKeyORM foreign_key = Relation::getForeignKey(this.name);
-		if (foreign_key == null) return;
-		
 		Connection conn = api.getDatabaseConnection();
 		RelationArray result = null;
 		
-		/* Search items */
-		if (api.action == "actionSearch")
-		{
-			result = await foreign_key.resolve(conn, api.items);
-			api.dictionary.setValue(this.dictionary_name, result);
-		}
-		
 		/* Get item */
-		else if (api.action == "actionItem")
+		if (api.action == "actionItem")
 		{
-			result = await foreign_key.resolveAll(conn);
+			Query q = new Query
+				|> .select(this.table_name)
+			;
+			
+			if (this.query != null)
+			{
+				fn f = this.query;
+				q = await f(api, q);
+			}
+			
+			RelationArray result = await conn.fetchAll(q);
 			api.dictionary.setValue(this.dictionary_name, result);
 		}
 		
@@ -76,10 +77,8 @@ struct ForeignKey extends CrudRule
 		{
 			items = result.toModel(this.model_name);
 			
-			/* Set response */
-			ApiResult api_result = api.container.response;
-			api_result <= data <= dictionary <= { this.dictionary_name } <= items;
-			api.container.response = api_result;
+			/* Set dictionary result */
+			api.container.setDictionary(this.dictionary_name, items);
 		}
 	}
 }

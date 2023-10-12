@@ -73,9 +73,9 @@ class CrudRoute extends BaseRoute
 		this.page_model.commit("setPage", this.container.request.query.get("page", 1));
 		
 		/* Search items */
-		await this.page_model.commitAsync("crudRouteBefore", this, CrudPageModel::ACTION_INDEX);
+		await this.page_model.commitAsync("event", "crudRouteIndexBefore", {"crud_route": this});
 		await this.page_model.commitAsync("callCrudSearch");
-		await this.page_model.commitAsync("crudRouteAfter", this, CrudPageModel::ACTION_INDEX);
+		await this.page_model.commitAsync("event", "crudRouteIndexAfter", {"crud_route": this});
 		
 		/* Set title */
 		CrudPageModel model = this.page_model.data();
@@ -98,9 +98,9 @@ class CrudRoute extends BaseRoute
 		ModelProxy<FormModel> save_form = this.page_model.proxy("item_form");
 		
 		/* Call api */
-		await this.page_model.commitAsync("crudRouteBefore", this, CrudPageModel::ACTION_ADD);
+		await this.page_model.commitAsync("event", "crudRouteAddBefore", {"crud_route": this});
 		await this.page_model.commitAsync("callCrudItem");
-		await this.page_model.commitAsync("crudRouteAfter", this, CrudPageModel::ACTION_ADD);
+		await this.page_model.commitAsync("event", "crudRouteAddAfter", {"crud_route": this});
 		
 		/* Set title */
 		CrudPageModel model = this.page_model.data();
@@ -120,9 +120,9 @@ class CrudRoute extends BaseRoute
 		this.page_model.commit("setAction", CrudPageModel::ACTION_EDIT);
 		
 		/* Call api */
-		await this.page_model.commitAsync("crudRouteBefore", this, CrudPageModel::ACTION_ADD);
+		await this.page_model.commitAsync("event", "crudRouteEditBefore", {"crud_route": this});
 		await this.page_model.commitAsync("callCrudItem");
-		await this.page_model.commitAsync("crudRouteAfter", this, CrudPageModel::ACTION_ADD);
+		await this.page_model.commitAsync("event", "crudRouteEditAfter", {"crud_route": this});
 		
 		/* Set title */
 		CrudPageModel model = this.page_model.data();
@@ -142,9 +142,9 @@ class CrudRoute extends BaseRoute
 		this.page_model.commit("setAction", CrudPageModel::ACTION_DELETE);
 		
 		/* Call api */
-		await this.page_model.commitAsync("crudRouteBefore", this, CrudPageModel::ACTION_DELETE);
+		await this.page_model.commitAsync("event", "crudRouteDeleteBefore", {"crud_route": this});
 		await this.page_model.commitAsync("callCrudItem");
-		await this.page_model.commitAsync("crudRouteAfter", this, CrudPageModel::ACTION_DELETE);
+		await this.page_model.commitAsync("event", "crudRouteDeleteAfter", {"crud_route": this});
 		
 		/* Set title */
 		CrudPageModel model = this.page_model.data();

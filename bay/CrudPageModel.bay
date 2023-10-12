@@ -203,6 +203,21 @@ struct CrudPageModel<T> extends BaseModel
 	
 	
 	/**
+	 * Setup field options
+	 */
+	CrudPageModel setFieldOptions(string field_name, Collection options)
+	{
+		Dict fields = this.fields;
+		
+		fields <= { field_name } <= options <= options;
+		
+		return this.clone{
+			"fields": fields,
+		}
+	}
+	
+	
+	/**
 	 * Extends dictionary
 	 */
 	CrudPageModel extendDictionary(Dict new_dictionary)
@@ -235,6 +250,36 @@ struct CrudPageModel<T> extends BaseModel
 	 */
 	async static Dict event(ModelProxy model, string event, Dict data)
 	{
+		/* Get form model */
+		ModelProxy<FormModel> item_form = model.proxy("item_form");
+		
+		if (event == "crudRouteAddBefore")
+		{
+			item_form.commit("setPrimaryKey", null);
+		}
+		
+		/* Item before */
+		else if (
+			event == "crudRouteItemBefore" or
+			event == "crudRouteEditBefore" or
+			event == "crudRouteDeleteBefore"
+		)
+		{
+			CrudRoute crud_route = data["crud_route"];
+			Dict pk = static::getRoutePrimaryKey(crud_route);
+			item_form.commit("setPrimaryKey", pk);
+		}
+		
+		/* Item after */
+		else if (
+			event == "crudRouteEditAfter" or
+			event == "crudRouteDeleteAfter"
+		)
+		{
+			ModelProxy<FormModel> item_form = model.proxy("item_form");
+			item_form.commit("clearErrorMessage");
+		}
+		
 		return data;
 	}
 	
@@ -316,46 +361,6 @@ struct CrudPageModel<T> extends BaseModel
 	
 	
 	/**
-	 * Route before
-	 */
-	async static void crudRouteBefore(ModelProxy model, CrudRoute crud_route, string action)
-	{
-		/* Get form model */
-		ModelProxy<FormModel> item_form = model.proxy("item_form");
-		
-		if (action == CrudPageModel::ACTION_ADD)
-		{
-			item_form.commit("setPrimaryKey", null);
-		}
-		else if (
-			action == CrudPageModel::ACTION_EDIT or
-			action == CrudPageModel::ACTION_DELETE or
-			action == CrudPageModel::ACTION_ITEM
-		)
-		{
-			Dict pk = static::getRoutePrimaryKey(crud_route);
-			item_form.commit("setPrimaryKey", pk);
-		}
-	}
-	
-	
-	/**
-	 * Route after
-	 */
-	async static void crudRouteAfter(ModelProxy model, CrudRoute crud_route, string action)
-	{
-		if (
-			action == CrudPageModel::ACTION_EDIT or
-			action == CrudPageModel::ACTION_DELETE
-		)
-		{
-			ModelProxy<FormModel> item_form = model.proxy("item_form");
-			item_form.commit("clearErrorMessage");
-		}
-	}
-	
-	
-	/**
 	 * Search items
 	 */
 	async static ApiResult callCrudSearch(ModelProxy model)
@@ -386,8 +391,8 @@ struct CrudPageModel<T> extends BaseModel
 		
 		/* Process event */
 		await static::event(model, "crudSearchAfter", {
+			"api_res": res,
 			"post_data": post_data,
-			"res": res
 		});
 		
 		return res;
@@ -431,8 +436,8 @@ struct CrudPageModel<T> extends BaseModel
 		
 		/* Process event */
 		await static::event(model, "crudSearchAfter", {
+			"api_res": res,
 			"post_data": post_data,
-			"res": res
 		});
 		
 		return res;
@@ -496,8 +501,8 @@ struct CrudPageModel<T> extends BaseModel
 			/* Process after */
 			await static::event(model, "crudItemAfter", {
 				"pk": pk,
+				"api_res": res,
 				"post_data": post_data,
-				"res": res
 			});
 			
 			return res;
@@ -556,8 +561,8 @@ struct CrudPageModel<T> extends BaseModel
 		
 		/* Process after */
 		await static::event(model, "crudSaveAfter", {
+			"api_res": res,
 			"post_data": post_data,
-			"res": res,
 		});
 		
 		return res;
@@ -600,8 +605,8 @@ struct CrudPageModel<T> extends BaseModel
 		
 		/* Process after */
 		await static::event(model, "crudDeleteAfter", {
+			"api_res": res,
 			"post_data": post_data,
-			"res": res,
 		});
 		
 		return res;

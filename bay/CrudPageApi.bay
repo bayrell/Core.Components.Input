@@ -561,7 +561,8 @@ class CrudPageApi extends BaseApi
 			await item.save(conn);
 			
 			/* Refresh item */
-			await item.refresh(conn);
+			Dict pk = item.getPrimaryKey();
+			item = await this.findItem(pk);
 			
 			/* Before item */
 			await this.onSaveAfter(item, update_data);
