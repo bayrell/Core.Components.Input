@@ -1,0 +1,631 @@
+/*!
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2016-2023 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+namespace Runtime.Widget.Crud.Api;
+
+use Runtime.lib;
+use Runtime.BaseStruct;
+use Runtime.Web.ApiResult;
+
+
+class CrudApi extends BaseApi
+{
+	string action = "";
+	ApiResult result = null;
+	Connection conn = null;
+	QueryResult items = null;
+	Relation item = null;
+	int limit = 0;
+	int page = 0;
+	int pages = 0;
+	
+	
+	/**
+	 * Constructor
+	 */
+	void constructor()
+	{
+		parent();
+		this.connection = this.getConnection();
+		this.result = new ApiResult;
+	}
+	
+	
+	/**
+	 * Returns api name
+	 */
+	pure string getApiName() => "";
+	
+	
+	/**
+	 * Returns table name
+	 */
+	pure string getTableName() => "";
+	
+	
+	/**
+	 * Returns database Connection
+	 */
+	Connection getConnection()
+	{
+		return Connection::getConnection();
+	}
+	
+	
+	/**
+	 * Returns if search
+	 */
+	bool isSearch()
+	{
+		if (this.action == "actionSearch") return true;
+		if (this.action == "actionSearchOne") return true;
+		return false;
+	}
+	
+	
+	/**
+	 * Returns search fields
+	 */
+	Vector getSearchFields() => this.getItemFields();
+	
+	
+	/**
+	 * Returns item fields
+	 */
+	Vector getItemFields() => [];
+	
+	
+	/**
+	 * Returns save fields
+	 */
+	Vector getSaveFields() => [];
+	
+	
+	/**
+	 * Returns allowed fields
+	 */
+	Vector getAllowedFields(string kind)
+	{
+		if (kind == "save")
+		{
+			return this.getSaveFields();
+		}
+		if (kind == "item")
+		{
+			return this.getItemFields();
+		}
+		if (kind == "search")
+		{
+			return this.getSearchFields();
+		}
+		return null;
+	}
+	
+	
+	/**
+	 * Returns rules
+	 */
+	Vector<CrudRule> getRules() =>
+	[
+	];
+	
+	
+	/**
+	 * Returns default limit
+	 */
+	int getDefaultLimit() => 10;	
+	
+	
+	/**
+	 * Returns max limit
+	 */
+	int getMaxLimit() => 100;
+		
+	
+	/**
+	 * Returns page limit
+	 */
+	list getPageLimit()
+	{
+		int page = (int)(this.post_data["page"] |> default int 1);
+		int limit = (int)(this.post_data["limit"] |> default int -1);
+		int limit_default = this.getDefaultLimit();
+		int limit_max = this.getMaxLimit();
+		
+		if (page <= 1) page = 1;
+		if (limit < 0) limit = limit_default;
+		if (limit > limit_max) limit = limit_max;
+		
+		return [page, limit];
+	}
+	
+	
+	/**
+	 * Convert item
+	 */
+	async Map convertItem(string action, Relation item)
+	{
+		Collection fields = this.getAllowedFields(action);
+		return item.data(fields);
+	}
+	
+	
+	/* -------------------------- Search -------------------------- */
+	
+	
+	/**
+	 * Before search
+	 */
+	async void onSearchBefore(Relation item, Dict update_data)
+	{
+		Collection<CrudRule> rules = this.getRules();
+		for (int i=0; i<rules.count(); i++)
+		{
+			CrudRule rule = rules[i];
+			await rule.onSearchBefore(this, item, update_data);
+		}
+	}
+	
+	
+	/**
+	 * After search
+	 */
+	async void onSearchAfter(Relation item, Dict update_data)
+	{
+		Collection<CrudRule> rules = this.getRules();
+		for (int i=0; i<rules.count(); i++)
+		{
+			CrudRule rule = rules[i];
+			await rule.onSearchAfter(this, item, update_data);
+		}
+	}
+	
+	
+	/**
+	 * Returns filter
+	 */
+	Vector buildFilter()
+	{
+		Vector<string> filter_fields = this.getRules()
+			.filter( lib::isInstance(classof Filter) )
+		;
+		
+		Vector result = new Vector();
+		Vector filter_post = this.post_data["filter"];
+		if (filter_post == null) return result;
+		if (not (filter_post instanceof Collection)) return result;
+		
+		for (int i=0; i<filter_post.count(); i++)
+		{
+			Vector filter_item = filter_post[i];
+			if (filter_item instanceof Collection and filter_item.count() == 3)
+			{
+				continue;
+			}
+			
+			QueryFilter filter = new QueryFilter(
+				filter_item[0],
+				filter_item[1],
+				filter_item[2]
+			);
+			
+			if (not rtl::isString(filter.key)) continue;
+			if (not rtl::isString(filter.op)) continue;
+			if (not rtl::isString(filter.value) and not rtl::isInt(filter.value)) continue;
+			if (not QueryFilter::validateOp(filter.op)) continue;
+			
+			Filter rule = filter_fields.findItem(
+				lib::equalAttr("api_name", field_name)
+			);
+			
+			if (not rule) continue;
+			
+			result.append(filter);
+		}
+		
+		return result;
+	}
+	
+	
+	/**
+	 * Build search query
+	 */
+	async void buildSearchQuery(Query q)
+	{
+	}
+	
+	
+	/**
+	 * Search items
+	 */
+	async void searchItems()
+	{
+		list res = this.getPageLimit();
+		this.limit = res[1];
+		this.page = res[0];
+		this.pages = 0;
+		
+		if (this.action == "actionSearchOne")
+		{
+			this.limit = 1;
+		}
+		
+		/* Search before event */
+		await this.onSearchBefore();
+		
+		/* Get table name */
+		string table_name = this.getTableName();
+		
+		/* Get filter */
+		Vector filter = this.buildFilter();
+		
+		/* Build query */
+		Query q = (new Query)
+			.select(table_name)
+			.setFilter(filter)
+			.limit(this.limit)
+			.page(this.page)
+		;
+		
+		/* Setup calc found rows */
+		if (this.action == "actionSearchOne")
+		{
+			q = q.calcFoundRows(false);
+		}
+		else
+		{
+			if (limit > 0)
+			{
+				q = q.calcFoundRows(true);
+			}
+		}
+		
+		/* Build search query */
+		await this.buildSearchQuery(q);
+		
+		/* Fetch all */
+		this.items = await this.connection.fetchAll(q);
+		
+		/* Search after event */
+		await this.onSearchAfter();
+	}
+	
+	
+	@ApiMethod
+	async void actionSearch()
+	{
+		/* Search items */
+		await this.searchItems();
+		
+		/* Transform items */
+		Collection items = this.items.map(
+			Dict (Relation item) => this.convertItem("search", item)
+		);
+		
+		this.result.success({
+			"data": {
+				"items": items,
+			}
+		});
+	}
+	
+	
+	@ApiMethod
+	async void actionSearchOne()
+	{
+		/* Search items */
+		await this.searchItems();
+		
+		/* Transform items */
+		Collection items = this.items.map(
+			Dict (Relation item) => this.convertItem("search", item)
+		);
+		
+		this.result.success({
+			"data": {
+				"items": items,
+			}
+		});
+	}
+	
+	
+	/* ------------------------- Get Item ------------------------- */
+	
+	
+	@ApiMethod
+	async void actionItem()
+	{
+		Map pk = this.post_data["pk"];
+		
+		/* Find item */
+		await this.findItem(pk);
+		if (this.item != null)
+		{
+			throw new NotFoundException();
+		}
+		
+		/* Convert item */
+		Map model = this.convertItem("item", this.item);
+		Map pk = this.item.getPrimaryKey();
+		
+		this.result.success({
+			"data": {
+				"pk": pk,
+				"item": model,
+			}
+		});
+	}
+	
+	
+	/* --------------------------- Save --------------------------- */
+	
+	
+	/**
+	 * Before save
+	 */
+	async void onSaveBefore(Relation item, Dict update_data)
+	{
+		Collection<CrudRule> rules = this.getRules();
+		for (int i=0; i<rules.count(); i++)
+		{
+			CrudRule rule = rules[i];
+			await rule.onSaveBefore(this, item, update_data);
+		}
+	}
+	
+	
+	/**
+	 * After save
+	 */
+	async void onSaveAfter(Relation item, Dict update_data)
+	{
+		Collection<CrudRule> rules = this.getRules();
+		for (int i=0; i<rules.count(); i++)
+		{
+			CrudRule rule = rules[i];
+			await rule.onSaveAfter(this, item, update_data);
+		}
+	}
+	
+	
+	/**
+	 * Find item by primary key
+	 */
+	async void findItem(Dict pk)
+	{
+		string table_name = this.getTableName();
+		
+		/* Get primary key */
+		Collection filter = Relation::getPrimaryFilter(table_name, pk);
+		
+		/* Build query */
+		Query q = (new Query)
+			.select(table_name)
+			.setFilter(filter)
+		;
+		this.buildSearchQuery(q);
+		q.limit(1);
+		
+		/* Find relation */
+		this.item = await this.connection.findRelation(q);
+	}
+	
+	
+	/**
+	 * Create new relation
+	 */
+	async void newRelation()
+	{
+		string table_name = this.getTableName();
+		return new Relation(table_name);
+	}
+	
+	
+	/**
+	 * Validate item
+	 */
+	async void validateItem(Map update_data)
+	{
+		/* Intersect */
+		Vector fields = this.getItemFields();
+		update_data = update_data.intersect(fields);
+		
+		/* Call rules */
+		Collection<CrudRule> rules = this.getRules();
+		for (int i=0; i<rules.count(); i++)
+		{
+			CrudRule rule = rules[i];
+			update_data = await rule.validateItem(this, update_data);
+		}
+		
+		/* Check fields error */
+		FieldResult fields = this.result.data.get("fields");
+		if (not fields.isSuccess())
+		{
+			throw new FieldException(this.result);
+		}
+		
+		return update_data;
+	}
+	
+	
+	/**
+	 * Save item to database
+	 */
+	async void save()
+	{
+		await this.item.save(this.connection);
+	}
+	
+	
+	/**
+	 * Refresh item from database
+	 */
+	async void refresh(Dict pk)
+	{
+		Map pk = this.item.getPrimaryKey();
+		await this.findItem(pk);
+	}
+	
+	
+	/**
+	 * Update item
+	 */
+	async void updateItem(Map update_data)
+	{
+		/* Create field result */
+		this.result.data.set("fields", new FieldResult);
+		
+		/* Validate item */
+		update_data = await this.validateItem(update_data);
+		
+		/* Update data */
+		this.item.updateData(update_data);
+		
+		/* Save before */
+		await this.onSaveBefore();
+		
+		/* Save item */
+		await this.save();
+		
+		/* Refresh item */
+		await this.refresh();
+		
+		/* Save after */
+		await this.onSaveAfter();
+	}
+	
+	
+	@ApiMethod
+	async void actionSave()
+	{		
+		Map pk = this.post_data["pk"];
+		Map update_data = this.post_data["update_data"];
+		
+		/* Find item */
+		await this.findItem(pk);
+		if (this.item != null)
+		{
+			this.item = await this.newRelation();
+		}
+		
+		/* Check if item is exists */
+		if (this.item != null)
+		{
+			throw new NotFoundException();
+		}
+		
+		/* Update item */
+		await this.updateItem(update_data);
+		
+		/* Convert item */
+		Map model = this.convertItem("item", this.item);
+		Map pk = this.item.getPrimaryKey();
+		
+		this.result.success({
+			"data": {
+				"pk": pk,
+				"item": model,
+			}
+		});
+	}
+	
+	
+	/* -------------------------- Delete -------------------------- */
+	
+	
+	/**
+	 * Before delete
+	 */
+	async void onDeleteBefore(Relation item, Dict update_data)
+	{
+		Collection<CrudRule> rules = this.getRules();
+		for (int i=0; i<rules.count(); i++)
+		{
+			CrudRule rule = rules[i];
+			await rule.onDeleteBefore(this, item, update_data);
+		}
+	}
+	
+	
+	/**
+	 * After delete
+	 */
+	async void onDeleteAfter(Relation item, Dict update_data)
+	{
+		Collection<CrudRule> rules = this.getRules();
+		for (int i=0; i<rules.count(); i++)
+		{
+			CrudRule rule = rules[i];
+			await rule.onDeleteAfter(this, item, update_data);
+		}
+	}
+	
+	
+	/**
+	 * Delete item from database
+	 */
+	async void delete()
+	{
+		await this.item.delete(this.connection);
+	}
+	
+	
+	/**
+	 * Delete item
+	 */
+	async void deleteItem(Map update_data)
+	{
+		/* Delete before */
+		await this.onDeleteBefore();
+		
+		/* Delete item */
+		await this.delete();
+		
+		/* Delete after */
+		await this.onDeleteAfter();
+	}
+	
+	
+	@ApiMethod
+	async void actionDelete()
+	{		
+		Map pk = this.post_data["pk"];
+		
+		/* Find item */
+		await this.findItem(pk);
+		if (this.item != null)
+		{
+			throw new NotFoundException();
+		}
+		
+		/* Delete item */
+		await this.deleteItem();
+		
+		/* Convert item */
+		Map model = this.convertItem("item", this.item);
+		Map pk = this.item.getPrimaryKey();
+		
+		this.result.success({
+			"data": {
+				"pk": pk,
+				"item": model,
+			}
+		});
+	}
+}
