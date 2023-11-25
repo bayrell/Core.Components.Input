@@ -20,7 +20,19 @@ namespace Runtime.Widget.Crud.Api;
 
 use Runtime.lib;
 use Runtime.BaseStruct;
+use Runtime.Exceptions.ItemNotFound;
+use Runtime.Crud.CrudRule;
+use Runtime.Crud.FieldResult;
+use Runtime.Crud.FieldException;
+use Runtime.Crud.Filter;
+use Runtime.ORM.Connection;
+use Runtime.ORM.Query;
+use Runtime.ORM.QueryFilter;
+use Runtime.ORM.QueryResult;
+use Runtime.ORM.Relation;
+use Runtime.Web.ApiMethod;
 use Runtime.Web.ApiResult;
+use Runtime.Web.BaseApi;
 
 
 class CrudApi extends BaseApi
@@ -230,7 +242,7 @@ class CrudApi extends BaseApi
 			if (not QueryFilter::validateOp(filter.op)) continue;
 			
 			Filter rule = filter_fields.findItem(
-				lib::equalAttr("api_name", field_name)
+				lib::equalAttr("api_name", filter.key)
 			);
 			
 			if (not rule) continue;
@@ -289,7 +301,7 @@ class CrudApi extends BaseApi
 		}
 		else
 		{
-			if (limit > 0)
+			if (this.limit > 0)
 			{
 				q = q.calcFoundRows(true);
 			}
@@ -356,7 +368,7 @@ class CrudApi extends BaseApi
 		await this.findItem(pk);
 		if (this.item != null)
 		{
-			throw new NotFoundException();
+			throw new ItemNotFound();
 		}
 		
 		/* Convert item */
@@ -527,7 +539,7 @@ class CrudApi extends BaseApi
 		/* Check if item is exists */
 		if (this.item != null)
 		{
-			throw new NotFoundException();
+			throw new ItemNotFound();
 		}
 		
 		/* Update item */
@@ -611,7 +623,7 @@ class CrudApi extends BaseApi
 		await this.findItem(pk);
 		if (this.item != null)
 		{
-			throw new NotFoundException();
+			throw new ItemNotFound();
 		}
 		
 		/* Delete item */
