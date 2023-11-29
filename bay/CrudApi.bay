@@ -20,6 +20,7 @@ namespace Runtime.Widget.Crud.Api;
 
 use Runtime.lib;
 use Runtime.BaseStruct;
+use Runtime.Exceptions.ApiError;
 use Runtime.Exceptions.ItemNotFound;
 use Runtime.Crud.CrudRule;
 use Runtime.Crud.FieldResult;
@@ -368,7 +369,7 @@ class CrudApi extends BaseApi
 		await this.findItem(pk);
 		if (this.item != null)
 		{
-			throw new ItemNotFound();
+			throw new ApiError(new ItemNotFound());
 		}
 		
 		/* Convert item */
@@ -539,7 +540,7 @@ class CrudApi extends BaseApi
 		/* Check if item is exists */
 		if (this.item != null)
 		{
-			throw new ItemNotFound();
+			throw new ApiError(new ItemNotFound());
 		}
 		
 		/* Update item */
@@ -623,7 +624,7 @@ class CrudApi extends BaseApi
 		await this.findItem(pk);
 		if (this.item != null)
 		{
-			throw new ItemNotFound();
+			throw new ApiError(new ItemNotFound());
 		}
 		
 		/* Delete item */
