@@ -27,6 +27,7 @@ use Runtime.Crud.FieldResult;
 use Runtime.Crud.FieldException;
 use Runtime.Crud.Filter;
 use Runtime.ORM.Connection;
+use Runtime.ORM.Cursor;
 use Runtime.ORM.Query;
 use Runtime.ORM.QueryFilter;
 use Runtime.ORM.QueryResult;
@@ -174,7 +175,7 @@ class CrudApi extends BaseApi
 	async Map convertItem(string action, Relation item)
 	{
 		Collection fields = this.getAllowedFields(action);
-		return item.data(fields);
+		return item.intersect(fields);
 	}
 	
 	
@@ -292,7 +293,7 @@ class CrudApi extends BaseApi
 			.select(table_name)
 			.setFilter(filter)
 			.limit(this.limit)
-			.page(this.page)
+			.page(this.page - 1)
 		;
 		
 		/* Setup calc found rows */
@@ -311,8 +312,16 @@ class CrudApi extends BaseApi
 		/* Build search query */
 		await this.buildSearchQuery(q);
 		
+		/* Get cursor */
+		Cursor c = await this.connection.execute(q);
+		
 		/* Fetch all */
-		this.items = await this.connection.fetchAll(q);
+		this.items = await c.fetchAll();
+		this.page = c.getPage() + 1;
+		this.pages = c.getPages();
+		
+		/* Close cursor */
+		await c.close();
 		
 		/* Search after event */
 		await this.onSearchAfter();
@@ -431,7 +440,7 @@ class CrudApi extends BaseApi
 			.select(table_name)
 			.setFilter(filter)
 		;
-		this.buildSearchQuery(q);
+		await this.buildSearchQuery(q);
 		q.limit(1);
 		
 		/* Find relation */
