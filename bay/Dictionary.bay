@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Crud.Api;
+namespace Runtime.Widget.Crud;
 
 use Runtime.lib;
 use Runtime.BaseStruct;
@@ -27,7 +27,7 @@ use Runtime.ORM.RelationArray;
 use Runtime.ORM.Annotations.ForeignKey as ForeignKeyORM;
 use Runtime.Web.ApiResult;
 use Runtime.Widget.Crud.CrudApi;
-use Runtime.Widget.Crud.Api.CrudRule;
+use Runtime.Widget.Crud.CrudRule;
 
 
 struct Dictionary extends CrudRule

@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Crud.Api;
+namespace Runtime.Widget.Crud;
 
 use Runtime.re;
 use Runtime.BaseStruct;
@@ -25,8 +25,8 @@ use Runtime.ORM.Connection;
 use Runtime.ORM.Query;
 use Runtime.ORM.QueryFilter;
 use Runtime.ORM.Relation;
-use Runtime.Widget.Crud.Api.CrudApi;
-use Runtime.Widget.Crud.Api.CrudRule;
+use Runtime.Widget.Crud.CrudApi;
+use Runtime.Widget.Crud.CrudRule;
 
 
 struct Unique extends CrudRule

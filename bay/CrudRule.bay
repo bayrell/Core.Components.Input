@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Crud.Api;
+namespace Runtime.Widget.Crud;
 
 use Runtime.BaseStruct;
 use Runtime.ORM.Relation;
@@ -27,49 +27,49 @@ struct CrudRule extends BaseStruct
 {
 	
 	/**
-	 * Search init event
+	 * Search before event
 	 */
-	async void onSearchInit(CrudApi api)
+	async void onSearchBefore(CrudApi api)
 	{
 	}
 	
 	
 	/**
-	 * Search final event
+	 * Search after event
 	 */
-	async void onSearchFinal(CrudApi api)
+	async void onSearchAfter(CrudApi api)
 	{
 	}
 	
 	
 	/**
-	 * Save init event
+	 * Save before event
 	 */
-	async void onSaveInit(CrudApi api)
+	async void onSaveBefore(CrudApi api)
 	{
 	}
 	
 	
 	/**
-	 * Save final event
+	 * Save after event
 	 */
-	async void onSaveFinal(CrudApi api)
+	async void onSaveAfter(CrudApi api)
 	{
 	}
 	
 	
 	/**
-	 * Delete init event
+	 * Delete before event
 	 */
-	async void onDeleteInit(CrudApi api)
+	async void onDeleteBefore(CrudApi api)
 	{
 	}
 	
 	
 	/**
-	 * Delete final event
+	 * Delete after event
 	 */
-	async void onDeleteFinal(CrudApi api)
+	async void onDeleteAfter(CrudApi api)
 	{
 	}
 	
@@ -77,26 +77,5 @@ struct CrudRule extends BaseStruct
 	/**
 	 * Validate item
 	 */
-	async Dict validateItem(CrudApi api, Dict update_data)
-	{
-		return update_data;
-	}
-	
-	
-	/**
-	 * Before save item
-	 */
-	async void onSaveBefore(CrudApi api, Relation item, Dict update_data)
-	{
-		
-	}
-	
-	
-	/**
-	 * After save item
-	 */
-	async void onSaveAfter(CrudApi api, Relation item, Dict update_data)
-	{
-		
-	}
+	async Map validateItem(CrudApi api, Map update_data) => update_data;
 }

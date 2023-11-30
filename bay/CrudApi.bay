@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Crud.Api;
+namespace Runtime.Widget.Crud;
 
 use Runtime.lib;
 use Runtime.BaseStruct;
@@ -31,7 +31,7 @@ use Runtime.ORM.Query;
 use Runtime.ORM.QueryFilter;
 use Runtime.ORM.QueryResult;
 use Runtime.ORM.Relation;
-use Runtime.Web.ApiMethod;
+use Runtime.Web.Annotations.ApiMethod;
 use Runtime.Web.ApiResult;
 use Runtime.Web.BaseApi;
 
@@ -184,13 +184,13 @@ class CrudApi extends BaseApi
 	/**
 	 * Before search
 	 */
-	async void onSearchBefore(Relation item, Dict update_data)
+	async void onSearchBefore()
 	{
 		Collection<CrudRule> rules = this.getRules();
 		for (int i=0; i<rules.count(); i++)
 		{
 			CrudRule rule = rules[i];
-			await rule.onSearchBefore(this, item, update_data);
+			await rule.onSearchBefore(this);
 		}
 	}
 	
@@ -198,13 +198,13 @@ class CrudApi extends BaseApi
 	/**
 	 * After search
 	 */
-	async void onSearchAfter(Relation item, Dict update_data)
+	async void onSearchAfter()
 	{
 		Collection<CrudRule> rules = this.getRules();
 		for (int i=0; i<rules.count(); i++)
 		{
 			CrudRule rule = rules[i];
-			await rule.onSearchAfter(this, item, update_data);
+			await rule.onSearchAfter(this);
 		}
 	}
 	
@@ -391,13 +391,13 @@ class CrudApi extends BaseApi
 	/**
 	 * Before save
 	 */
-	async void onSaveBefore(Relation item, Dict update_data)
+	async void onSaveBefore()
 	{
 		Collection<CrudRule> rules = this.getRules();
 		for (int i=0; i<rules.count(); i++)
 		{
 			CrudRule rule = rules[i];
-			await rule.onSaveBefore(this, item, update_data);
+			await rule.onSaveBefore(this);
 		}
 	}
 	
@@ -405,13 +405,13 @@ class CrudApi extends BaseApi
 	/**
 	 * After save
 	 */
-	async void onSaveAfter(Relation item, Dict update_data)
+	async void onSaveAfter()
 	{
 		Collection<CrudRule> rules = this.getRules();
 		for (int i=0; i<rules.count(); i++)
 		{
 			CrudRule rule = rules[i];
-			await rule.onSaveAfter(this, item, update_data);
+			await rule.onSaveAfter(this);
 		}
 	}
 	
@@ -565,13 +565,13 @@ class CrudApi extends BaseApi
 	/**
 	 * Before delete
 	 */
-	async void onDeleteBefore(Relation item, Dict update_data)
+	async void onDeleteBefore()
 	{
 		Collection<CrudRule> rules = this.getRules();
 		for (int i=0; i<rules.count(); i++)
 		{
 			CrudRule rule = rules[i];
-			await rule.onDeleteBefore(this, item, update_data);
+			await rule.onDeleteBefore(this);
 		}
 	}
 	
@@ -579,13 +579,13 @@ class CrudApi extends BaseApi
 	/**
 	 * After delete
 	 */
-	async void onDeleteAfter(Relation item, Dict update_data)
+	async void onDeleteAfter()
 	{
 		Collection<CrudRule> rules = this.getRules();
 		for (int i=0; i<rules.count(); i++)
 		{
 			CrudRule rule = rules[i];
-			await rule.onDeleteAfter(this, item, update_data);
+			await rule.onDeleteAfter(this);
 		}
 	}
 	
