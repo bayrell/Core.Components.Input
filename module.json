@@ -2,7 +2,9 @@
 	"name": "Runtime.Widget.Crud",
 	"assets":
 	[
-		"CrudApiStorage.bay"
+		"CrudApiStorage.bay",
+		"CrudPage.bay",
+		"CrudPageModel.bay"
 	],
 	"src": "./bay",
 	"dest":
