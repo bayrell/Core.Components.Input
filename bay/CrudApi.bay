@@ -451,7 +451,7 @@ class CrudApi extends BaseApi
 	/**
 	 * Create new relation
 	 */
-	async void newRelation()
+	async Relation newRelation()
 	{
 		string table_name = this.getTableName();
 		return new Relation(table_name);
@@ -476,11 +476,13 @@ class CrudApi extends BaseApi
 		}
 		
 		/* Check fields error */
+		/*
 		FieldResult fields = this.result.data.get("fields");
 		if (not fields.isSuccess())
 		{
 			throw new FieldException(this.result);
 		}
+		*/
 		
 		return update_data;
 	}
@@ -498,7 +500,7 @@ class CrudApi extends BaseApi
 	/**
 	 * Refresh item from database
 	 */
-	async void refresh(Dict pk)
+	async void refresh()
 	{
 		Map pk = this.item.getPrimaryKey();
 		await this.findItem(pk);
@@ -511,7 +513,7 @@ class CrudApi extends BaseApi
 	async void updateItem(Map update_data)
 	{
 		/* Create field result */
-		this.result.data.set("fields", new FieldResult);
+		/* this.result.data.set("fields", new FieldResult); */
 		
 		/* Validate item */
 		update_data = await this.validateItem(update_data);
@@ -537,17 +539,20 @@ class CrudApi extends BaseApi
 	async void actionSave()
 	{		
 		Map pk = this.post_data["pk"];
-		Map update_data = this.post_data["update_data"];
+		Map update_data = this.post_data["item"];
 		
 		/* Find item */
-		await this.findItem(pk);
-		if (this.item != null)
+		if (pk != null)
+		{
+			await this.findItem(pk);
+		}
+		else
 		{
 			this.item = await this.newRelation();
 		}
 		
 		/* Check if item is exists */
-		if (this.item != null)
+		if (this.item == null)
 		{
 			throw new ApiError(new ItemNotFound());
 		}

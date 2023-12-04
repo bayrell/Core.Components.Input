@@ -19,6 +19,7 @@
 namespace Runtime.Widget.Crud;
 
 use Runtime.BaseObject;
+use Runtime.Serializer;
 use Runtime.Web.ApiResult;
 use Runtime.Web.LayoutModel;
 use Runtime.Widget.WidgetError;
@@ -28,6 +29,7 @@ class CrudApiStorage extends BaseObject
 {
 	string api_name = "";
 	
+	Map item = {};
 	Vector items = null;
 	int page = 0;
 	int pages = 0;
@@ -53,10 +55,22 @@ class CrudApiStorage extends BaseObject
 	 */
 	void setApiResult(ApiResult res)
 	{
-		this.setItems(res.data["items"]);
-		this.setLimit(res.data["limit"]);
-		this.setPage(res.data["page"]);
-		this.setPages(res.data["pages"]);
+		if (res.data.has("items"))
+		{
+			this.setItems(res.data["items"]);
+		}
+		if (res.data.has("limit"))
+		{
+			this.setLimit(res.data["limit"]);
+		}
+		if (res.data.has("page"))
+		{
+			this.setPage(res.data["page"]);
+		}
+		if (res.data.has("pages"))
+		{
+			this.setPages(res.data["pages"]);
+		}
 		this.error.setApiResult(res);
 	}
 	
@@ -94,6 +108,16 @@ class CrudApiStorage extends BaseObject
 	void setPages(int pages)
 	{
 		this.pages = pages;
+	}
+	
+	
+	/**
+	 * Clear
+	 */
+	void clear()
+	{
+		this.item = {};
+		this.error.clear();
 	}
 	
 	
@@ -136,10 +160,28 @@ class CrudApiStorage extends BaseObject
 			"page": this.page,
 			"pages": this.pages,
 		});
-		
 		ApiResult res = await this.layout.callApi({
 			"class": this.api_name,
 			"method": "actionSearch",
+			"data": post_data
+		});
+		this.setApiResult(res);
+	}
+	
+	
+	/**
+	 * Save data
+	 */
+	async void doSave(Dict post_data = null)
+	{
+		if (post_data == null) post_data = {};
+		post_data = post_data.concat({
+			"item": this.item,
+		});
+		
+		ApiResult res = await this.layout.callApi({
+			"class": this.api_name,
+			"method": "actionSave",
 			"data": post_data
 		});
 		this.setApiResult(res);

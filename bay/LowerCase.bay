@@ -31,11 +31,11 @@ struct LowerCase extends CrudRule
 	/**
 	 * Validate item
 	 */
-	async Dict validateItem(CrudApi api, Dict update_data)
+	async Map validateItem(CrudApi api, Map update_data)
 	{
 		var value = update_data[this.name];
-		value = rs::strtolower(value);
-		update_data <= { this.name } <= value;
+		value = rs::lower(value);
+		update_data.set(this.name, value);
 		return update_data;
 	}
 	

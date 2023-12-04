@@ -22,6 +22,7 @@ use Runtime.re;
 use Runtime.BaseStruct;
 use Runtime.Widget.Crud.CrudApi;
 use Runtime.Widget.Crud.CrudRule;
+use Runtime.Widget.Crud.FieldResult;
 
 
 struct Required extends CrudRule
@@ -44,7 +45,8 @@ struct Required extends CrudRule
 		var value = update_data[this.name];
 		if (not update_data.has(this.name) or value === "" or value === null)
 		{
-			api.field_result.addFieldError(this.name, "Field is required");
+			FieldResult fields = api.result.data.get("fields");
+			fields.addFieldError(this.name, "Field is required");
 		}
 		
 		return update_data;

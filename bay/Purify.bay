@@ -42,11 +42,11 @@ struct Purify extends CrudRule
 	/**
 	 * Validate item
 	 */
-	async Dict validateItem(CrudApi api, Dict update_data)
+	async Map validateItem(CrudApi api, Map update_data)
 	{
 		var value = update_data[this.name];
 		value = this.purify(value);
-		update_data <= { this.name } <= value;
+		update_data.set(this.name, value);
 		return update_data;
 	}
 	
