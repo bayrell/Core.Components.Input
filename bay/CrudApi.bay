@@ -464,7 +464,7 @@ class CrudApi extends BaseApi
 	async void validateItem(Map update_data)
 	{
 		/* Intersect */
-		Vector fields = this.getItemFields();
+		Vector fields = this.getSaveFields();
 		update_data = update_data.intersect(fields);
 		
 		/* Call rules */

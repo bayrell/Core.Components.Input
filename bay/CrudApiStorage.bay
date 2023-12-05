@@ -30,6 +30,7 @@ class CrudApiStorage extends BaseObject
 	string api_name = "";
 	
 	Map item = {};
+	Map item_pk = null;
 	Vector items = null;
 	int page = 0;
 	int pages = 0;
@@ -53,8 +54,16 @@ class CrudApiStorage extends BaseObject
 	/**
 	 * Set api result
 	 */
-	void setApiResult(ApiResult res)
+	void setApiResult(ApiResult res, string action = "")
 	{
+		if (res.data.has("item"))
+		{
+			this.setItem(res.data["item"]);
+		}
+		if (res.data.has("pk"))
+		{
+			this.setPrimaryKey(res.data["pk"]);
+		}
 		if (res.data.has("items"))
 		{
 			this.setItems(res.data["items"]);
@@ -81,6 +90,24 @@ class CrudApiStorage extends BaseObject
 	void setItems(Vector items)
 	{
 		this.items = items;
+	}
+	
+	
+	/**
+	 * Set item
+	 */
+	void setItem(Map item)
+	{
+		this.item = item;
+	}
+	
+	
+	/**
+	 * Set primary key
+	 */
+	void setPrimaryKey(Map pk)
+	{
+		this.item_pk = pk;
 	}
 	
 	
@@ -117,6 +144,7 @@ class CrudApiStorage extends BaseObject
 	void clear()
 	{
 		this.item = {};
+		this.item_pk = null;
 		this.error.clear();
 	}
 	
@@ -126,6 +154,8 @@ class CrudApiStorage extends BaseObject
 	 */
 	void importData(Map import_data)
 	{
+		this.item = import_data.get("item");
+		this.item_pk = import_data.get("item_pk");
 		this.items = import_data.get("items");
 		this.page = import_data.get("page");
 		this.pages = import_data.get("pages");
@@ -140,6 +170,8 @@ class CrudApiStorage extends BaseObject
 	Map exportData()
 	{
 		Map data = {
+			"item": this.item,
+			"item_pk": this.item_pk,
 			"items": this.items,
 			"page": this.page,
 			"pages": this.pages,
@@ -165,7 +197,7 @@ class CrudApiStorage extends BaseObject
 			"method": "actionSearch",
 			"data": post_data
 		});
-		this.setApiResult(res);
+		this.setApiResult(res, "search");
 		
 		return res;
 	}
@@ -179,6 +211,7 @@ class CrudApiStorage extends BaseObject
 		if (post_data == null) post_data = {};
 		post_data = post_data.concat({
 			"item": this.item,
+			"pk": this.item_pk,
 		});
 		
 		ApiResult res = await this.layout.callApi({
@@ -186,7 +219,7 @@ class CrudApiStorage extends BaseObject
 			"method": "actionSave",
 			"data": post_data
 		});
-		this.setApiResult(res);
+		this.setApiResult(res, "save");
 		
 		return res;
 	}
