@@ -614,7 +614,7 @@ class CrudApi extends BaseApi
 	/**
 	 * Delete item
 	 */
-	async void deleteItem(Map update_data)
+	async void deleteItem()
 	{
 		/* Delete before */
 		await this.onDeleteBefore();
@@ -634,7 +634,7 @@ class CrudApi extends BaseApi
 		
 		/* Find item */
 		await this.findItem(pk);
-		if (this.item != null)
+		if (this.item == null)
 		{
 			throw new ApiError(new ItemNotFound());
 		}

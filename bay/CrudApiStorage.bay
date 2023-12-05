@@ -224,4 +224,25 @@ class CrudApiStorage extends BaseObject
 		return res;
 	}
 	
+	
+	/**
+	 * Do delete
+	 */
+	async ApiResult doDelete(Dict post_data = null)
+	{
+		if (post_data == null) post_data = {};
+		post_data = post_data.concat({
+			"pk": this.item_pk,
+		});
+		
+		ApiResult res = await this.layout.callApi({
+			"class": this.api_name,
+			"method": "actionDelete",
+			"data": post_data
+		});
+		this.setApiResult(res, "delete");
+		
+		return res;
+	}
+	
 }
