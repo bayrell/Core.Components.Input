@@ -4,7 +4,8 @@
 	[
 		"CrudApiStorage.bay",
 		"CrudPage.bay",
-		"CrudPageModel.bay"
+		"CrudPageModel.bay",
+		"FieldException.bay"
 	],
 	"src": "./bay",
 	"dest":

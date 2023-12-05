@@ -22,10 +22,6 @@ use Runtime.lib;
 use Runtime.BaseStruct;
 use Runtime.Exceptions.ApiError;
 use Runtime.Exceptions.ItemNotFound;
-use Runtime.Crud.CrudRule;
-use Runtime.Crud.FieldResult;
-use Runtime.Crud.FieldException;
-use Runtime.Crud.Filter;
 use Runtime.ORM.Connection;
 use Runtime.ORM.Cursor;
 use Runtime.ORM.Query;
@@ -35,6 +31,10 @@ use Runtime.ORM.Relation;
 use Runtime.Web.Annotations.ApiMethod;
 use Runtime.Web.ApiResult;
 use Runtime.Web.BaseApi;
+use Runtime.Widget.Crud.CrudRule;
+use Runtime.Widget.Crud.FieldResult;
+use Runtime.Widget.Crud.FieldException;
+use Runtime.Widget.Crud.Filter;
 
 
 class CrudApi extends BaseApi
@@ -476,13 +476,11 @@ class CrudApi extends BaseApi
 		}
 		
 		/* Check fields error */
-		/*
 		FieldResult fields = this.result.data.get("fields");
 		if (not fields.isSuccess())
 		{
-			throw new FieldException(this.result);
+			throw new ApiError( new FieldException() );
 		}
-		*/
 		
 		return update_data;
 	}
@@ -513,7 +511,7 @@ class CrudApi extends BaseApi
 	async void updateItem(Map update_data)
 	{
 		/* Create field result */
-		/* this.result.data.set("fields", new FieldResult); */
+		this.result.data.set("fields", new FieldResult);
 		
 		/* Validate item */
 		update_data = await this.validateItem(update_data);
@@ -537,7 +535,7 @@ class CrudApi extends BaseApi
 	
 	@ApiMethod
 	async void actionSave()
-	{		
+	{
 		Map pk = this.post_data["pk"];
 		Map update_data = this.post_data["item"];
 		

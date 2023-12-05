@@ -153,7 +153,7 @@ class CrudApiStorage extends BaseObject
 	/**
 	 * Load data from api
 	 */
-	async void doSearch(Dict post_data = null)
+	async ApiResult doSearch(Dict post_data = null)
 	{
 		if (post_data == null) post_data = {};
 		post_data = post_data.concat({
@@ -166,13 +166,15 @@ class CrudApiStorage extends BaseObject
 			"data": post_data
 		});
 		this.setApiResult(res);
+		
+		return res;
 	}
 	
 	
 	/**
 	 * Save data
 	 */
-	async void doSave(Dict post_data = null)
+	async ApiResult doSave(Dict post_data = null)
 	{
 		if (post_data == null) post_data = {};
 		post_data = post_data.concat({
@@ -185,6 +187,8 @@ class CrudApiStorage extends BaseObject
 			"data": post_data
 		});
 		this.setApiResult(res);
+		
+		return res;
 	}
 	
 }

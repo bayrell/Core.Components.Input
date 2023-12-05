@@ -18,32 +18,18 @@
 
 namespace Runtime.Widget.Crud;
 
-use Runtime.BaseObject;
-use Runtime.Exceptions.ApiException;
-use Runtime.Web.ApiResult;
-use Runtime.Web.Bus;
-use Runtime.Web.RenderContainer;
-use Runtime.Widget.FieldInfo;
+use Runtime.rtl;
+use Runtime.Exceptions.AbstractException;
 
 
-class FieldResult extends Map
+class FieldException extends AbstractException
 {
-	/**
-	 * Returns true if is success
-	 */
-	bool isSuccess() => this.keys().count() == 0;
-	
-	
-	/**
-	 * Add field error
-	 */
-	void addFieldError(string field_name, string error_message)
+	void constructor(Object prev = null)
 	{
-		if (not this.has(field_name))
-		{
-			this.set(field_name, new Vector);
-		}
-		Vector messages = this.get(field_name);
-		messages.push(error_message);
+		parent(
+			"Fields error",
+			rtl::ERROR_VALIDATION,
+			prev
+		);
 	}
 }
