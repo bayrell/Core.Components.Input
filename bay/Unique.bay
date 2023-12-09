@@ -46,10 +46,8 @@ struct Unique extends CrudRule
 	/**
 	 * Before save item
 	 */
-	async void onSaveBefore(CrudApi api, Relation item, Dict update_data)
+	async void onSaveBefore(CrudApi api)
 	{
-		Connection conn = api.getDatabaseConnection();
-		
 		Query q = new Query
 			|> .select(api::getTableName())
 			|> .limit(1)
@@ -60,14 +58,16 @@ struct Unique extends CrudRule
 			for (int i=0; i<this.keys.count(); i++)
 			{
 				string field_name = this.keys.get(i);
-				string value = item.get(field_name);
+				string value = api.item.get(field_name);
 				q.where(field_name, "=", value);
 			}
 		}
 		
-		if (item != null)
+		if (api.item != null)
 		{
-			Collection filter = Relation::getPrimaryFilter( api::getTableName(), item.data(), true );
+			Collection filter = Relation::getPrimaryFilter(
+				api::getTableName(), api.item.toMap(), true
+			);
 			for (int i=0; i<filter.count(); i++)
 			{
 				QueryFilter item = filter[i];
@@ -76,8 +76,7 @@ struct Unique extends CrudRule
 			}
 		}
 		
-		Relation find_item = await conn.fetch(q);
-		
+		Relation find_item = await api.connection.fetch(q);
 		if (find_item)
 		{
 			for (int i=0; i<this.keys.count(); i++)

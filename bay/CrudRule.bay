@@ -25,7 +25,6 @@ use Runtime.Widget.Crud.CrudApi;
 
 struct CrudRule extends BaseStruct
 {
-	
 	/**
 	 * Search before event
 	 */
