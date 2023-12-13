@@ -341,7 +341,7 @@ class CrudApi extends BaseApi
 		
 		this.result.success({
 			"data": {
-				"items": items,
+				"items": Vector::from(items),
 			}
 		});
 	}
@@ -360,7 +360,7 @@ class CrudApi extends BaseApi
 		
 		this.result.success({
 			"data": {
-				"items": items,
+				"items": Vector::from(items),
 			}
 		});
 	}

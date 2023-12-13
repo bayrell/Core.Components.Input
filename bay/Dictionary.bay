@@ -20,65 +20,84 @@ namespace Runtime.Widget.Crud;
 
 use Runtime.lib;
 use Runtime.BaseStruct;
-use Runtime.ORM.Connection;
-use Runtime.ORM.Query;
-use Runtime.ORM.Relation;
-use Runtime.ORM.RelationArray;
-use Runtime.ORM.Annotations.ForeignKey as ForeignKeyORM;
-use Runtime.Web.ApiResult;
-use Runtime.Widget.Crud.CrudApi;
-use Runtime.Widget.Crud.CrudRule;
+use Runtime.Web.BaseWidget;
+use Runtime.Widget.WidgetError;
+use Runtime.Widget.Crud.ApiResult;
+use Runtime.Widget.Crud.CrudApiStorage;
 
 
-struct Dictionary extends CrudRule
+class Dictionary extends BaseWidget
 {
-	string dictionary_name = "";
-	string table_name = "";
-	Collection fields = null;
-	fn query = null;
+	Vector options = [];
+	WidgetError error = new WidgetError;
+	CrudApiStorage storage = null;
+	fn transform = null;
 	
 	
 	/**
-	 * Search final event
+	 * Constructor
 	 */
-	async void onSearchFinal(CrudApi api)
+	void constructor(Dict params = null)
 	{
-		if (this.dictionary_name == "") return ;
-		
-		/* Check action */
-		if (
-			api.action != "actionSearch" and
-			api.action != "actionItem" and
-			api.action != "actionDictionary"
-		)
+		parent(params);
+		if (params)
 		{
-			return;
+			if (params.has("storage")) this.storage = params.get("storage");
+			if (params.has("transform")) this.transform = params.get("transform");
 		}
-		
-		Connection conn = api.getDatabaseConnection();
-		RelationArray result = null;
-		
-		/* Get item */
-		if (api.action == "actionItem" or api.action == "actionDictionary")
+	}
+	
+	
+	/**
+	 * Returns options
+	 */
+	Vector getOptions() => this.options;
+	
+	
+	/**
+	 * Set api result
+	 */
+	void setApiResult(ApiResult res, string action = "")
+	{
+		if (res.data.has("items"))
 		{
-			Query q = new Query
-				|> .select(this.table_name)
-			;
-			
-			if (this.query != null)
-			{
-				fn f = this.query;
-				q = await f(api, this, q);
-			}
-			
-			RelationArray result = await conn.fetchAll(q);
-			api.dictionary.setValue(this.dictionary_name, result);
-			
-			/* Transform items */
-			Collection items = result.toDict(this.fields);
-			
-			/* Set dictionary result */
-			api.container.setDictionary(this.dictionary_name, items);
+			Vector items = res.data["items"];
+			this.options = items.map( this.transform );
 		}
+		this.error.setApiResult(res);
+	}
+	
+	
+	/**
+	 * Load table data
+	 */
+	async void loadData()
+	{
+		await parent();
+		ApiResult res = await this.storage.doSearch();
+		this.setApiResult(res, "search");
+	}
+	
+	
+	/**
+	 * Import data
+	 */
+	void importData(Map import_data)
+	{
+		parent(import_data);
+		this.error = import_data.get("error");
+		this.options = import_data.get("options");
+	}
+	
+	
+	/**
+	 * Export data
+	 */
+	Map exportData()
+	{
+		Map data = parent();
+		data.set("error", this.error);
+		data.set("options", this.options);
+		return data;
 	}
 }

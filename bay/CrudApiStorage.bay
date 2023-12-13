@@ -198,7 +198,6 @@ class CrudApiStorage extends BaseObject
 			"data": post_data
 		});
 		this.setApiResult(res, "search");
-		
 		return res;
 	}
 	

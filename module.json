@@ -5,6 +5,7 @@
 		"CrudApiStorage.bay",
 		"CrudPage.bay",
 		"CrudPageModel.bay",
+		"Dictionary.bay",
 		"FieldException.bay"
 	],
 	"src": "./bay",
