@@ -29,12 +29,15 @@
 	<div class="crud_page">
 		%if (this.model.action == "index")
 		{
-			%set CrudPageModel table = this.model.getWidget("table");
+			%set var table = this.model.getWidget("table");
 			%set string component = table.component;
 			<{component} @model=["widgets", "table"] />
 		}
-		%elseif (this.model.action == "save")
+		%elseif (this.model.action == "add" or this.model.action == "edit")
 		{
+			%set var form = this.model.getWidget("form");
+			%set string component = form.component;
+			<{component} @model=["widgets", "form"] />
 		}
 		%elseif (this.model.action == "delete")
 		{

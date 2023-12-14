@@ -376,7 +376,7 @@ class CrudApi extends BaseApi
 		
 		/* Find item */
 		await this.findItem(pk);
-		if (this.item != null)
+		if (this.item == null)
 		{
 			throw new ApiError(new ItemNotFound());
 		}

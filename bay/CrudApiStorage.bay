@@ -81,6 +81,11 @@ class CrudApiStorage extends BaseObject
 			this.setPages(res.data["pages"]);
 		}
 		this.error.setApiResult(res);
+		
+		if (action == "item" and this.error.isSuccess())
+		{
+			this.error.clear();
+		}
 	}
 	
 	
@@ -203,6 +208,25 @@ class CrudApiStorage extends BaseObject
 	
 	
 	/**
+	 * Load item from api
+	 */
+	async ApiResult doItem(Dict post_data = null)
+	{
+		if (post_data == null) post_data = {};
+		post_data = post_data.concat({
+			"pk": this.item_pk,
+		});
+		ApiResult res = await this.layout.callApi({
+			"class": this.api_name,
+			"method": "actionItem",
+			"data": post_data
+		});
+		this.setApiResult(res, "item");
+		return res;
+	}
+	
+	
+	/**
 	 * Save data
 	 */
 	async ApiResult doSave(Dict post_data = null)
@@ -212,14 +236,12 @@ class CrudApiStorage extends BaseObject
 			"item": this.item,
 			"pk": this.item_pk,
 		});
-		
 		ApiResult res = await this.layout.callApi({
 			"class": this.api_name,
 			"method": "actionSave",
 			"data": post_data
 		});
 		this.setApiResult(res, "save");
-		
 		return res;
 	}
 	
@@ -233,14 +255,12 @@ class CrudApiStorage extends BaseObject
 		post_data = post_data.concat({
 			"pk": this.item_pk,
 		});
-		
 		ApiResult res = await this.layout.callApi({
 			"class": this.api_name,
 			"method": "actionDelete",
 			"data": post_data
 		});
 		this.setApiResult(res, "delete");
-		
 		return res;
 	}
 	
