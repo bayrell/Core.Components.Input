@@ -20,9 +20,17 @@
 
 <use name="Runtime.Widget.Button" />
 <use name="Runtime.Widget.Crud.CrudPageModel" />
+<use name="Runtime.Widget.RenderListModel" />
 
 <style>
 </style>
+
+
+<template name="renderWidgets">
+	%set RenderListModel render_list = this.model.getWidget("render_list");
+	%set string component = render_list.component;
+	<{component} @model={{ render_list }} />
+</template>
 
 
 <template>
@@ -45,6 +53,7 @@
 		%else
 		{
 		}
+		%render this.renderWidgets();
 	</div>
 </template>
 

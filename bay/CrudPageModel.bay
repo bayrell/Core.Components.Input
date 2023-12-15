@@ -22,12 +22,27 @@ use Runtime.lib;
 use Runtime.Web.BaseWidget;
 use Runtime.Web.LayoutModel;
 use Runtime.Web.PageModel;
+use Runtime.Widget.RenderListModel;
 
 
 class CrudPageModel extends PageModel
 {
 	string action = "";
     
+	
+	/**
+	 * Constructor
+	 */
+	void constructor(Dict params = null)
+	{
+		parent(params);
+		
+		/* Create render list */
+		RenderListModel render_list = new RenderListModel{
+			"parent_widget": this,
+		};
+	}
+	
     
     /**
      * Set action
