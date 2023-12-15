@@ -37,6 +37,9 @@ class CrudApiStorage extends BaseObject
 	int pages = 0;
 	int limit = 10;
 	
+	string foreign_key = null;
+	var foreign_value = null;
+	
 	LayoutModel layout = null;
 	WidgetError error = new WidgetError;
 	
@@ -198,9 +201,33 @@ class CrudApiStorage extends BaseObject
 	
 	
 	/**
+	 * Set foreign key
+	 */
+	void setForeignKey(string foreign_key, var foreign_value)
+	{
+		this.foreign_key = foreign_key;
+		this.foreign_value = foreign_value;
+	}
+	
+	
+	/**
 	 * Merge post data
 	 */
-	Map mergePostData(Map post_data) => post_data.concat(this.post_data);
+	Map mergePostData(Map post_data)
+	{
+		post_data = post_data.concat(this.post_data);
+		
+		if (this.foreign_key != null)
+		{
+			post_data.set(this.foreign_key, this.foreign_value);
+			if (post_data.has("item"))
+			{
+				post_data.get("item").set(this.foreign_key, this.foreign_value);
+			}
+		}
+		
+		return post_data;
+	}
 	
 	
 	/**
