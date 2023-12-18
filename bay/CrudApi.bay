@@ -41,7 +41,7 @@ class CrudApi extends BaseApi
 {
 	string action = "";
 	ApiResult result = null;
-	Connection conn = null;
+	Connection connection = null;
 	QueryResult items = null;
 	Relation item = null;
 	int limit = 0;
