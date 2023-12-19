@@ -159,35 +159,17 @@ class CrudApiStorage extends BaseObject
 	
 	
 	/**
-	 * Import data
+	 * Process frontend data
 	 */
-	void importData(Map import_data)
+	void processFrontendData(Serializer serializer, Map data)
 	{
-		this.item = import_data.get("item");
-		this.item_pk = import_data.get("item_pk");
-		this.items = import_data.get("items");
-		this.page = import_data.get("page");
-		this.pages = import_data.get("pages");
-		this.limit = import_data.get("limit");
-		this.error.importData(import_data.get("error"));
-	}
-	
-	
-	/**
-	 * Export data
-	 */
-	Map exportData()
-	{
-		Map data = {
-			"item": this.item,
-			"item_pk": this.item_pk,
-			"items": this.items,
-			"page": this.page,
-			"pages": this.pages,
-			"limit": this.limit,
-			"error": this.error.exportData(),
-		};
-		return data;
+		serializer.process(this, "item", data);
+		serializer.process(this, "item_pk", data);
+		serializer.process(this, "items", data);
+		serializer.process(this, "page", data);
+		serializer.process(this, "pages", data);
+		serializer.process(this, "limit", data);
+		serializer.process(this, "error", data);
 	}
 	
 	
@@ -242,7 +224,7 @@ class CrudApiStorage extends BaseObject
 		});
 		post_data = this.mergePostData(post_data);
 		ApiResult res = await this.layout.callApi({
-			"class": this.api_name,
+			"api_name": this.api_name,
 			"method": "actionSearch",
 			"data": post_data
 		});
@@ -262,7 +244,7 @@ class CrudApiStorage extends BaseObject
 		});
 		post_data = this.mergePostData(post_data);
 		ApiResult res = await this.layout.callApi({
-			"class": this.api_name,
+			"api_name": this.api_name,
 			"method": "actionItem",
 			"data": post_data
 		});
@@ -283,7 +265,7 @@ class CrudApiStorage extends BaseObject
 		});
 		post_data = this.mergePostData(post_data);
 		ApiResult res = await this.layout.callApi({
-			"class": this.api_name,
+			"api_name": this.api_name,
 			"method": "actionSave",
 			"data": post_data
 		});
@@ -303,7 +285,7 @@ class CrudApiStorage extends BaseObject
 		});
 		post_data = this.mergePostData(post_data);
 		ApiResult res = await this.layout.callApi({
-			"class": this.api_name,
+			"api_name": this.api_name,
 			"method": "actionDelete",
 			"data": post_data
 		});

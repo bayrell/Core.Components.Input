@@ -19,6 +19,7 @@
 namespace Runtime.Widget.Crud;
 
 use Runtime.lib;
+use Runtime.Serializer;
 use Runtime.Web.BaseWidget;
 use Runtime.Web.LayoutModel;
 use Runtime.Web.PageModel;
@@ -28,7 +29,7 @@ use Runtime.Widget.RenderListModel;
 class CrudPageModel extends PageModel
 {
 	string action = "";
-    
+	
 	
 	/**
 	 * Constructor
@@ -43,33 +44,22 @@ class CrudPageModel extends PageModel
 		};
 	}
 	
-    
-    /**
-     * Set action
-     */
-    void setAction(string action)
-    {
-        this.action = action;
-    }
-    
-    
-    /**
-	 * Import data
+	
+	/**
+	 * Set action
 	 */
-	void importData(Map import_data)
+	void setAction(string action)
 	{
-		parent(import_data);
-        this.action = import_data.get("action");
+		this.action = action;
 	}
 	
 	
 	/**
-	 * Export data
+	 * Process frontend data
 	 */
-	Map exportData()
+	void processFrontendData(Serializer serializer, Map data)
 	{
-		Map data = parent();
-		data.set("action", this.action);
-		return data;
+		serializer.process(this, "action", data);
+		parent(serializer, data);
 	}
 }

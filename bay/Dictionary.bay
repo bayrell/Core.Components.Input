@@ -20,6 +20,7 @@ namespace Runtime.Widget.Crud;
 
 use Runtime.lib;
 use Runtime.BaseStruct;
+use Runtime.Serializer;
 use Runtime.Web.BaseWidget;
 use Runtime.Widget.WidgetError;
 use Runtime.Widget.Crud.ApiResult;
@@ -80,24 +81,12 @@ class Dictionary extends BaseWidget
 	
 	
 	/**
-	 * Import data
+	 * Process frontend data
 	 */
-	void importData(Map import_data)
+	void processFrontendData(Serializer serializer, Map data)
 	{
-		parent(import_data);
-		this.error = import_data.get("error");
-		this.options = import_data.get("options");
-	}
-	
-	
-	/**
-	 * Export data
-	 */
-	Map exportData()
-	{
-		Map data = parent();
-		data.set("error", this.error);
-		data.set("options", this.options);
-		return data;
+		serializer.process(this, "error", data);
+		serializer.process(this, "options", data);
+		parent(serializer, data);
 	}
 }
