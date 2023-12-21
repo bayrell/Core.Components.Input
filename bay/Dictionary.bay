@@ -21,16 +21,16 @@ namespace Runtime.Widget.Crud;
 use Runtime.lib;
 use Runtime.BaseStruct;
 use Runtime.Serializer;
-use Runtime.Web.BaseWidget;
-use Runtime.Widget.WidgetError;
+use Runtime.Web.BaseModel;
+use Runtime.Widget.WidgetResultModel;
 use Runtime.Widget.Crud.ApiResult;
 use Runtime.Widget.Crud.CrudApiStorage;
 
 
-class Dictionary extends BaseWidget
+class Dictionary extends BaseModel
 {
 	Vector options = [];
-	WidgetError error = new WidgetError;
+	WidgetResultModel result = new WidgetResultModel;
 	CrudApiStorage storage = null;
 	fn transform = null;
 	
@@ -65,7 +65,7 @@ class Dictionary extends BaseWidget
 			Vector items = res.data["items"];
 			this.options = items.map( this.transform );
 		}
-		this.error.setApiResult(res);
+		this.result.setApiResult(res);
 	}
 	
 	
@@ -85,7 +85,7 @@ class Dictionary extends BaseWidget
 	 */
 	void processFrontendData(Serializer serializer, Map data)
 	{
-		serializer.process(this, "error", data);
+		serializer.process(this, "result", data);
 		serializer.process(this, "options", data);
 		parent(serializer, data);
 	}

@@ -22,7 +22,7 @@ use Runtime.BaseObject;
 use Runtime.Serializer;
 use Runtime.Web.ApiResult;
 use Runtime.Web.LayoutModel;
-use Runtime.Widget.WidgetError;
+use Runtime.Widget.WidgetResultModel;
 
 
 class CrudApiStorage extends BaseObject
@@ -41,7 +41,7 @@ class CrudApiStorage extends BaseObject
 	var foreign_value = null;
 	
 	LayoutModel layout = null;
-	WidgetError error = new WidgetError;
+	WidgetResultModel result = new WidgetResultModel;
 	
 	
 	/**
@@ -84,11 +84,11 @@ class CrudApiStorage extends BaseObject
 		{
 			this.setPages(res.data["pages"]);
 		}
-		this.error.setApiResult(res);
+		this.result.setApiResult(res);
 		
-		if (action == "item" and this.error.isSuccess())
+		if (action == "item" and this.result.isSuccess())
 		{
-			this.error.clear();
+			this.result.clear();
 		}
 	}
 	
@@ -154,7 +154,7 @@ class CrudApiStorage extends BaseObject
 	{
 		this.item = {};
 		this.item_pk = null;
-		this.error.clear();
+		this.result.clear();
 	}
 	
 	
@@ -169,7 +169,7 @@ class CrudApiStorage extends BaseObject
 		serializer.process(this, "page", data);
 		serializer.process(this, "pages", data);
 		serializer.process(this, "limit", data);
-		serializer.process(this, "error", data);
+		serializer.process(this, "result", data);
 	}
 	
 	
