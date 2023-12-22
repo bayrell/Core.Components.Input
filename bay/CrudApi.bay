@@ -142,7 +142,7 @@ class CrudApi extends BaseApi
 	/**
 	 * Returns default limit
 	 */
-	int getDefaultLimit() => 10;	
+	int getDefaultLimit() => 10;
 	
 	
 	/**

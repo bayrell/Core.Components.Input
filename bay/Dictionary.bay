@@ -22,6 +22,7 @@ use Runtime.lib;
 use Runtime.BaseStruct;
 use Runtime.Serializer;
 use Runtime.Web.BaseModel;
+use Runtime.Web.Events;
 use Runtime.Widget.WidgetResultModel;
 use Runtime.Widget.Crud.ApiResult;
 use Runtime.Widget.Crud.CrudApiStorage;
@@ -30,8 +31,10 @@ use Runtime.Widget.Crud.CrudApiStorage;
 class Dictionary extends BaseModel
 {
 	Vector options = [];
+	Events events = new Events;
 	WidgetResultModel result = new WidgetResultModel;
 	CrudApiStorage storage = null;
+	fn filter = null;
 	fn transform = null;
 	
 	
@@ -44,6 +47,7 @@ class Dictionary extends BaseModel
 		if (params)
 		{
 			if (params.has("storage")) this.storage = params.get("storage");
+			if (params.has("filter")) this.filter = params.get("filter");
 			if (params.has("transform")) this.transform = params.get("transform");
 		}
 	}
@@ -60,12 +64,25 @@ class Dictionary extends BaseModel
 	 */
 	void setApiResult(ApiResult res, string action = "")
 	{
-		if (res.data.has("items"))
-		{
-			Vector items = res.data["items"];
-			this.options = items.map( this.transform );
-		}
 		this.result.setApiResult(res);
+	}
+	
+	
+	/**
+	 * Reload options
+	 */
+	void reloadOptions()
+	{
+		Vector items = this.storage.items;
+		if (this.filter)
+		{
+			items = items.filter( this.filter );
+		}
+		if (this.transform)
+		{
+			items = items.map( this.transform );
+		}
+		this.options = items;
 	}
 	
 	
@@ -75,8 +92,10 @@ class Dictionary extends BaseModel
 	async void loadData()
 	{
 		await parent();
+		this.storage.setLimit(-1);
 		ApiResult res = await this.storage.doSearch();
 		this.setApiResult(res, "search");
+		this.reloadOptions();
 	}
 	
 	
@@ -85,8 +104,27 @@ class Dictionary extends BaseModel
 	 */
 	void processFrontendData(Serializer serializer, Map data)
 	{
-		serializer.process(this, "result", data);
 		serializer.process(this, "options", data);
+		serializer.process(this, "result", data);
+		serializer.process(this, "storage", data);
 		parent(serializer, data);
+	}
+	
+	
+	/**
+	 * On change
+	 */
+	void onChange(var data = null)
+	{
+		this.events.emmit("onChange", [data]);
+	}
+	
+	
+	/**
+	 * On changed
+	 */
+	void onChanged(var data = null)
+	{
+		this.events.emmit("onChanged", [data]);
 	}
 }
