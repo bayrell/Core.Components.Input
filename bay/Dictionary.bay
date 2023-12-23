@@ -74,6 +74,8 @@ class Dictionary extends BaseModel
 	void reloadOptions()
 	{
 		Vector items = this.storage.items;
+		if (items == null) return;
+		
 		if (this.filter)
 		{
 			items = items.filter( this.filter );

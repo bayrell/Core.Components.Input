@@ -47,6 +47,7 @@ class CrudApi extends BaseApi
 	int limit = 0;
 	int page = 0;
 	int pages = 0;
+	bool is_create = false;
 	
 	
 	/**
@@ -88,6 +89,46 @@ class CrudApi extends BaseApi
 	{
 		if (this.action == "actionSearch") return true;
 		if (this.action == "actionSearchOne") return true;
+		return false;
+	}
+	
+	
+	/**
+	 * Returns if save
+	 */
+	bool isSave()
+	{
+		if (this.action == "actionSave") return true;
+		return false;
+	}
+	
+	
+	/**
+	 * Returns if create
+	 */
+	bool isCreate()
+	{
+		if (this.action == "actionSave" and this.is_create) return true;
+		return false;
+	}
+	
+	
+	/**
+	 * Returns if create
+	 */
+	bool isUpdate()
+	{
+		if (this.action == "actionSave" and not this.is_create) return true;
+		return false;
+	}
+	
+	
+	/**
+	 * Returns if delete
+	 */
+	bool isDelete()
+	{
+		if (this.action == "actionDelete") return true;
 		return false;
 	}
 	
@@ -542,10 +583,12 @@ class CrudApi extends BaseApi
 		/* Find item */
 		if (pk != null)
 		{
+			this.is_create = false;
 			await this.findItem(pk);
 		}
 		else
 		{
+			this.is_create = true;
 			this.item = await this.newRelation();
 		}
 		

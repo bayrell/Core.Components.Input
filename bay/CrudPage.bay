@@ -28,8 +28,29 @@
 
 <template name="renderWidgets">
 	%set RenderListModel render_list = this.model.getWidget("render_list");
-	%set string component = render_list.component;
-	<{component} @model={{ render_list }} />
+	%if (render_list)
+	{
+		%set string component = render_list.component;
+		<{component} @model={{ render_list }} />
+	}
+</template>
+
+
+<template name="renderIndex">
+	%set var table = this.model.getWidget("table");
+	%set string component = table.component;
+	<{component} @model=["widgets", "table"] />
+</template>
+
+
+<template name="renderSave">
+	%set var form = this.model.getWidget("form");
+	%set string component = form.component;
+	<{component} @model=["widgets", "form"] />
+</template>
+
+
+<template name="renderDelete">
 </template>
 
 
@@ -37,15 +58,11 @@
 	<div class="crud_page">
 		%if (this.model.action == "index")
 		{
-			%set var table = this.model.getWidget("table");
-			%set string component = table.component;
-			<{component} @model=["widgets", "table"] />
+			%render this.renderIndex();
 		}
 		%elseif (this.model.action == "add" or this.model.action == "edit")
 		{
-			%set var form = this.model.getWidget("form");
-			%set string component = form.component;
-			<{component} @model=["widgets", "form"] />
+			%render this.renderSave();
 		}
 		%elseif (this.model.action == "delete")
 		{
