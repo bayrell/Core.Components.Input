@@ -39,6 +39,7 @@ class CrudApiStorage extends BaseObject
 	
 	string foreign_key = null;
 	var foreign_value = null;
+	Vector<string> primary_keys = [];
 	
 	LayoutModel layout = null;
 	WidgetResultModel result = new WidgetResultModel;
@@ -47,11 +48,15 @@ class CrudApiStorage extends BaseObject
 	/**
 	 * Constructor
 	 */
-	void constructor(LayoutModel layout, string object_name)
+	void constructor(Dict params = null)
 	{
 		parent();
-		this.layout = layout;
-		this.api_name = object_name ~ "::crud";
+		if (params)
+		{
+			if (params.has("class_name")) this.api_name = params.get("class_name") ~ "::crud";
+			if (params.has("primary_keys")) this.primary_keys = params.get("primary_keys");
+			if (params.has("layout")) this.layout = params.get("layout");
+		}
 	}
 	
 	
@@ -118,6 +123,7 @@ class CrudApiStorage extends BaseObject
 	void setItem(Map item)
 	{
 		this.item = item;
+		this.updatePrimaryKey();
 	}
 	
 	
@@ -162,11 +168,61 @@ class CrudApiStorage extends BaseObject
 	
 	
 	/**
+	 * Returns item value
+	 */
+	var getItemValue(string field_name) => this.getItem().get(field_name);
+	
+	
+	/**
+	 * Primary keys
+	 */
+	Vector<string> getPrimaryKeys() => this.primary_keys;
+	
+	
+	/**
+	 * Set primary keys
+	 */
+	Vector setPrimaryKeys(Vector<string> keys)
+	{
+		this.primary_keys = keys;
+	}
+	
+	
+	/**
+	 * Returns primary key from item
+	 */
+	Map getItemPrimaryKey()
+	{
+		Vector keys = this.getPrimaryKeys();
+		return this.getItem().intersect(keys);
+	}
+	
+	
+	/**
+	 * Returns primary key
+	 */
+	Map getPrimaryKey()
+	{
+		return this.item_pk;
+	}
+	
+	
+	/**
 	 * Set primary key
 	 */
 	void setPrimaryKey(Map pk)
 	{
 		this.item_pk = pk;
+	}
+	
+	
+	/**
+	 * Update primary key from item
+	 */
+	void updatePrimaryKey()
+	{
+		Map pk = this.getItemPrimaryKey();
+		this.setPrimaryKey(pk);
 	}
 	
 	

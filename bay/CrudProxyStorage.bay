@@ -35,11 +35,14 @@ class CrudProxyStorage extends CrudApiStorage
 	/**
 	 * Constructor
 	 */
-	void constructor(LayoutModel layout, var container, Vector<string> path)
+	void constructor(Dict params = null)
 	{
-		parent(layout, null);
-		this.container = container;
-		this.path = path;
+		parent(params);
+		if (params)
+		{
+			if (params.has("container")) this.container = params.get("container");
+			if (params.has("path")) this.path = params.get("path");
+		}
 	}
 	
 	
@@ -119,6 +122,7 @@ class CrudProxyStorage extends CrudApiStorage
 		ApiResult res = new ApiResult();
 		res.success({
 			"data": {
+				"pk": this.getItemPrimaryKey(),
 				"item": this.item.clone(),
 			}
 		});
@@ -143,6 +147,7 @@ class CrudProxyStorage extends CrudApiStorage
 		ApiResult res = new ApiResult();
 		res.success({
 			"data": {
+				"pk": this.getItemPrimaryKey(),
 			}
 		});
 		this.setApiResult(res, "delete");
