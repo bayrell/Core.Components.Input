@@ -33,7 +33,7 @@ class CrudApiStorage extends BaseObject
 	Map item = {};
 	Map item_pk = null;
 	Vector items = null;
-	int page = 0;
+	int page = 1;
 	int pages = 0;
 	int limit = 10;
 	
@@ -60,6 +60,7 @@ class CrudApiStorage extends BaseObject
 	 */
 	void setApiResult(ApiResult res, string action = "")
 	{
+		if (res == null) return;
 		if (res.data.has("item"))
 		{
 			this.setItem(res.data["item"]);
@@ -103,11 +104,60 @@ class CrudApiStorage extends BaseObject
 	
 	
 	/**
+	 * Returns items
+	 */
+	Vector getItems()
+	{
+		return this.items;
+	}
+	
+	
+	/**
 	 * Set item
 	 */
 	void setItem(Map item)
 	{
 		this.item = item;
+	}
+	
+	
+	/**
+	 * Returns item
+	 */
+	Map getItem()
+	{
+		return this.item;
+	}
+	
+	
+	/**
+	 * Return item by row number
+	 */
+	Map getItemByRowNumber(int row_number) => this.getItems().get(row_number);
+	
+	
+	/**
+	 * Find index by primary key
+	 */
+	int findIndex(Map pk)
+	{
+		if (pk == null) return -1;
+		
+		Vector items = this.getItems();
+		int index = items.find(
+			bool (Dict item) use (pk)
+			{
+				Collection keys = pk.keys();
+				for (int i=0; i<keys.count(); i++)
+				{
+					string key = keys.get(i);
+					if (not item.has(key)) return false;
+					if (item.get(key) != pk.get(key)) return false;
+				}
+				return true;
+			}
+		);
+		return index;
 	}
 	
 	
