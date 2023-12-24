@@ -21,7 +21,6 @@ namespace Runtime.Widget.Crud;
 use Runtime.Web.BaseRoute;
 use Runtime.Web.PageModel;
 use Runtime.Web.RouteInfo;
-use Runtime.Widget.Crud.CrudPage;
 use Runtime.Widget.Crud.CrudPageModel;
 
 
@@ -42,12 +41,6 @@ class CrudPageRoute extends BaseRoute
 	
 	
 	/**
-	 * Returns page component name
-	 */
-	string getPageComponent() => classof CrudPage;
-	
-	
-	/**
 	 * Index
 	 */
 	async void actionIndex()
@@ -58,7 +51,7 @@ class CrudPageRoute extends BaseRoute
 		await page_model.onRouteAfter();
 		
 		/* Render page */
-		this.render( this.getPageComponent() );
+		this.render(page_model.component);
 	}
 	
 	
@@ -73,6 +66,6 @@ class CrudPageRoute extends BaseRoute
 		await page_model.onRouteAfter();
 		
 		/* Render page */
-		this.render( this.getPageComponent() );
+		this.render(page_model.component);
 	}
 }
