@@ -32,6 +32,9 @@ class CrudApiStorage extends BaseObject
 	Map post_data = {};
 	Map item = {};
 	Map item_pk = null;
+	Vector item_fields = null;
+	Vector save_fields = null;
+	Vector search_fields = null;
 	Vector items = null;
 	int page = 1;
 	int pages = 0;
@@ -56,6 +59,9 @@ class CrudApiStorage extends BaseObject
 			if (params.has("class_name")) this.api_name = params.get("class_name") ~ "::crud";
 			if (params.has("primary_keys")) this.primary_keys = params.get("primary_keys");
 			if (params.has("layout")) this.layout = params.get("layout");
+			if (params.has("item_fields")) this.item_fields = params.get("item_fields");
+			if (params.has("save_fields")) this.save_fields = params.get("save_fields");
+			if (params.has("search_fields")) this.search_fields = params.get("search_fields");
 		}
 	}
 	
@@ -301,7 +307,7 @@ class CrudApiStorage extends BaseObject
 	/**
 	 * Merge post data
 	 */
-	Map mergePostData(Map post_data)
+	Map mergePostData(Map post_data, string action)
 	{
 		post_data = post_data.concat(this.post_data);
 		
@@ -311,6 +317,35 @@ class CrudApiStorage extends BaseObject
 			if (post_data.has("item"))
 			{
 				post_data.get("item").set(this.foreign_key, this.foreign_value);
+			}
+		}
+		
+		/* Set search fields */
+		if (action == "search")
+		{
+			if (this.search_fields != null)
+			{
+				post_data.set("fields", this.search_fields);
+			}
+		}
+		
+		/* Set item fields */
+		if (action == "item")
+		{
+			if (this.item_fields != null)
+			{
+				post_data.set("fields", this.item_fields);
+			}
+		}
+		
+		/* Intersect save fields */
+		if (action == "save")
+		{
+			if (this.save_fields != null)
+			{
+				Dict item = post_data.get("item");
+				item = item.intersect(this.save_fields);
+				post_data.set("item", item);
 			}
 		}
 		
@@ -329,7 +364,7 @@ class CrudApiStorage extends BaseObject
 			"pages": this.pages,
 			"limit": this.limit,
 		});
-		post_data = this.mergePostData(post_data);
+		post_data = this.mergePostData(post_data, "search");
 		ApiResult res = await this.layout.callApi({
 			"api_name": this.api_name,
 			"method": "actionSearch",
@@ -349,7 +384,7 @@ class CrudApiStorage extends BaseObject
 		post_data = post_data.concat({
 			"pk": this.item_pk,
 		});
-		post_data = this.mergePostData(post_data);
+		post_data = this.mergePostData(post_data, "item");
 		ApiResult res = await this.layout.callApi({
 			"api_name": this.api_name,
 			"method": "actionItem",
@@ -370,7 +405,7 @@ class CrudApiStorage extends BaseObject
 			"item": this.item,
 			"pk": this.item_pk,
 		});
-		post_data = this.mergePostData(post_data);
+		post_data = this.mergePostData(post_data, "save");
 		ApiResult res = await this.layout.callApi({
 			"api_name": this.api_name,
 			"method": "actionSave",
@@ -390,7 +425,7 @@ class CrudApiStorage extends BaseObject
 		post_data = post_data.concat({
 			"pk": this.item_pk,
 		});
-		post_data = this.mergePostData(post_data);
+		post_data = this.mergePostData(post_data, "delete");
 		ApiResult res = await this.layout.callApi({
 			"api_name": this.api_name,
 			"method": "actionDelete",
