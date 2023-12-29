@@ -213,7 +213,7 @@ class CrudApi extends BaseApi
 	/**
 	 * Convert item
 	 */
-	async Map convertItem(string action, Relation item)
+	Map convertItem(string action, Relation item)
 	{
 		Collection fields = this.getAllowedFields(action);
 		return item.intersect(fields);
