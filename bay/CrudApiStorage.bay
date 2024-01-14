@@ -361,7 +361,6 @@ class CrudApiStorage extends BaseObject
 		if (post_data == null) post_data = {};
 		post_data = post_data.concat({
 			"page": this.page,
-			"pages": this.pages,
 			"limit": this.limit,
 		});
 		post_data = this.mergePostData(post_data, "search");

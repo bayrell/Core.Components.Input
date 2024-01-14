@@ -383,6 +383,8 @@ class CrudApi extends BaseApi
 		this.result.success({
 			"data": {
 				"items": Vector::from(items),
+				"page": this.page,
+				"pages": this.pages,
 			}
 		});
 	}
