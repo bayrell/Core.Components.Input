@@ -565,6 +565,13 @@ class CrudApi extends BaseApi
 		/* Save before */
 		await this.onSaveBefore();
 		
+		/* Check fields error */
+		FieldResult fields = this.result.data.get("fields");
+		if (not fields.isSuccess())
+		{
+			throw new ApiError( new FieldException() );
+		}
+		
 		/* Save item */
 		await this.save();
 		
