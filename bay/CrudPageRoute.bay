@@ -1,7 +1,7 @@
 /*!
  *  Bayrell Runtime Library
  *
- *  (c) Copyright 2016-2023 "Ildar Bikmamatov" <support@bayrell.org>
+ *  (c) Copyright 2016-2024 "Ildar Bikmamatov" <support@bayrell.org>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@
 namespace Runtime.Widget.Crud;
 
 use Runtime.Web.BaseRoute;
-use Runtime.Web.PageModel;
 use Runtime.Web.RouteInfo;
 use Runtime.Widget.Crud.CrudPageModel;
 
@@ -45,13 +44,6 @@ class CrudPageRoute extends BaseRoute
 	 */
 	async void actionIndex()
 	{
-		CrudPageModel page_model = this.layout.getPageModel();
-		
-		await page_model.loadData();
-		await page_model.onRouteAfter();
-		
-		/* Render page */
-		this.render(page_model.component);
 	}
 	
 	
@@ -60,12 +52,5 @@ class CrudPageRoute extends BaseRoute
 	 */
 	async void actionEdit()
 	{
-		CrudPageModel page_model = this.layout.getPageModel();
-		
-		await page_model.loadData();
-		await page_model.onRouteAfter();
-		
-		/* Render page */
-		this.render(page_model.component);
 	}
 }
