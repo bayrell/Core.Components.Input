@@ -16,51 +16,44 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Crud;
+namespace Runtime.Widget.Form;
 
-use Runtime.lib;
-use Runtime.Serializer;
-use Runtime.Web.BaseModel;
-use Runtime.Web.LayoutModel;
-use Runtime.Web.RenderListModel;
-use Runtime.Widget.Crud.CrudPage;
+use Runtime.Web.ApiResult;
+use Runtime.Widget.Button;
+use Runtime.Widget.ButtonModel;
+use Runtime.Widget.Form.FormModel;
+use Runtime.Widget.Form.SaveButton;
 
 
-class CrudPageModel extends BaseModel
+class SaveButtonModel extends ButtonModel
 {
-	string action = "";
-	string component = classof CrudPage;
+	string widget_name = "save_button";
+	string component = classof SaveButton;
+	FormModel form = null;
 	
 	
 	/**
 	 * Constructor
 	 */
-	void constructor(Dict params = null)
+	void constructor(Map params = null)
 	{
 		parent(params);
 		
-		/* Create render list */
-		RenderListModel render_list = new RenderListModel{
-			"parent_widget": this,
-		};
+		if (params)
+		{
+			if (params.has("parent_widget")) this.form = params.get("parent_widget");
+			if (params.has("form")) this.form = params.get("form");
+		}
+		
+		this.styles.add("success");
 	}
 	
 	
 	/**
-	 * Set action
+	 * Save
 	 */
-	void setAction(string action)
+	async void save()
 	{
-		this.action = action;
-	}
-	
-	
-	/**
-	 * Process frontend data
-	 */
-	void processFrontendData(Serializer serializer, Map data)
-	{
-		serializer.process(this, "action", data);
-		parent(serializer, data);
+		await this.form.save();
 	}
 }

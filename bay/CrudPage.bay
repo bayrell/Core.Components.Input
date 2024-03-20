@@ -18,9 +18,9 @@
 
 <class name="Runtime.Widget.Crud.CrudPage">
 
+<use name="Runtime.Web.RenderListModel" />
 <use name="Runtime.Widget.Button" />
 <use name="Runtime.Widget.Crud.CrudPageModel" />
-<use name="Runtime.Widget.RenderListModel" />
 
 <style>
 </style>

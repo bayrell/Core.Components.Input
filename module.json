@@ -7,7 +7,20 @@
 		"CrudPageModel.bay",
 		"CrudProxyStorage.bay",
 		"Dictionary.bay",
-		"FieldException.bay"
+		"FieldException.bay",
+		"Form/Form.bay",
+		"Form/FormModel.bay",
+		"Form/SaveButton.bay",
+		"Form/SaveButtonModel.bay",
+		"Table/DeleteDialog.bay",
+		"Table/DeleteDialogModel.bay",
+		"Table/RefreshButton.bay",
+		"Table/RefreshButtonModel.bay",
+		"Table/SaveDialog.bay",
+		"Table/SaveDialogModel.bay",
+		"Table/Table.bay",
+		"Table/TableModel.bay",
+		"Table/TableDialogModel.bay"
 	],
 	"src": "./bay",
 	"dest":

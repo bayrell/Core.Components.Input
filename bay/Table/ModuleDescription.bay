@@ -16,51 +16,44 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Crud;
+namespace Runtime.Widget.Table;
 
-use Runtime.lib;
-use Runtime.Serializer;
-use Runtime.Web.BaseModel;
-use Runtime.Web.LayoutModel;
-use Runtime.Web.RenderListModel;
-use Runtime.Widget.Crud.CrudPage;
+use Runtime.Entity.Hook;
+use Runtime.Entity.Hook;
 
-
-class CrudPageModel extends BaseModel
+static class ModuleDescription
 {
-	string action = "";
-	string component = classof CrudPage;
+	/**
+	 * Returns module name
+	 * @return string
+	 */
+	pure string getModuleName() => "Runtime.Widget.Table";
 	
 	
 	/**
-	 * Constructor
+	 * Returns module name
+	 * @return string
 	 */
-	void constructor(Dict params = null)
-	{
-		parent(params);
-		
-		/* Create render list */
-		RenderListModel render_list = new RenderListModel{
-			"parent_widget": this,
-		};
-	}
+	pure string getModuleVersion() => "0.12.0";
 	
 	
 	/**
-	 * Set action
+	 * Returns required modules
+	 * @return Dict<string>
 	 */
-	void setAction(string action)
+	pure Dict<string> requiredModules() =>
 	{
-		this.action = action;
-	}
+		"Runtime.Widget": "0.12",
+		"Runtime.Widget.Dialog": "0.12",
+		"Runtime.Widget.Form": "0.12",
+	};
 	
 	
 	/**
-	 * Process frontend data
+	 * Returns enities
 	 */
-	void processFrontendData(Serializer serializer, Map data)
-	{
-		serializer.process(this, "action", data);
-		parent(serializer, data);
-	}
+	pure Collection<Dict> entities() => 
+	[
+	];
+	
 }
