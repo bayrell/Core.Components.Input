@@ -111,7 +111,7 @@ class SaveDialogModel extends DialogModel
 		/* Add item */
 		if (row_number == -1)
 		{
-			this.dialog.title = this.form.getPageTitle("add");
+			this.title = this.form.getPageTitle("add");
 			this.form.setAction("add");
 		}
 		
