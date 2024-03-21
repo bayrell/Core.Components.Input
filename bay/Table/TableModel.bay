@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Table;
+namespace Runtime.Widget.Crud.Table;
 
 use Runtime.BaseObject;
 use Runtime.Callback;
@@ -29,7 +29,7 @@ use Runtime.Widget.RowButtons;
 use Runtime.Widget.RowButtonsModel;
 use Runtime.Widget.Styles;
 use Runtime.Widget.Crud.CrudApiStorage;
-use Runtime.Widget.Table.Table;
+use Runtime.Widget.Crud.Table.Table;
 
 
 class TableModel extends BaseModel
@@ -39,31 +39,78 @@ class TableModel extends BaseModel
 	string widget_name = "table";
 	Vector<Map> fields = [];
 	Map pagination = {};
-	RowButtonsModel top_buttons = new RowButtonsModel{
-		"styles": ["@widget_table__top_buttons"]
-	};
+	RowButtonsModel top_buttons, row_buttons;
+	RenderListModel render_list;
 	Styles styles = new Styles{ "prefix": "widget_table" };
 	
 	
 	/**
-	 * Constructor
+	 * Setup widget params
 	 */
-	void constructor(Dict params = null)
+	void setup(Dict params)
 	{
 		parent(params);
-		if (params)
-		{
-			if (params.has("storage")) this.storage = params.get("storage");
-			if (params.has("styles")) this.styles.addStyles(params.get("styles"));
-		}
+		
+		if (params == null) return;
+		if (params.has("storage")) this.storage = params.get("storage");
+		if (params.has("styles")) this.styles.addStyles(params.get("styles"));
+		
+		/* Setup storage */
 		if (this.storage == null)
 		{
 			this.setDataStorage( this.createDataStorage() );
 		}
-		this.initWidgets();
-		this.initFields();
-		this.initButtons();
-		this.initStyles();
+	}
+	
+	
+	/**
+	 * Init widget settings
+	 */
+	void initWidget()
+	{
+		parent();
+		
+		/* Init widgets */
+		this.top_buttons = this.addWidget(
+			classof RowButtonsModel,
+			{
+				"widget_name": "top_buttons",
+				"styles": ["@widget_table__top_buttons"]
+			}
+		)
+		this.row_buttons = this.addWidget(
+			classof RowButtonsModel,
+			{
+				"widget_name": "row_buttons",
+			}
+		);
+		this.render_list = this.addWidget(classof RenderListModel);
+		
+		/* Edit button */
+		this.row_buttons.addWidget(
+			classof ButtonModel,
+			{
+				"content": "Edit",
+				"widget_name": "edit_button",
+				"styles": [
+					"default",
+					"small",
+				]
+			}
+		);
+		
+		/* Delete button */
+		this.row_buttons.addWidget(
+			classof ButtonModel,
+			{
+				"content": "Delete",
+				"widget_name": "delete_button",
+				"styles": [
+					"danger",
+					"small",
+				],
+			}
+		);
 	}
 	
 	
@@ -71,41 +118,6 @@ class TableModel extends BaseModel
 	 * Create data storage
 	 */
 	BaseObject createDataStorage() => null;
-	
-	
-	/**
-	 * Init table widgets
-	 */
-	void initWidgets()
-	{
-		RenderListModel render_list = new RenderListModel{
-			"parent_widget": this,
-		};
-	}
-	
-	
-	/**
-	 * Init fields
-	 */
-	void initFields()
-	{
-	}
-	
-	
-	/**
-	 * Init buttons
-	 */
-	void initButtons()
-	{
-	}
-	
-	
-	/**
-	 * Init styles
-	 */
-	void initStyles()
-	{
-	}
 	
 	
 	/**
@@ -128,6 +140,18 @@ class TableModel extends BaseModel
 	
 	
 	/**
+	 * Add fields
+	 */
+	void addFields(Collection fields)
+	{
+		for (int i=0; i<fields.count(); i++)
+		{
+			this.addField(fields.get(i));
+		}
+	}
+	
+	
+	/**
 	 * Remove field
 	 */
 	void removeField(string field_name)
@@ -135,62 +159,6 @@ class TableModel extends BaseModel
 		this.fields = this.fields.filter(
 			bool (Map field) use (field_name) => field.get("name") != field_name
 		);
-	}
-	
-	
-	/**
-	 * Add edit field row buttons
-	 */
-	ButtonModel addEditFieldRowButtons(RowButtonsModel row_buttons)
-	{
-		ButtonModel edit_button = row_buttons.add(new ButtonModel{
-			"content": "Edit",
-			"widget_name": "edit_button",
-			"styles": [
-				"default",
-				"small",
-			],
-		});
-		return edit_button;
-	}
-	
-	
-	/**
-	 * Add delete field row buttons
-	 */
-	ButtonModel addDeleteFieldRowButtons(RowButtonsModel row_buttons)
-	{
-		ButtonModel delete_button = row_buttons.add(new ButtonModel{
-			"content": "Delete",
-			"widget_name": "delete_button",
-			"styles": [
-				"danger",
-				"small",
-			],
-		});
-		return delete_button;
-	}
-	
-	
-	/**
-	 * Add field row buttons
-	 */
-	Map addFieldRowButtons()
-	{
-		/* Row buttons */
-		RowButtonsModel row_buttons = new RowButtonsModel();
-		
-		this.addEditFieldRowButtons(row_buttons);
-		this.addDeleteFieldRowButtons(row_buttons);
-		
-		/* Add buttons */
-		Map field = this.addField({
-			"name": "row_buttons",
-			"component": classof RowButtons,
-			"model": row_buttons,
-		});
-		
-		return field;
 	}
 	
 	

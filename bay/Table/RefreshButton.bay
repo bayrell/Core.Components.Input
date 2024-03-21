@@ -16,7 +16,7 @@
  *  limitations under the License.
 -->
 
-<class name="Runtime.Widget.Table.RefreshButton">
+<class name="Runtime.Widget.Crud.Table.RefreshButton">
 
 <use name="Runtime.Widget.Button" component="true" />
 <use name="Runtime.Widget.WidgetResult" component="true" />

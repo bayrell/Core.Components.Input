@@ -20,7 +20,8 @@
 		"Table/SaveDialogModel.bay",
 		"Table/Table.bay",
 		"Table/TableModel.bay",
-		"Table/TableDialogModel.bay"
+		"Table/TableDialogModel.bay",
+		"ModuleDescription.bay"
 	],
 	"src": "./bay",
 	"dest":

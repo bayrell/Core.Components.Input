@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Table;
+namespace Runtime.Widget.Crud.Table;
 
 use Runtime.Callback;
 use Runtime.Exceptions.RuntimeException;
@@ -25,10 +25,10 @@ use Runtime.Widget.ButtonModel;
 use Runtime.Widget.RowButtons;
 use Runtime.Widget.RowButtonsModel;
 use Runtime.Widget.Crud.CrudApiStorage;
-use Runtime.Widget.Form.FormModel;
-use Runtime.Widget.Table.DeleteDialogModel;
-use Runtime.Widget.Table.SaveDialogModel;
-use Runtime.Widget.Table.TableModel;
+use Runtime.Widget.Crud.Form.FormModel;
+use Runtime.Widget.Crud.Table.DeleteDialogModel;
+use Runtime.Widget.Crud.Table.SaveDialogModel;
+use Runtime.Widget.Crud.Table.TableModel;
 
 
 class TableDialogModel extends TableModel
@@ -36,7 +36,7 @@ class TableDialogModel extends TableModel
 	/**
 	 * Init table widgets
 	 */
-	void initWidgets()
+	void initWidget()
 	{
 		parent();
 		
@@ -44,86 +44,57 @@ class TableDialogModel extends TableModel
 		FormModel form_model = this.getWidget("form");
 		if (form_model == null)
 		{
-			form_model = new FormModel{
-				"parent_widget": this,
-				"widget_name": "form",
-			};
+			form_model = this.addWidget(
+				classof FormModel,
+				{
+					"widget_name": "form",
+				}
+			);
 		}
 		
-		/* Get render list widget */
-		RenderListModel render_list = this.getWidget("render_list");
-		
 		/* Create save wiget */
-		SaveDialogModel save_dialog = new SaveDialogModel{
-			"form": form_model,
-			"parent_widget": this,
-		};
-		render_list.addRender(save_dialog.getWidgetName());
+		this.render_list.addItem(
+			this.addWidget(
+				classof SaveDialogModel,
+				{
+					"form": form_model,
+					"widget_name": "save_dialog",
+				}
+			)
+		);
 		
 		/* Create delete widget */
-		DeleteDialogModel delete_dialog = new DeleteDialogModel{
-			"form": form_model,
-			"parent_widget": this,
-		};
-		render_list.addRender(delete_dialog.getWidgetName());
-	}
-	
-	
-	/**
-	 * Init buttons
-	 */
-	void initButtons()
-	{
+		this.render_list.addItem(
+			this.addWidget(
+				classof DeleteDialogModel,
+				{
+					"form": form_model,
+					"widget_name": "delete_dialog",
+				}
+			)
+		);
+		
 		/* Add button */
-		ButtonModel add_button = this.top_buttons.add(new ButtonModel{
-			"content": "Add",
-			"widget_name": "add_button",
-			"styles": [
-				"success",
-			],
-		});
-		add_button.events.add("onClick", new Callback(this.getWidget("save_dialog"), "onClick"));
-	}
-	
-	
-	/**
-	 * Add edit field row buttons
-	 */
-	ButtonModel addEditFieldRowButtons(RowButtonsModel row_buttons)
-	{
-		/* Edit button */
-		ButtonModel edit_button = row_buttons.add(new ButtonModel{
-			"content": "Edit",
-			"widget_name": "edit_button",
-			"styles": [
-				"default",
-				"small",
-			],
-		});
+		this.top_buttons.addWidget(
+			classof ButtonModel,
+			{
+				"content": "Add",
+				"widget_name": "add_button",
+				"styles": [
+					"success",
+				],
+				"events": {
+					"onClick": new Callback(this.getWidget("save_dialog"), "onClick"),
+				},
+			}
+		);
 		
-		/* Add edit onClick */
-		SaveDialogModel save_dialog = this.getWidget("save_dialog");
-		edit_button.events.add("onClick", new Callback(save_dialog, "onClick"));
-	}
-	
-	
-	/**
-	 * Add delete field row buttons
-	 */
-	ButtonModel addDeleteFieldRowButtons(RowButtonsModel row_buttons)
-	{
-		/* Delete button */
-		ButtonModel delete_button = row_buttons.add(new ButtonModel{
-			"content": "Delete",
-			"widget_name": "delete_button",
-			"styles": [
-				"danger",
-				"small",
-			],
-		});
-		
-		/* Add delete onClick */
-		DeleteDialogModel delete_dialog = this.getWidget("delete_dialog");
-		delete_button.events.add("onClick", new Callback(delete_dialog, "onClick"));
+		/* Setup row buttons */
+		this.row_buttons.getWidget("edit_button").events
+			.add("onClick", new Callback(this.getWidget("save_dialog"), "onClick"))
+		;
+		this.row_buttons.getWidget("delete_button").events
+			.add("onClick", new Callback(this.getWidget("delete_dialog"), "onClick"))
+		;
 	}
 }

@@ -16,16 +16,14 @@
  *  limitations under the License.
 -->
 
-<class name="Runtime.Widget.Table.SaveDialog">
+<class name="Runtime.Widget.Crud.Table.SaveDialog"
+	extends="Runtime.Widget.Dialog.Dialog"
+>
 
-
-<template name="render">
-	%set string dialog_component = this.model.dialog.component;
-	<{dialog_component} @model={{ this.model.dialog }}>
-		%set string form_component = this.model.form.component;
-		<{form_component} @model={{ this.model.form }} />
-	</{dialog_component}>
+<template name="renderContent">
+	<div class='widget_dialog__content'>
+		%render this.renderWidget(this.model.form);
+	</div>
 </template>
-
 
 </class>

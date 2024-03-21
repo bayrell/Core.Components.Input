@@ -33,18 +33,15 @@ class SaveButtonModel extends ButtonModel
 	
 	
 	/**
-	 * Constructor
+	 * Setup widget params
 	 */
-	void constructor(Map params = null)
+	void setup(Dict params)
 	{
 		parent(params);
 		
-		if (params)
-		{
-			if (params.has("parent_widget")) this.form = params.get("parent_widget");
-			if (params.has("form")) this.form = params.get("form");
-		}
-		
+		if (params == null) return;
+		if (params.has("parent_widget")) this.form = params.get("parent_widget");
+		if (params.has("form")) this.form = params.get("form");
 		this.styles.add("success");
 	}
 	

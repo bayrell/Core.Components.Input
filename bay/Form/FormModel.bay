@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Form;
+namespace Runtime.Widget.Crud.Form;
 
 use Runtime.BaseObject;
 use Runtime.Serializer;
@@ -26,7 +26,7 @@ use Runtime.Web.RenderListModel;
 use Runtime.Widget.RowButtonsModel;
 use Runtime.Widget.Styles;
 use Runtime.Widget.Crud.CrudApiStorage;
-use Runtime.Widget.Form.Form;
+use Runtime.Widget.Crud.Form.Form;
 
 
 class FormModel extends BaseModel
@@ -37,77 +37,55 @@ class FormModel extends BaseModel
 	string widget_name = "form";
 	Vector<Map> fields = [];
 	Map<Vector> fields_error = {};
-	RowButtonsModel top_buttons = new RowButtonsModel{
-		"styles": ["@widget_form__top_buttons"]
-	};
-	RowButtonsModel bottom_buttons = new RowButtonsModel{
-		"styles": ["@widget_form__bottom_buttons"]
-	};
+	RowButtonsModel top_buttons, bottom_buttons;
+	RenderListModel render_list;
 	Styles styles = new Styles{ "prefix": "widget_form" };
 	bool show_result = true;
 	
 	
 	/**
-	 * Constructor
+	 * Setup widget params
 	 */
-	void constructor(Dict params = null)
+	void setup(Dict params)
 	{
 		parent(params);
-		if (params)
-		{
-			if (params.has("action")) this.action = params.get("action");
-			if (params.has("storage")) this.storage = params.get("storage");
-			if (params.has("styles")) this.styles.addStyles(params.get("styles"));
-		}
+		
+		if (params == null) return;
+		if (params.has("action")) this.action = params.get("action");
+		if (params.has("storage")) this.storage = params.get("storage");
+		if (params.has("styles")) this.styles.addStyles(params.get("styles"));
+		
+		/* Setup storage */
 		if (this.storage == null)
 		{
 			this.setDataStorage( this.createDataStorage() );
 		}
-		this.initWidgets();
-		this.initFields();
-		this.initButtons();
-		this.initStyles();
 	}
 	
 	
 	/**
-	 * Create data storage
+	 * Init widget settings
 	 */
-	BaseObject createDataStorage() => null;
-	
-	
-	/**
-	 * Init table widgets
-	 */
-	void initWidgets()
+	void initWidget()
 	{
-		RenderListModel render_list = new RenderListModel{
-			"parent_widget": this,
-		};
-	}
-	
-	
-	/**
-	 * Init fields
-	 */
-	void initFields()
-	{
-	}
-	
-	
-	/**
-	 * Init buttons
-	 */
-	void initButtons()
-	{
-	}
-	
-	
-	/**
-	 * Init styles
-	 */
-	void initStyles()
-	{
+		parent();
+		
+		/* Init widgets */
+		this.top_buttons = this.addWidget(
+			classof RowButtonsModel,
+			{
+				"widget_name": "top_buttons",
+				"styles": ["@widget_form__top_buttons"],
+			}
+		);
+		this.bottom_buttons = this.addWidget(
+			classof RowButtonsModel,
+			{
+				"widget_name": "bottom_buttons",
+				"styles": ["@widget_form__bottom_buttons"],
+			}
+		);
+		this.render_list = this.addWidget(classof RenderListModel);
 	}
 	
 	
@@ -118,6 +96,12 @@ class FormModel extends BaseModel
 	{
 		this.action = action;
 	}
+	
+	
+	/**
+	 * Create data storage
+	 */
+	BaseObject createDataStorage() => null;
 	
 	
 	/**
@@ -135,6 +119,18 @@ class FormModel extends BaseModel
 	void addField(Map field)
 	{
 		this.fields.append(field);
+	}
+	
+	
+	/**
+	 * Add fields
+	 */
+	void addFields(Collection fields)
+	{
+		for (int i=0; i<fields.count(); i++)
+		{
+			this.addField(fields.get(i));
+		}
 	}
 	
 	

@@ -16,12 +16,12 @@
  *  limitations under the License.
 -->
 
-<class name="Runtime.Widget.Table.Table">
+<class name="Runtime.Widget.Crud.Table.Table">
 
 <use name="Runtime.Web.RenderListModel" />
 <use name="Runtime.Widget.Pagination" component="true" />
 <use name="Runtime.Widget.RowButtons" />
-<use name="Runtime.Widget.Table.TableModel" />
+<use name="Runtime.Widget.Crud.Table.TableModel" />
 
 
 <style>
@@ -167,7 +167,7 @@
 <template name="renderTopButtons">
 	%if (this.model.top_buttons.count() > 0)
 	{
-		<RowButtons @model={{ this.model.top_buttons }} />
+		%render this.renderWidget(this.model.top_buttons);
 	}
 </template>
 
@@ -183,12 +183,7 @@
 
 
 <template name="renderWidgets">
-	%set RenderListModel render_list = this.model.getWidget("render_list");
-	%if (render_list)
-	{
-		%set string component = render_list.component;
-		<{component} @model={{ render_list }} />
-	}
+	%render this.renderWidget(this.model.getWidget("render_list"));
 </template>
 
 

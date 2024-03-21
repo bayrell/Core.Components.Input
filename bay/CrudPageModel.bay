@@ -31,16 +31,17 @@ class CrudPageModel extends BaseModel
 	string action = "";
 	string component = classof CrudPage;
 	
+	RenderListModel render_list;
+	
 	
 	/**
-	 * Constructor
+	 * Init widget settings
 	 */
-	void constructor(Dict params = null)
+	void initWidget()
 	{
-		parent(params);
+		parent();
 		
-		/* Create render list */
-		RenderListModel render_list = new RenderListModel{
+		this.render_list = new RenderListModel{
 			"parent_widget": this,
 		};
 	}

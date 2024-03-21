@@ -16,13 +16,13 @@
  *  limitations under the License.
 -->
 
-<class name="Runtime.Widget.Form.Form">
+<class name="Runtime.Widget.Crud.Form.Form">
 
 <use name="Runtime.Web.RenderListModel" />
 <use name="Runtime.Widget.Input" component="true" />
 <use name="Runtime.Widget.RowButtons" component="true" />
 <use name="Runtime.Widget.WidgetResult" component="true" />
-<use name="Runtime.Widget.Form.FormModel" />
+<use name="Runtime.Widget.Crud.Form.FormModel" />
 
 
 <style>

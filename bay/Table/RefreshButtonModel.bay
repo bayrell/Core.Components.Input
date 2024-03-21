@@ -16,14 +16,14 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Table;
+namespace Runtime.Widget.Crud.Table;
 
 use Runtime.Web.ApiResult;
 use Runtime.Widget.Button;
 use Runtime.Widget.ButtonModel;
 use Runtime.Widget.WidgetResultModel;
-use Runtime.Widget.Table.RefreshButton;
-use Runtime.Widget.Table.TableModel;
+use Runtime.Widget.Crud.Table.RefreshButton;
+use Runtime.Widget.Crud.Table.TableModel;
 
 
 class RefreshButtonModel extends ButtonModel
@@ -35,17 +35,15 @@ class RefreshButtonModel extends ButtonModel
 	
 	
 	/**
-	 * Constructor
+	 * Setup widget params
 	 */
-	void constructor(Map params = null)
+	void setup(Dict params)
 	{
 		parent(params);
 		
-		if (params)
-		{
-			if (params.has("parent_widget")) this.table = params.get("parent_widget");
-			if (params.has("table")) this.table = params.get("table");
-		}
+		if (params == null) return;
+		if (params.has("parent_widget")) this.table = params.get("parent_widget");
+		if (params.has("table")) this.table = params.get("table");
 		
 		this.styles.add("primary");
 	}
@@ -62,5 +60,4 @@ class RefreshButtonModel extends ButtonModel
 		ApiResult res = await this.table.refresh();
 		this.result.setApiResult(res);
 	}
-	
 }

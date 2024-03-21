@@ -16,11 +16,11 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.ContextMenu;
+namespace Runtime.Widget.Crud.ContextMenu;
 
 use Runtime.Web.BaseModel;
 use Runtime.Web.Events;
-use Runtime.Widget.ContextMenu.ContextMenu;
+use Runtime.Widget.Crud.ContextMenu.ContextMenu;
 
 
 class ContextMenuModel extends BaseModel
