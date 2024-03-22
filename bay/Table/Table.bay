@@ -103,7 +103,12 @@
 		}
 		%else if (field_model != null)
 		{
-			%render this.renderWidget(field_model);
+			%render this.renderWidget(field_model, {
+				"data": {
+					"field_name": field_name,
+					"row_number": row_number,
+				}
+			});
 		}
 		%else
 		{

@@ -366,7 +366,7 @@ class CrudApiStorage extends BaseObject
 		post_data = this.mergePostData(post_data, "search");
 		ApiResult res = await this.layout.callApi({
 			"api_name": this.api_name,
-			"method": "actionSearch",
+			"method_name": "actionSearch",
 			"data": post_data
 		});
 		this.setApiResult(res, "search");
@@ -386,7 +386,7 @@ class CrudApiStorage extends BaseObject
 		post_data = this.mergePostData(post_data, "item");
 		ApiResult res = await this.layout.callApi({
 			"api_name": this.api_name,
-			"method": "actionItem",
+			"method_name": "actionItem",
 			"data": post_data
 		});
 		this.setApiResult(res, "item");
@@ -407,7 +407,7 @@ class CrudApiStorage extends BaseObject
 		post_data = this.mergePostData(post_data, "save");
 		ApiResult res = await this.layout.callApi({
 			"api_name": this.api_name,
-			"method": "actionSave",
+			"method_name": "actionSave",
 			"data": post_data
 		});
 		this.setApiResult(res, "save");
@@ -427,7 +427,7 @@ class CrudApiStorage extends BaseObject
 		post_data = this.mergePostData(post_data, "delete");
 		ApiResult res = await this.layout.callApi({
 			"api_name": this.api_name,
-			"method": "actionDelete",
+			"method_name": "actionDelete",
 			"data": post_data
 		});
 		this.setApiResult(res, "delete");
