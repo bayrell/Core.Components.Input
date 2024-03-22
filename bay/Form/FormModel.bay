@@ -182,6 +182,12 @@ class FormModel extends BaseModel
 	
 	
 	/**
+	 * Returns item value
+	 */
+	var getItemValue(Map item, string field_name) => item.get(field_name);
+	
+	
+	/**
 	 * Returns error message
 	 */
 	string getErrorMessage() => this.storage.error.message;
