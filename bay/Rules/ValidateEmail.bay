@@ -16,19 +16,36 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Crud;
+namespace Runtime.Widget.Crud.Rules;
 
 use Runtime.re;
 use Runtime.BaseStruct;
 use Runtime.Widget.Crud.CrudApi;
-use Runtime.Widget.Crud.CrudRule;
+use Runtime.Widget.Crud.FieldResult;
+use Runtime.Widget.Crud.Rules.CrudRule;
 
 
-struct ReadOnly extends CrudRule
+struct ValidateEmail extends CrudRule
 {
 	string name = "";
-	bool can_create = false;
-	bool can_update = false;
+	
+	
+	/**
+	 * Validate field_name in item
+	 */
+	bool validate(string email)
+	{
+		if (email == null) return false;
+		if (not rtl::isString(email)) return false;
+		
+		bool is_match = re::match("^[\w\_\-\.]+@[\w\-\.]+\.[\w]+$", email);
+		if (not is_match) return false;
+		
+		is_match = re::match("\.[\.]+", email);
+		if (is_match) return false;
+		
+		return true;
+	}
 	
 	
 	/**
@@ -36,29 +53,14 @@ struct ReadOnly extends CrudRule
 	 */
 	async Dict validateItem(CrudApi api, Dict update_data)
 	{
-		Dict pk = api.post_data["pk"];
+		string email = update_data[this.name];
 		
-		if (pk == null)
+		if (not this.validate(email))
 		{
-			if (not this.can_create)
-			{
-				if (update_data.has(this.name))
-				{
-					update_data = update_data.removeIm(this.name);
-				}
-			}
+			FieldResult fields = api.result.data.get("fields");
+			fields.addFieldError(this.name, "Wrong email");
 		}
-		else
-		{
-			if (not this.can_update)
-			{
-				if (update_data.has(this.name))
-				{
-					update_data = update_data.removeIm(this.name);
-				}
-			}
-		}
+		
 		return update_data;
 	}
-	
 }

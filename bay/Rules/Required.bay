@@ -16,38 +16,39 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Crud;
+namespace Runtime.Widget.Crud.Rules;
 
 use Runtime.re;
 use Runtime.BaseStruct;
 use Runtime.Widget.Crud.CrudApi;
-use Runtime.Widget.Crud.CrudRule;
+use Runtime.Widget.Crud.FieldResult;
+use Runtime.Widget.Crud.Rules.CrudRule;
 
 
-struct Purify extends CrudRule
+struct Required extends CrudRule
 {
 	string name = "";
-	
-	
-	/**
-	 * Purify item
-	 */
-	string purify(string value)
-	{
-		value = re::replace("[^a-z0-9_\-\.\@]$", "", value);
-		return value;
-	}
+	bool check_create = true;
+	bool check_update = true;
 	
 	
 	/**
 	 * Validate item
 	 */
-	async Map validateItem(CrudApi api, Map update_data)
+	async Dict validateItem(CrudApi api, Dict update_data)
 	{
+		Dict pk = api.post_data["pk"];
+		
+		if (pk == null and not this.check_create) return update_data;
+		if (pk != null and not this.check_update) return update_data;
+		
 		var value = update_data[this.name];
-		value = this.purify(value);
-		update_data.set(this.name, value);
+		if (not update_data.has(this.name) or value === "" or value === null)
+		{
+			FieldResult fields = api.result.data.get("fields");
+			fields.addFieldError(this.name, "Field is required");
+		}
+		
 		return update_data;
 	}
-	
 }

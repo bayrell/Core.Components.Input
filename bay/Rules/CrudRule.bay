@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Crud;
+namespace Runtime.Widget.Crud.Rules;
 
 use Runtime.BaseStruct;
 use Runtime.ORM.Relation;

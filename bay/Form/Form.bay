@@ -94,30 +94,40 @@
 <template name="renderRow" args="Dict field">
 	
 	%set string field_name = field.get("name");
+	%set fn field_condition = field.get("condition");
+	%set bool is_show = true;
 	
-	<div class="widget_form__row" @key={{ field_name }}>
-		
-		<label class="widget_form__row_label">{{ field.get("label") }}</label>
-		
-		%render this.renderField(field);
-		
-		%set Collection<string> field_error = this.model.getFieldResult(field_name);
-		%if (field_error.count() == 0)
-		{
-			<div class="widget_form__field_error widget_form__field_error--hide"
-				data-name={{ field_name }} @key="result1"></div>
-		}
-		%else
-		{
-			<div class="widget_form__field_error" data-name={{ field_name }} @key="result2">
-				%for (int i=0; i<field_error.count(); i++)
-				{
-					<div>{{ field_error.get(i) }}</div>
-				}
-			</div>
-		}
-		
-	</div>
+	%if (field_condition)
+	{
+		%set is_show = rtl::apply(field_condition);
+	}
+	
+	%if (is_show)
+	{
+		<div class="widget_form__row" @key={{ field_name }}>
+			
+			<label class="widget_form__row_label">{{ field.get("label") }}</label>
+			
+			%render this.renderField(field);
+			
+			%set Collection<string> field_error = this.model.getFieldResult(field_name);
+			%if (field_error.count() == 0)
+			{
+				<div class="widget_form__field_error widget_form__field_error--hide"
+					data-name={{ field_name }} @key="result1"></div>
+			}
+			%else
+			{
+				<div class="widget_form__field_error" data-name={{ field_name }} @key="result2">
+					%for (int i=0; i<field_error.count(); i++)
+					{
+						<div>{{ field_error.get(i) }}</div>
+					}
+				</div>
+			}
+			
+		</div>
+	}
 </template>
 
 

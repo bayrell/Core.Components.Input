@@ -31,10 +31,10 @@ use Runtime.ORM.Relation;
 use Runtime.Web.Annotations.ApiMethod;
 use Runtime.Web.ApiResult;
 use Runtime.Web.BaseApi;
-use Runtime.Widget.Crud.CrudRule;
 use Runtime.Widget.Crud.FieldResult;
 use Runtime.Widget.Crud.FieldException;
-use Runtime.Widget.Crud.Filter;
+use Runtime.Widget.Crud.Rules.CrudRule;
+use Runtime.Widget.Crud.Rules.Filter;
 
 
 class CrudApi extends BaseApi

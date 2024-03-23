@@ -16,18 +16,19 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Web.Crud;
+namespace Runtime.Widget.Crud.Rules;
 
 use Runtime.re;
 use Runtime.BaseStruct;
-use Runtime.Web.Crud.CrudApi;
-use Runtime.Web.Crud.CrudRule;
+use Runtime.Widget.Crud.CrudApi;
+use Runtime.Widget.Crud.Rules.ValidationRule;
 
 
-struct EqualPasswords extends CrudRule
+struct ValidateRegEx extends ValidationRule
 {
-	string password1 = "";
-	string password2 = "";
+	string name = "";
+	string match = "";
+	string message = "";
 	
 	
 	/**
@@ -35,18 +36,17 @@ struct EqualPasswords extends CrudRule
 	 */
 	async Dict validateItem(CrudApi api, Dict update_data)
 	{
-		string password1 = update_data[this.password1];
-		string password2 = update_data[this.password2];
+		var value = update_data[this.name];
+		bool is_match = re::match(this.match, value);
 		
-		if (password1 != password2)
+		if (not is_match)
 		{
 			api.field_result.addFieldError(
 				this.name,
-				"password1 and password2% must be equal"
+				this.message
 			);
 		}
 		
 		return update_data;
 	}
-	
 }

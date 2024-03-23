@@ -16,54 +16,26 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Crud;
+namespace Runtime.Widget.Crud.Rules;
 
-use Runtime.re;
 use Runtime.BaseStruct;
 use Runtime.Widget.Crud.CrudApi;
-use Runtime.Widget.Crud.CrudRule;
+use Runtime.Widget.Crud.Rules.CrudRule;
 
 
-struct ValidateEmail extends CrudRule
+struct LowerCase extends CrudRule
 {
-	string name = "";
-	
-	
-	/**
-	 * Validate field_name in item
-	 */
-	bool validate(string email)
-	{
-		if (email == null) return false;
-		if (not rtl::isString(email)) return false;
-		
-		bool is_match = re::match("^[\w\_\-\.]+@[\w\-\.]+\.[\w]+$", email);
-		if (not is_match) return false;
-		
-		is_match = re::match("\.[\.]+", email);
-		if (is_match) return false;
-		
-		return true;
-	}
-	
-	
+    string name = "";
+    
+    
 	/**
 	 * Validate item
 	 */
-	async Dict validateItem(CrudApi api, Dict update_data)
+	async Map validateItem(CrudApi api, Map update_data)
 	{
-		string email = update_data[this.name];
-		
-		if (not this.validate(email))
-		{
-			api.field_result.addFieldError(
-				this.name,
-				"wrong email"
-			);
-		}
-		
+		var value = update_data[this.name];
+		value = rs::lower(value);
+		update_data.set(this.name, value);
 		return update_data;
 	}
-	
-	
 }

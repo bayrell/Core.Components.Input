@@ -25,40 +25,10 @@
 <style>
 </style>
 
-
-<template name="renderIndex">
-	%render this.renderWidget( this.model.getWidget("table") );
-</template>
-
-
-<template name="renderSave">
-	%render this.renderWidget( this.model.getWidget("form") );
-</template>
-
-
-<template name="renderDelete">
-</template>
-
-
 <template>
 	<div class="crud_page">
-		%if (this.model.action == "index")
-		{
-			%render this.renderIndex();
-		}
-		%elseif (this.model.action == "add" or this.model.action == "edit")
-		{
-			%render this.renderSave();
-		}
-		%elseif (this.model.action == "delete")
-		{
-		}
-		%else
-		{
-		}
 		%render this.renderWidget(this.model.render_list);
 	</div>
 </template>
-
 
 </class>

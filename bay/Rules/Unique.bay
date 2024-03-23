@@ -16,18 +16,19 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Crud;
+namespace Runtime.Widget.Crud.Rules;
 
 use Runtime.re;
 use Runtime.BaseStruct;
 use Runtime.Exceptions.RuntimeException;
 use Runtime.ORM.Connection;
+use Runtime.ORM.Cursor;
 use Runtime.ORM.Query;
 use Runtime.ORM.QueryFilter;
 use Runtime.ORM.Relation;
 use Runtime.Widget.Crud.CrudApi;
-use Runtime.Widget.Crud.CrudRule;
-use Runtime.Widget.Crud.FieldResult;
+use Runtime.Widget.Crud.Rules.CrudRule;
+use Runtime.Widget.Crud.Rules.FieldResult;
 
 
 struct Unique extends CrudRule
@@ -51,7 +52,7 @@ struct Unique extends CrudRule
 	{
 		Query q = new Query
 			|> .select(api::getTableName())
-			|> .limit(1)
+			|> .addRawField("count(1) as c")
 		;
 		
 		if (this.keys)
@@ -78,8 +79,9 @@ struct Unique extends CrudRule
 		}
 		
 		FieldResult field_result = api.result.data.get("fields");
-		Relation find_item = await api.connection.fetch(q);
-		if (find_item)
+		Cursor cursor = await api.connection.executeQuery(q);
+		int res = await cursor.fetchVar('c');
+		if (res > 0)
 		{
 			for (int i=0; i<this.keys.count(); i++)
 			{
@@ -88,5 +90,4 @@ struct Unique extends CrudRule
 			}
 		}
 	}
-	
 }

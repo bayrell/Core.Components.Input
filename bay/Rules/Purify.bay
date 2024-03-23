@@ -16,20 +16,37 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Crud;
+namespace Runtime.Widget.Crud.Rules;
 
-use Runtime.lib;
+use Runtime.re;
 use Runtime.BaseStruct;
-use Runtime.ORM.Cursor;
-use Runtime.ORM.Database;
-use Runtime.ORM.Query;
-use Runtime.Web.ApiResult;
 use Runtime.Widget.Crud.CrudApi;
-use Runtime.Widget.Crud.CrudRule;
+use Runtime.Widget.Crud.Rules.CrudRule;
 
 
-struct Filter extends CrudRule
+struct Purify extends CrudRule
 {
-	string api_name = "";
-	string field_name = "";	
+	string name = "";
+	
+	
+	/**
+	 * Purify item
+	 */
+	string purify(string value)
+	{
+		value = re::replace("[^a-z0-9_\-\.\@]$", "", value);
+		return value;
+	}
+	
+	
+	/**
+	 * Validate item
+	 */
+	async Map validateItem(CrudApi api, Map update_data)
+	{
+		var value = update_data[this.name];
+		value = this.purify(value);
+		update_data.set(this.name, value);
+		return update_data;
+	}
 }
