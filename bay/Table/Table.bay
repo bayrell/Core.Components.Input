@@ -147,6 +147,7 @@
 				<Pagination
 					page={{ this.model.storage.page }}
 					pages={{ this.model.storage.pages }}
+					pagination_name={{ this.model.pagination_name }}
 					@event:onPage={{ this.onChangePage }}
 					...props
 				/>

@@ -37,6 +37,7 @@ class TableModel extends BaseModel
 	CrudApiStorage storage = null;
 	string component = classof Table;
 	string widget_name = "table";
+	string pagination_name = "page";
 	Vector<Map> fields = [];
 	Map pagination = {};
 	RowButtonsModel top_buttons, row_buttons;
@@ -111,6 +112,12 @@ class TableModel extends BaseModel
 				],
 			}
 		);
+		
+		/* Set page */
+		if (this.pagination_name)
+		{
+			this.storage.setPage(this.layout.request_query.get(this.pagination_name, 1));
+		}
 	}
 	
 	

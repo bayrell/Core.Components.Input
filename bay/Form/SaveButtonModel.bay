@@ -16,19 +16,20 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Form;
+namespace Runtime.Widget.Crud.Form;
 
 use Runtime.Web.ApiResult;
 use Runtime.Widget.Button;
 use Runtime.Widget.ButtonModel;
-use Runtime.Widget.Form.FormModel;
-use Runtime.Widget.Form.SaveButton;
+use Runtime.Widget.Crud.Form.FormModel;
+use Runtime.Widget.Crud.Form.SaveButton;
 
 
 class SaveButtonModel extends ButtonModel
 {
 	string widget_name = "save_button";
 	string component = classof SaveButton;
+	bool show_result = false;
 	FormModel form = null;
 	
 	

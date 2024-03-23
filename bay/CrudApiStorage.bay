@@ -59,6 +59,7 @@ class CrudApiStorage extends BaseObject
 			if (params.has("class_name")) this.api_name = params.get("class_name") ~ "::crud";
 			if (params.has("primary_keys")) this.primary_keys = params.get("primary_keys");
 			if (params.has("layout")) this.layout = params.get("layout");
+			if (params.has("item_pk")) this.item_pk = params.get("item_pk");
 			if (params.has("item_fields")) this.item_fields = params.get("item_fields");
 			if (params.has("save_fields")) this.save_fields = params.get("save_fields");
 			if (params.has("search_fields")) this.search_fields = params.get("search_fields");

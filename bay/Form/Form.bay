@@ -106,7 +106,11 @@
 	{
 		<div class="widget_form__row" @key={{ field_name }}>
 			
-			<label class="widget_form__row_label">{{ field.get("label") }}</label>
+			%set string field_label = field.get("label");
+			%if (field_label)
+			{
+				<label class="widget_form__row_label">{{ field_label }}</label>
+			}
 			
 			%render this.renderField(field);
 			
