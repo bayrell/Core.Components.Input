@@ -9,6 +9,7 @@
 		"Dictionary.bay",
 		"FieldException.bay",
 		"Form/Form.bay",
+		"Form/FormGroupFields.bay",
 		"Form/FormModel.bay",
 		"Form/SaveButton.bay",
 		"Form/SaveButtonModel.bay",

@@ -22,6 +22,7 @@
 <use name="Runtime.Widget.Input" component="true" />
 <use name="Runtime.Widget.RowButtons" component="true" />
 <use name="Runtime.Widget.WidgetResult" component="true" />
+<use name="Runtime.Widget.Crud.Form.FormGroupFields" component="true" />
 <use name="Runtime.Widget.Crud.Form.FormModel" />
 
 
@@ -64,85 +65,11 @@
 </template>
 
 
-<template name="renderField" args="Dict field">
-	%set string field_name = field.get("name");
-	%set string field_component = field.get("component", "Runtime.Widget.Input");
-	%set string field_model = field.get("model", null);
-	%set string props = field.get("props", {});
-	%set var value = "";
-	%if (this.model.storage)
-	{
-		%set value = this.model.getItemValue(this.model.storage.getItem(), field_name);
-	}
-	<div class="widget_form__field" @key={{ field_name }}>
-		<{field_component}
-			value={{ value }}
-			name={{ field_name }}
-			@model={{ field_model }}
-			@event:onValueChange={{
-				void (string value) use (field_name) => this.onValueChange(field_name, value)
-			}}
-			data={{{
-				"field_name": field_name,
-			}}}
-			...props
-		/>
-	</div>
-</template>
-
-
-<template name="renderRow" args="Dict field">
-	
-	%set string field_name = field.get("name");
-	%set fn field_condition = field.get("condition");
-	%set bool is_show = true;
-	
-	%if (field_condition)
-	{
-		%set is_show = rtl::apply(field_condition);
-	}
-	
-	%if (is_show)
-	{
-		<div class="widget_form__row" @key={{ field_name }}>
-			
-			%set string field_label = field.get("label");
-			%if (field_label)
-			{
-				<label class="widget_form__row_label">{{ field_label }}</label>
-			}
-			
-			%render this.renderField(field);
-			
-			%set Collection<string> field_error = this.model.getFieldResult(field_name);
-			%if (field_error.count() == 0)
-			{
-				<div class="widget_form__field_error widget_form__field_error--hide"
-					data-name={{ field_name }} @key="result1"></div>
-			}
-			%else
-			{
-				<div class="widget_form__field_error" data-name={{ field_name }} @key="result2">
-					%for (int i=0; i<field_error.count(); i++)
-					{
-						<div>{{ field_error.get(i) }}</div>
-					}
-				</div>
-			}
-			
-		</div>
-	}
-</template>
-
-
 <template name="renderContent">
-	<div class="widget_form__content">
-		%for (int i=0; i<this.model.fields.count(); i++)
-		{
-			%set Dict field = this.model.fields.get(i);
-			%render this.renderRow(field);
-		}
-	</div>
+	<FormGroupFields
+		fields={{ this.model.fields }}
+		@model={{ this.model }}
+	/>
 </template>
 
 
@@ -166,12 +93,7 @@
 
 
 <template name="renderWidgets">
-	%set RenderListModel render_list = this.model.getWidget("render_list");
-	%if (render_list)
-	{
-		%set string component = render_list.component;
-		<{component} @model={{ render_list }} />
-	}
+	%render this.renderWidget(this.model.getWidget("render_list"));
 </template>
 
 
@@ -190,15 +112,6 @@
  * Returns styles
  */
 string getStyles() => this.model.styles.join(" ");
-
-
-/**
- * Change value
- */
-void onValueChange(string field_name, string value)
-{
-	this.model.onFieldChange(field_name, value);
-}
 
 </script>
 

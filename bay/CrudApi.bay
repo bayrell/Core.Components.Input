@@ -220,6 +220,16 @@ class CrudApi extends BaseApi
 	}
 	
 	
+	/**
+	 * Add field error
+	 */
+	void addFieldError(string field_name, string error_message)
+	{
+		FieldResult fields = this.result.data.get("fields");
+		fields.addFieldError(field_name, error_message);
+	}
+	
+	
 	/* -------------------------- Search -------------------------- */
 	
 	
@@ -459,6 +469,9 @@ class CrudApi extends BaseApi
 	 */
 	async void onSaveAfter()
 	{
+		/* Refresh item */
+		await this.refresh();
+		
 		Collection<CrudRule> rules = this.getRules();
 		for (int i=0; i<rules.count(); i++)
 		{
@@ -506,10 +519,6 @@ class CrudApi extends BaseApi
 	 */
 	async void validateItem(Map update_data)
 	{
-		/* Intersect */
-		Vector fields = this.getSaveFields();
-		update_data = update_data.intersect(fields);
-		
 		/* Call rules */
 		Collection<CrudRule> rules = this.getRules();
 		for (int i=0; i<rules.count(); i++)
@@ -517,6 +526,10 @@ class CrudApi extends BaseApi
 			CrudRule rule = rules[i];
 			update_data = await rule.validateItem(this, update_data);
 		}
+		
+		/* Intersect */
+		Vector fields = this.getSaveFields();
+		update_data = update_data.intersect(fields);
 		
 		/* Check fields error */
 		FieldResult fields = this.result.data.get("fields");
@@ -574,9 +587,6 @@ class CrudApi extends BaseApi
 		
 		/* Save item */
 		await this.save();
-		
-		/* Refresh item */
-		await this.refresh();
 		
 		/* Save after */
 		await this.onSaveAfter();
