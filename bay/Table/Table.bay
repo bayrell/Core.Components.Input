@@ -89,7 +89,7 @@
 	<td class={{ "widget_table__td widget_table__td--" ~ field_name }} @key={{ field_name }}>
 		%if (field_name == "row_number")
 		{
-			{{ storage.limit * (storage.page - 1) + row_number + 1 }}
+			{{ this.model.limit * (this.model.page - 1) + row_number + 1 }}
 		}
 		%else if (field_component != null)
 		{
@@ -148,7 +148,7 @@
 					page={{ this.model.storage.page }}
 					pages={{ this.model.storage.pages }}
 					pagination_name={{ this.model.pagination_name }}
-					@event:onPage={{ this.onChangePage }}
+					@event:page={{ this.onChangePage }}
 					...props
 				/>
 			</td>

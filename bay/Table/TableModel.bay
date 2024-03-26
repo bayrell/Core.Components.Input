@@ -29,6 +29,7 @@ use Runtime.Widget.RowButtons;
 use Runtime.Widget.RowButtonsModel;
 use Runtime.Widget.Styles;
 use Runtime.Widget.Crud.CrudApiStorage;
+use Runtime.Widget.Crud.Form.FormModel;
 use Runtime.Widget.Crud.Table.Table;
 
 
@@ -38,6 +39,9 @@ class TableModel extends BaseModel
 	string component = classof Table;
 	string widget_name = "table";
 	string pagination_name = "page";
+	int limit = 10;
+	int page = 1;
+	int pages = 0;
 	Vector<Map> fields = [];
 	Map pagination = {};
 	RowButtonsModel top_buttons, row_buttons;
@@ -118,6 +122,10 @@ class TableModel extends BaseModel
 		{
 			this.storage.setPage(this.layout.request_query.get(this.pagination_name, 1));
 		}
+		else
+		{
+			this.storage.setPage(1);
+		}
 	}
 	
 	
@@ -133,6 +141,20 @@ class TableModel extends BaseModel
 	void setDataStorage(CrudApiStorage storage)
 	{
 		this.storage = storage;
+	}
+	
+	
+	/**
+	 * Set foreign key
+	 */
+	void setForeignKey(string foreign_key, var foreign_value)
+	{
+		this.storage.setForeignKey(foreign_key, foreign_value);
+		FormModel form = this.getWidget("form");
+		if (form)
+		{
+			form.storage.setForeignKey(foreign_key, foreign_value);
+		}
 	}
 	
 	
@@ -186,8 +208,22 @@ class TableModel extends BaseModel
 	 */
 	void processFrontendData(Serializer serializer, Map data)
 	{
+		serializer.process(this, "limit", data);
+		serializer.process(this, "page", data);
+		serializer.process(this, "pages", data);
 		serializer.process(this, "storage", data);
 		parent(serializer, data);
+	}
+	
+	
+	/**
+	 * Update page
+	 */
+	void updatePage()
+	{
+		this.limit = this.storage.limit;
+		this.page = this.storage.page;
+		this.pages = this.storage.pages;
 	}
 	
 	
@@ -199,6 +235,7 @@ class TableModel extends BaseModel
 		if (this.storage)
 		{
 			await this.storage.doSearch();
+			this.updatePage();
 		}
 		await parent();
 	}
@@ -211,7 +248,9 @@ class TableModel extends BaseModel
 	{
 		if (this.storage)
 		{
-			return await this.storage.doSearch();
+			ApiResult res = await this.storage.doSearch();
+			this.updatePage();
+			return res;
 		}
 		return null;
 	}
@@ -232,5 +271,6 @@ class TableModel extends BaseModel
 	{
 		this.storage.page = page;
 		await this.storage.doSearch();
+		this.updatePage();
 	}
 }
