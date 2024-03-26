@@ -434,6 +434,9 @@ class CrudApi extends BaseApi
 			throw new ApiError(new ItemNotFound());
 		}
 		
+		/* Search after event */
+		await this.onSearchAfter();
+		
 		/* Convert item */
 		Map model = this.convertItem("item", this.item);
 		Map pk = this.item.getPrimaryKey();

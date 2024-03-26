@@ -41,6 +41,7 @@ class FormModel extends BaseModel
 	RenderListModel render_list;
 	Styles styles = new Styles{ "prefix": "widget_form" };
 	bool show_result = true;
+	bool is_load_success = true;
 	
 	
 	/**
@@ -200,6 +201,7 @@ class FormModel extends BaseModel
 	{
 		serializer.process(this, "action", data);
 		serializer.process(this, "storage", data);
+		serializer.process(this, "is_load_success", data);
 		parent(serializer, data);
 	}
 	
@@ -228,6 +230,13 @@ class FormModel extends BaseModel
 		if (this.storage.item_pk)
 		{
 			await this.storage.doItem();
+			
+			/* Set load success */
+			this.is_load_success = true;
+			if (this.storage.result.isError())
+			{
+				this.is_load_success = false;
+			}
 		}
 		await parent();
 	}

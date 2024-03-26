@@ -82,7 +82,7 @@ class DeleteDialogModel extends DialogModel
 		ButtonModel confirm_button = this.buttons.addWidget(
 			classof ButtonModel,
 			{
-				"content": "Save",
+				"content": "Delete",
 				"widget_name": "confirm_button",
 				"styles": [
 					"danger"

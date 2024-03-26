@@ -27,17 +27,7 @@
 
 
 <style>
-.widget_form__row{
-	margin-bottom: calc(var(--widget-space) * 3);
-}
-.widget_form__row_label{
-	display: block;
-	font-weight: bold;
-	margin-bottom: var(--widget-space);
-}
-.widget_form__field_error{
-	color: var(--widget-color-danger);
-	margin-top: var(--widget-space);
+.widget_form__load_error{
 }
 .widget_form %(RowButtons)widget_form__top_buttons{
 	margin-bottom: calc(var(--widget-space) * 3);
@@ -97,11 +87,25 @@
 </template>
 
 
+<template name="renderLoadError">
+	<div class="widget_form__load_error">
+		{{ this.model.storage.result.message }}
+	</div>
+</template>
+
+
 <template>
 	<div class="widget_form" class={{ this.getStyles() }}>
 		%render this.renderTopButtons();
-		%render this.renderForm();
-		%render this.renderWidgets();
+		%if (this.model.is_load_success)
+		{
+			%render this.renderForm();
+			%render this.renderWidgets();
+		}
+		%else
+		{
+			%render this.renderLoadError();
+		}
 	</div>
 </template>
 
