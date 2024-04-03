@@ -32,6 +32,7 @@ class CrudApiStorage extends BaseObject
 	Map post_data = {};
 	Map item = {};
 	Map item_pk = null;
+	Map item_data = {};
 	Vector item_fields = null;
 	Vector save_fields = null;
 	Vector search_fields = null;
@@ -60,9 +61,11 @@ class CrudApiStorage extends BaseObject
 			if (params.has("primary_keys")) this.primary_keys = params.get("primary_keys");
 			if (params.has("layout")) this.layout = params.get("layout");
 			if (params.has("item_pk")) this.item_pk = params.get("item_pk");
+			if (params.has("item_data")) this.item_data = params.get("item_data");
 			if (params.has("item_fields")) this.item_fields = params.get("item_fields");
 			if (params.has("save_fields")) this.save_fields = params.get("save_fields");
 			if (params.has("search_fields")) this.search_fields = params.get("search_fields");
+			if (params.has("post_data")) this.post_data = params.get("post_data");
 		}
 	}
 	
@@ -312,6 +315,7 @@ class CrudApiStorage extends BaseObject
 	{
 		post_data = post_data.concat(this.post_data);
 		
+		/* Add foreign key */
 		if (this.foreign_key != null)
 		{
 			post_data.set(this.foreign_key, this.foreign_value);
@@ -319,6 +323,18 @@ class CrudApiStorage extends BaseObject
 			{
 				post_data.get("item").set(this.foreign_key, this.foreign_value);
 			}
+		}
+		
+		/* Add item data */
+		if (this.item_data and post_data.has("item"))
+		{
+			Map item = post_data.get("item");
+			this.item_data.each(
+				void (var value, string key) use (item)
+				{
+					item.set(key, value);
+				}
+			);
 		}
 		
 		/* Set search fields */

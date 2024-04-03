@@ -31,8 +31,8 @@ use Runtime.ORM.Relation;
 use Runtime.Web.Annotations.ApiMethod;
 use Runtime.Web.ApiResult;
 use Runtime.Web.BaseApi;
-use Runtime.Widget.Crud.FieldResult;
 use Runtime.Widget.Crud.FieldException;
+use Runtime.Widget.Crud.FieldResult;
 use Runtime.Widget.Crud.Rules.CrudRule;
 use Runtime.Widget.Crud.Rules.Filter;
 
@@ -520,7 +520,7 @@ class CrudApi extends BaseApi
 	/**
 	 * Validate item
 	 */
-	async void validateItem(Map update_data)
+	async Map validateItem(Map update_data)
 	{
 		/* Call rules */
 		Collection<CrudRule> rules = this.getRules();

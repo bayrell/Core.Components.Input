@@ -24,24 +24,28 @@
 
 <style>
 .save_button{
-    display: flex;
-    align-items: center;
-    gap: 5px;
+	display: flex;
+	align-items: center;
+	gap: 5px;
 }
 .save_button %(WidgetResult)widget_result{
-    margin-top: 0;
+	margin-top: 0;
 }
 </style>
 
 
 <template name="render">
-    <div class="save_button">
-        <Button @model={{ this.model }} @event:onClick={{ this.onSave }}>Save</Button>
-        %if (this.model.show_result)
-        {
-            <WidgetResult @model={{ this.model.form.storage.result }} />
-        }
-    </div>
+	%if (this.model.show_result)
+	{
+		<div class="save_button">
+			<Button @model={{ this.model }} @event:onClick={{ this.onSave }}>Save</Button>
+			<WidgetResult @model={{ this.model.form.storage.result }} />
+		</div>
+	}
+	%else
+	{
+		<Button @model={{ this.model }} @event:onClick={{ this.onSave }}>Save</Button>
+	}
 </template>
 
 
@@ -52,7 +56,7 @@
  */
 async void onSave()
 {
-    await this.model.save();
+	await this.model.save();
 }
 
 </script>
