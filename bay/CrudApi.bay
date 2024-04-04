@@ -204,7 +204,7 @@ class CrudApi extends BaseApi
 		
 		if (page <= 1) page = 1;
 		if (limit < 0) limit = limit_default;
-		if (limit > limit_max) limit = limit_max;
+		if (limit > limit_max and limit_max != -1) limit = limit_max;
 		
 		return [page, limit];
 	}
@@ -489,6 +489,8 @@ class CrudApi extends BaseApi
 	 */
 	async void findItem(Dict pk)
 	{
+		if (pk == null) return;
+		
 		string table_name = this.getTableName();
 		
 		/* Get primary key */
