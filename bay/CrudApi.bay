@@ -25,6 +25,7 @@ use Runtime.Exceptions.ItemNotFound;
 use Runtime.ORM.Connection;
 use Runtime.ORM.Cursor;
 use Runtime.ORM.Query;
+use Runtime.ORM.QueryField;
 use Runtime.ORM.QueryFilter;
 use Runtime.ORM.QueryResult;
 use Runtime.ORM.Relation;
@@ -134,12 +135,6 @@ class CrudApi extends BaseApi
 	
 	
 	/**
-	 * Returns search fields
-	 */
-	Vector getSearchFields() => this.getItemFields();
-	
-	
-	/**
 	 * Returns item fields
 	 */
 	Vector getItemFields() => [];
@@ -152,23 +147,31 @@ class CrudApi extends BaseApi
 	
 	
 	/**
+	 * Returns query field
+	 */
+	bool getQueryField(string table_name, string field_name)
+		=> new QueryField(table_name, field_name)
+	;
+	
+	
+	/**
 	 * Returns allowed fields
 	 */
-	Vector getAllowedFields(string kind)
+	Vector getAllowedFields()
 	{
-		if (kind == "save")
+		if (this.post_data.has("fields"))
 		{
-			return this.getSaveFields();
+			Collection fields = this.post_data["fields"];
+			Collection item_fields = this.getItemFields();
+			Map item_fields_index = item_fields.transition(
+				list (string field_name, int index) => [index, field_name]
+			);
+			return fields.filter(
+				bool (string field_name) use (item_fields_index) =>
+					item_fields_index.has(field_name)
+			);
 		}
-		if (kind == "item")
-		{
-			return this.getItemFields();
-		}
-		if (kind == "search")
-		{
-			return this.getSearchFields();
-		}
-		return null;
+		return this.getItemFields();
 	}
 	
 	
@@ -203,7 +206,7 @@ class CrudApi extends BaseApi
 		int limit_max = this.getMaxLimit();
 		
 		if (page <= 1) page = 1;
-		if (limit < 0) limit = limit_default;
+		if (limit < 0 and limit_max != -1) limit = limit_default;
 		if (limit > limit_max and limit_max != -1) limit = limit_max;
 		
 		return [page, limit];
@@ -213,9 +216,8 @@ class CrudApi extends BaseApi
 	/**
 	 * Convert item
 	 */
-	Map convertItem(string action, Relation item)
+	Map convertItem(Collection fields, Relation item)
 	{
-		Collection fields = this.getAllowedFields(action);
 		return item.intersect(fields);
 	}
 	
@@ -347,18 +349,25 @@ class CrudApi extends BaseApi
 			.page(this.page - 1)
 		;
 		
+		/* Add fields */
+		Collection fields = this.getAllowedFields();
+		for (int i=0; i<fields.count(); i++)
+		{
+			string field_name = fields.get(i);
+			QueryField field = this.getQueryField(table_name, field_name);
+			if (field) q.addField(field);
+		}
+		
 		/* Setup calc found rows */
-		if (this.action == "actionSearchOne")
+		q.calcFoundRows(false);
+		if (this.action == "actionSearch" and this.limit > 0)
 		{
-			q = q.calcFoundRows(false);
+			q.calcFoundRows(true);
 		}
-		else
-		{
-			if (this.limit > 0)
-			{
-				q = q.calcFoundRows(true);
-			}
-		}
+		
+		/* Set from post data */
+		bool found_rows = this.post_data.get("found_rows", true);
+		if (q._calc_found_rows and not found_rows) q.calcFoundRows(false);
 		
 		/* Build search query */
 		await this.buildSearchQuery(q);
@@ -386,8 +395,9 @@ class CrudApi extends BaseApi
 		await this.searchItems();
 		
 		/* Transform items */
+		Collection fields = this.getAllowedFields();
 		Collection items = this.items.map(
-			Dict (Relation item) => this.convertItem("search", item)
+			Dict (Relation item) use (fields) => this.convertItem(fields, item)
 		);
 		
 		this.result.success({
@@ -407,8 +417,9 @@ class CrudApi extends BaseApi
 		await this.searchItems();
 		
 		/* Transform items */
+		Collection fields = this.getAllowedFields();
 		Collection items = this.items.map(
-			Dict (Relation item) => this.convertItem("search", item)
+			Dict (Relation item) use (fields) => this.convertItem(fields, item)
 		);
 		
 		this.result.success({
@@ -437,8 +448,12 @@ class CrudApi extends BaseApi
 		/* Search after event */
 		await this.onSearchAfter();
 		
+		/* Set item */
+		this.item = this.items.get(0);
+		
 		/* Convert item */
-		Map model = this.convertItem("item", this.item);
+		Collection fields = this.getAllowedFields();
+		Map model = this.convertItem(fields, this.item);
 		Map pk = this.item.getPrimaryKey();
 		
 		this.result.success({
@@ -506,6 +521,7 @@ class CrudApi extends BaseApi
 		
 		/* Find relation */
 		this.item = await this.connection.findRelation(q);
+		this.items = [this.item];
 	}
 	
 	
@@ -626,7 +642,8 @@ class CrudApi extends BaseApi
 		await this.updateItem(update_data);
 		
 		/* Convert item */
-		Map model = this.convertItem("item", this.item);
+		Collection fields = this.getAllowedFields();
+		Map model = this.convertItem(fields, this.item);
 		Map pk = this.item.getPrimaryKey();
 		
 		this.result.success({
@@ -709,14 +726,9 @@ class CrudApi extends BaseApi
 		/* Delete item */
 		await this.deleteItem();
 		
-		/* Convert item */
-		Map model = this.convertItem("item", this.item);
-		Map pk = this.item.getPrimaryKey();
-		
 		this.result.success({
 			"data": {
 				"pk": pk,
-				"item": model,
 			}
 		});
 	}

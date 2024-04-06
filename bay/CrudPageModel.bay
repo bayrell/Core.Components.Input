@@ -40,10 +40,7 @@ class CrudPageModel extends BaseModel
 	void initWidget()
 	{
 		parent();
-		
-		this.render_list = new RenderListModel{
-			"parent_widget": this,
-		};
+		this.render_list = this.addWidget(classof RenderListModel);
 	}
 	
 	

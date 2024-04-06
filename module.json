@@ -5,6 +5,7 @@
 		"CrudApiStorage.bay",
 		"CrudPage.bay",
 		"CrudPageModel.bay",
+		"CrudSimplePageModel.bay",
 		"CrudProxyStorage.bay",
 		"Dictionary.bay",
 		"FieldException.bay",
