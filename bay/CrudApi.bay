@@ -42,6 +42,7 @@ class CrudApi extends BaseApi
 {
 	string action = "";
 	ApiResult result = null;
+	Collection allowed_fields = null;
 	Connection connection = null;
 	QueryResult items = null;
 	Relation item = null;
@@ -157,21 +158,38 @@ class CrudApi extends BaseApi
 	/**
 	 * Returns allowed fields
 	 */
-	Vector getAllowedFields()
+	Collection getAllowedFields()
 	{
-		if (this.post_data.has("fields"))
+		if (this.allowed_fields == null)
 		{
-			Collection fields = this.post_data["fields"];
-			Collection item_fields = this.getItemFields();
-			Map item_fields_index = item_fields.transition(
-				list (string field_name, int index) => [index, field_name]
-			);
-			return fields.filter(
-				bool (string field_name) use (item_fields_index) =>
-					item_fields_index.has(field_name)
-			);
+			if (this.post_data.has("fields"))
+			{
+				Collection fields = this.post_data["fields"];
+				Collection item_fields = this.getItemFields();
+				Map item_fields_index = item_fields.transition(
+					list (string field_name, int index) => [index, field_name]
+				);
+				this.allowed_fields = fields.filter(
+					bool (string field_name) use (item_fields_index) =>
+						item_fields_index.has(field_name)
+				);
+			}
+			else
+			{
+				this.allowed_fields = this.getItemFields();
+			}
 		}
-		return this.getItemFields();
+		return this.allowed_fields;
+	}
+	
+	
+	/**
+	 * Allowed field
+	 */
+	bool hasAllowedField(string field_name)
+	{
+		Collection allowed_fields = this.getAllowedFields();
+		return allowed_fields.indexOf(field_name) != -1;
 	}
 	
 	

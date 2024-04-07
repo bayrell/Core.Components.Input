@@ -141,7 +141,7 @@ class CrudSimplePageModel extends BaseModel
 		if (post_data == null) post_data = {};
 		
 		/* Add post data */
-		if (post_data.has("fields")) post_data.set("fields", this.getItemFields());
+		if (not post_data.has("fields")) post_data.set("fields", this.getItemFields());
 		
 		/* Add post data filter */
 		this.loadItemFilter(post_data);
