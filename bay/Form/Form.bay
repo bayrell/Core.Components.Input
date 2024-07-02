@@ -1,5 +1,5 @@
 <!--
- *  Bayrell Runtime Library
+ *  BayLang Technology
  *
  *  (c) Copyright 2016-2024 "Ildar Bikmamatov" <support@bayrell.org>
  *
@@ -16,14 +16,14 @@
  *  limitations under the License.
 -->
 
-<class name="Runtime.Widget.Crud.Form.Form">
+<class name="Runtime.Widget.Form.Form">
 
 <use name="Runtime.Web.RenderListModel" />
+<use name="Runtime.Widget.Form.FormGroupFields" component="true" />
+<use name="Runtime.Widget.Form.FormModel" />
 <use name="Runtime.Widget.Input" component="true" />
 <use name="Runtime.Widget.RowButtons" component="true" />
 <use name="Runtime.Widget.WidgetResult" component="true" />
-<use name="Runtime.Widget.Crud.Form.FormGroupFields" component="true" />
-<use name="Runtime.Widget.Crud.Form.FormModel" />
 
 
 <style>
@@ -42,7 +42,7 @@
 <template name="renderTopButtons">
 	%if (this.model.top_buttons.count() > 0)
 	{
-		<RowButtons @model={{ this.model.top_buttons }} />
+		%render this.renderWidget(this.model.top_buttons);
 	}
 </template>
 
@@ -50,7 +50,7 @@
 <template name="renderBottomButtons">
 	%if (this.model.bottom_buttons.count() > 0)
 	{
-		<RowButtons @model={{ this.model.bottom_buttons }} />
+		%render this.renderWidget(this.model.bottom_buttons);
 	}
 </template>
 

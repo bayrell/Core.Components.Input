@@ -1,5 +1,5 @@
 <!--
- *  Bayrell Runtime Library
+ *  BayLang Technology
  *
  *  (c) Copyright 2016-2024 "Ildar Bikmamatov" <support@bayrell.org>
  *
@@ -16,7 +16,7 @@
  *  limitations under the License.
 -->
 
-<class name="Runtime.Widget.Crud.Form.SaveButton">
+<class name="Runtime.Widget.Form.SaveButton">
 
 <use name="Runtime.Widget.Button" component="true" />
 <use name="Runtime.Widget.WidgetResult" component="true" />
@@ -38,13 +38,21 @@
 	%if (this.model.show_result)
 	{
 		<div class="save_button">
-			<Button @model={{ this.model }} @event:onClick={{ this.onSave }}>Save</Button>
+			<Button
+				render_list={{ this.render_list }}
+				@model={{ this.model }}
+				@event:onClick={{ this.onSave }}
+			>Save</Button>
 			<WidgetResult @model={{ this.model.form.storage.result }} />
 		</div>
 	}
 	%else
 	{
-		<Button @model={{ this.model }} @event:onClick={{ this.onSave }}>Save</Button>
+		<Button
+			render_list={{ this.render_list }}
+			@model={{ this.model }}
+			@event:onClick={{ this.onSave }}
+		>Save</Button>
 	}
 </template>
 

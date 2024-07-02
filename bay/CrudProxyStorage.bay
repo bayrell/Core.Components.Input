@@ -1,5 +1,5 @@
 /*!
- *  Bayrell Runtime Library
+ *  BayLang Technology
  *
  *  (c) Copyright 2016-2024 "Ildar Bikmamatov" <support@bayrell.org>
  *
@@ -49,7 +49,7 @@ class CrudProxyStorage extends CrudApiStorage
 	/**
 	 * Process frontend data
 	 */
-	void processFrontendData(Serializer serializer, Map data)
+	void serialize(Serializer serializer, Map data)
 	{
 	}
 	

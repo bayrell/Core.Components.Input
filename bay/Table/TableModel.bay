@@ -1,5 +1,5 @@
 /*!
- *  Bayrell Runtime Library
+ *  BayLang Technology
  *
  *  (c) Copyright 2016-2024 "Ildar Bikmamatov" <support@bayrell.org>
  *
@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Crud.Table;
+namespace Runtime.Widget.Table;
 
 use Runtime.BaseObject;
 use Runtime.Callback;
@@ -26,12 +26,12 @@ use Runtime.Web.BaseModel;
 use Runtime.Web.RenderContainer;
 use Runtime.Web.RenderListModel;
 use Runtime.Widget.ButtonModel;
+use Runtime.Widget.Crud.CrudApiStorage;
+use Runtime.Widget.Form.FormModel;
 use Runtime.Widget.RowButtons;
 use Runtime.Widget.RowButtonsModel;
 use Runtime.Widget.Styles;
-use Runtime.Widget.Crud.CrudApiStorage;
-use Runtime.Widget.Crud.Form.FormModel;
-use Runtime.Widget.Crud.Table.Table;
+use Runtime.Widget.Table.Table;
 
 
 class TableModel extends BaseModel
@@ -40,6 +40,7 @@ class TableModel extends BaseModel
 	string component = classof Table;
 	string widget_name = "table";
 	string pagination_name = "page";
+	string title = "";
 	int limit = 10;
 	int page = 1;
 	int pages = 0;
@@ -47,7 +48,7 @@ class TableModel extends BaseModel
 	Map pagination = {};
 	RowButtonsModel top_buttons, row_buttons;
 	RenderListModel render_list;
-	Styles styles = new Styles{ "prefix": "widget_table__table" };
+	Styles styles = new Styles{ "prefix": "widget_table" };
 	
 	
 	/**
@@ -58,13 +59,15 @@ class TableModel extends BaseModel
 		parent(params);
 		
 		if (params == null) return;
+		if (params.has("pagination_name")) this.pagination_name = params.get("pagination_name");
 		if (params.has("storage")) this.storage = params.get("storage");
 		if (params.has("styles")) this.styles.addStyles(params.get("styles"));
+		if (params.has("title")) this.title = params.get("title");
 		
 		/* Setup storage */
 		if (this.storage == null)
 		{
-			this.setDataStorage( this.createDataStorage() );
+			this.setDataStorage( this.createDataStorage(params) );
 		}
 	}
 	
@@ -72,9 +75,9 @@ class TableModel extends BaseModel
 	/**
 	 * Init widget settings
 	 */
-	void initWidget()
+	void initWidget(Dict params)
 	{
-		parent();
+		parent(params);
 		
 		/* Init widgets */
 		this.top_buttons = this.addWidget(
@@ -127,6 +130,14 @@ class TableModel extends BaseModel
 		{
 			this.storage.setPage(1);
 		}
+		
+		/* Setup foreign key */
+		if (params.has("foreign_key"))
+		{
+			string foreign_key = params.get("foreign_key").keys().get(0);
+			var foreign_value = params.get("foreign_key").get(foreign_key);
+			this.setForeignKey(foreign_key, foreign_value);
+		}
 	}
 	
 	
@@ -150,7 +161,13 @@ class TableModel extends BaseModel
 	 */
 	void setForeignKey(string foreign_key, var foreign_value)
 	{
-		this.storage.setForeignKey(foreign_key, foreign_value);
+		/* Setup storage */
+		if (this.storage)
+		{
+			this.storage.setForeignKey(foreign_key, foreign_value);
+		}
+		
+		/* Setup form */
 		FormModel form = this.getWidget("form");
 		if (form)
 		{
@@ -207,7 +224,7 @@ class TableModel extends BaseModel
 	/**
 	 * Process frontend data
 	 */
-	void processFrontendData(Serializer serializer, Map data)
+	void serialize(Serializer serializer, Map data)
 	{
 		serializer.process(this, "limit", data);
 		serializer.process(this, "page", data);
@@ -238,7 +255,7 @@ class TableModel extends BaseModel
 			await this.storage.doSearch();
 			this.updatePage();
 		}
-		await parent();
+		await parent(container);
 	}
 	
 	

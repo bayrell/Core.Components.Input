@@ -1,5 +1,5 @@
 /*!
- *  Bayrell Runtime Library
+ *  BayLang Technology
  *
  *  (c) Copyright 2016-2024 "Ildar Bikmamatov" <support@bayrell.org>
  *
@@ -50,9 +50,9 @@ struct Unique extends CrudRule
 	 */
 	async void onSaveBefore(CrudApi api)
 	{
-		Query q = new Query
-			|> .select(api::getTableName())
-			|> .addRawField("count(1) as c")
+		Query q = new Query()
+			.select(api::getTableName())
+			.addRawField("count(1) as c")
 		;
 		
 		if (this.keys)
@@ -65,7 +65,7 @@ struct Unique extends CrudRule
 			}
 		}
 		
-		if (api.item != null)
+		if (api.item != null and not api.item.isNew())
 		{
 			Collection filter = Relation::getPrimaryFilter(
 				api::getTableName(), api.item.toMap(), true
@@ -78,8 +78,9 @@ struct Unique extends CrudRule
 			}
 		}
 		
+		Connection connection = api.getConnection();
 		FieldResult field_result = api.result.data.get("fields");
-		Cursor cursor = await api.connection.executeQuery(q);
+		Cursor cursor = await connection.executeQuery(q);
 		int res = await cursor.fetchVar('c');
 		if (res > 0)
 		{

@@ -1,5 +1,5 @@
 /*!
- *  Bayrell Runtime Library
+ *  BayLang Technology
  *
  *  (c) Copyright 2016-2024 "Ildar Bikmamatov" <support@bayrell.org>
  *
@@ -16,13 +16,13 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Crud.Form;
+namespace Runtime.Widget.Form;
 
 use Runtime.Web.ApiResult;
 use Runtime.Widget.Button;
 use Runtime.Widget.ButtonModel;
-use Runtime.Widget.Crud.Form.FormModel;
-use Runtime.Widget.Crud.Form.SaveButton;
+use Runtime.Widget.Form.FormModel;
+use Runtime.Widget.Form.SaveButton;
 
 
 class SaveButtonModel extends ButtonModel
@@ -41,6 +41,7 @@ class SaveButtonModel extends ButtonModel
 		parent(params);
 		
 		if (params == null) return;
+		if (params.has("show_result")) this.show_result = params.get("show_result");
 		if (params.has("parent_widget")) this.form = params.get("parent_widget");
 		if (params.has("form")) this.form = params.get("form");
 	}

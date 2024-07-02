@@ -1,5 +1,5 @@
 <!--
- *  Bayrell Runtime Library
+ *  BayLang Technology
  *
  *  (c) Copyright 2016-2024 "Ildar Bikmamatov" <support@bayrell.org>
  *
@@ -16,7 +16,7 @@
  *  limitations under the License.
 -->
 
-<class name="Runtime.Widget.Crud.Form.FormGroupFields">
+<class name="Runtime.Widget.Form.FormGroupFields">
 
 
 <style>

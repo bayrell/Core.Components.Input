@@ -1,5 +1,5 @@
 /*!
- *  Bayrell Runtime Library
+ *  BayLang Technology
  *
  *  (c) Copyright 2016-2024 "Ildar Bikmamatov" <support@bayrell.org>
  *
@@ -16,14 +16,14 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Crud.Table;
+namespace Runtime.Widget.Table;
 
 use Runtime.Web.ApiResult;
 use Runtime.Widget.Button;
 use Runtime.Widget.ButtonModel;
+use Runtime.Widget.Table.RefreshButton;
+use Runtime.Widget.Table.TableModel;
 use Runtime.Widget.WidgetResultModel;
-use Runtime.Widget.Crud.Table.RefreshButton;
-use Runtime.Widget.Crud.Table.TableModel;
 
 
 class RefreshButtonModel extends ButtonModel

@@ -1,5 +1,5 @@
 /*!
- *  Bayrell Runtime Library
+ *  BayLang Technology
  *
  *  (c) Copyright 2016-2024 "Ildar Bikmamatov" <support@bayrell.org>
  *
@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Crud.Table;
+namespace Runtime.Widget.Table;
 
 use Runtime.BaseObject;
 use Runtime.Callback;
@@ -25,15 +25,16 @@ use Runtime.Web.BaseModel;
 use Runtime.Widget.Button;
 use Runtime.Widget.ButtonModel;
 use Runtime.Widget.Dialog.DialogModel;
-use Runtime.Widget.Crud.Form.FormModel;
-use Runtime.Widget.Crud.Table.SaveDialog;
-use Runtime.Widget.Crud.Table.TableModel;
+use Runtime.Widget.Form.FormModel;
+use Runtime.Widget.Table.SaveDialog;
+use Runtime.Widget.Table.TableModel;
 
 
 class SaveDialogModel extends DialogModel
 {
 	string widget_name = "save_dialog";
 	string component = classof SaveDialog;
+	FormModel form;
 	TableModel table;
 	
 	
@@ -54,9 +55,9 @@ class SaveDialogModel extends DialogModel
 	/**
 	 * Init widget settings
 	 */
-	void initWidget()
+	void initWidget(Dict params)
 	{
-		parent();
+		parent(params);
 		
 		/* Setup dialog */
 		this.title = "Add item";
