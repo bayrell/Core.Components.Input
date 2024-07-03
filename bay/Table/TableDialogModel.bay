@@ -16,19 +16,19 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Table;
+namespace Runtime.Widget.Crud.Table;
 
 use Runtime.Callback;
 use Runtime.Exceptions.RuntimeException;
 use Runtime.Web.RenderListModel;
 use Runtime.Widget.ButtonModel;
-use Runtime.Widget.Crud.CrudApiStorage;
-use Runtime.Widget.Form.FormModel;
 use Runtime.Widget.RowButtons;
 use Runtime.Widget.RowButtonsModel;
-use Runtime.Widget.Table.DeleteDialogModel;
-use Runtime.Widget.Table.SaveDialogModel;
-use Runtime.Widget.Table.TableModel;
+use Runtime.Widget.Crud.CrudApiStorage;
+use Runtime.Widget.Crud.Form.FormModel;
+use Runtime.Widget.Crud.Table.DeleteDialogModel;
+use Runtime.Widget.Crud.Table.SaveDialogModel;
+use Runtime.Widget.Crud.Table.TableModel;
 
 
 class TableDialogModel extends TableModel
@@ -50,7 +50,7 @@ class TableDialogModel extends TableModel
 	/**
 	 * Init widget settings
 	 */
-	void initWidget(Dict params)
+	void init(Dict params)
 	{
 		/* Create form */
 		this.form = this.createForm();
@@ -95,11 +95,11 @@ class TableDialogModel extends TableModel
 		);
 		
 		/* Setup row buttons */
-		this.row_buttons.getWidget("edit_button").events
-			.add("onClick", new Callback(this.getWidget("save_dialog"), "onClick"))
+		this.row_buttons.getWidget("edit_button")
+			.addListener("click", new Callback(this.getWidget("save_dialog"), "onClick"))
 		;
-		this.row_buttons.getWidget("delete_button").events
-			.add("onClick", new Callback(this.getWidget("delete_dialog"), "onClick"))
+		this.row_buttons.getWidget("delete_button")
+			.addListener("click", new Callback(this.getWidget("delete_dialog"), "onClick"))
 		;
 	}
 }

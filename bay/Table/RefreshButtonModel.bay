@@ -16,14 +16,14 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Table;
+namespace Runtime.Widget.Crud.Table;
 
 use Runtime.Web.ApiResult;
 use Runtime.Widget.Button;
 use Runtime.Widget.ButtonModel;
-use Runtime.Widget.Table.RefreshButton;
-use Runtime.Widget.Table.TableModel;
 use Runtime.Widget.WidgetResultModel;
+use Runtime.Widget.Crud.Table.RefreshButton;
+use Runtime.Widget.Crud.Table.TableModel;
 
 
 class RefreshButtonModel extends ButtonModel

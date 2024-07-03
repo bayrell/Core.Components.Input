@@ -16,12 +16,12 @@
  *  limitations under the License.
 -->
 
-<class name="Runtime.Widget.Table.Table">
+<class name="Runtime.Widget.Crud.Table.Table">
 
 <use name="Runtime.Web.RenderListModel" />
 <use name="Runtime.Widget.Pagination" component="true" />
 <use name="Runtime.Widget.RowButtons" />
-<use name="Runtime.Widget.Table.TableModel" />
+<use name="Runtime.Widget.Crud.Table.TableModel" />
 
 
 <style>
@@ -210,7 +210,7 @@
 
 
 <template>
-	<div class="widget_table" class={{ this.getStyles() }}>
+	<div class="widget_table" class={{ static::getStyles(this.model.styles) }}>
 		%render this.renderTitle();
 		%render this.renderTopButtons();
 		%render this.renderTable();
@@ -234,12 +234,6 @@ bool isRowSelected(int row_number) => this.row_selected == row_number;
  * Returns selected item
  */
 Dict getSelectedItem() => this.model.storage.getItemByRowNumber(this.row_selected);
-
-
-/**
- * Returns styles
- */
-string getStyles() => this.model.styles.join(" ");
 
 
 /**

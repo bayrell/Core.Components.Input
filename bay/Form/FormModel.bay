@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Form;
+namespace Runtime.Widget.Crud.Form;
 
 use Runtime.BaseObject;
 use Runtime.Serializer;
@@ -25,10 +25,9 @@ use Runtime.Web.BaseModel;
 use Runtime.Web.Events;
 use Runtime.Web.RenderContainer;
 use Runtime.Web.RenderListModel;
-use Runtime.Widget.Crud.CrudApiStorage;
-use Runtime.Widget.Form.Form;
 use Runtime.Widget.RowButtonsModel;
-use Runtime.Widget.Styles;
+use Runtime.Widget.Crud.CrudApiStorage;
+use Runtime.Widget.Crud.Form.Form;
 
 
 class FormModel extends BaseModel
@@ -42,7 +41,7 @@ class FormModel extends BaseModel
 	Map<Vector> fields_error = {};
 	RowButtonsModel top_buttons, bottom_buttons;
 	RenderListModel render_list;
-	Styles styles = new Styles{ "prefix": "widget_form" };
+	Collection<string> styles = [];
 	bool show_result = true;
 	bool is_load_success = true;
 	
@@ -59,7 +58,7 @@ class FormModel extends BaseModel
 		if (params.has("events")) this.events.setup(params.get("events"));
 		if (params.has("fields")) this.addFields(params.get("fields"));
 		if (params.has("storage")) this.storage = params.get("storage");
-		if (params.has("styles")) this.styles.addStyles(params.get("styles"));
+		if (params.has("styles")) this.styles = params.get("styles");
 		
 		/* Setup storage */
 		if (this.storage == null)
@@ -78,7 +77,7 @@ class FormModel extends BaseModel
 	/**
 	 * Init widget settings
 	 */
-	void initWidget(Dict params)
+	void init(Dict params)
 	{
 		parent(params);
 		

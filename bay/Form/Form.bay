@@ -16,14 +16,14 @@
  *  limitations under the License.
 -->
 
-<class name="Runtime.Widget.Form.Form">
+<class name="Runtime.Widget.Crud.Form.Form">
 
 <use name="Runtime.Web.RenderListModel" />
-<use name="Runtime.Widget.Form.FormGroupFields" component="true" />
-<use name="Runtime.Widget.Form.FormModel" />
 <use name="Runtime.Widget.Input" component="true" />
 <use name="Runtime.Widget.RowButtons" component="true" />
 <use name="Runtime.Widget.WidgetResult" component="true" />
+<use name="Runtime.Widget.Crud.Form.FormGroupFields" component="true" />
+<use name="Runtime.Widget.Crud.Form.FormModel" />
 
 
 <style>
@@ -95,7 +95,7 @@
 
 
 <template>
-	<div class="widget_form" class={{ this.getStyles() }}>
+	<div class="widget_form" class={{ static::getStyles(this.model.styles) }}>
 		%render this.renderTopButtons();
 		%if (this.model.is_load_success)
 		{
@@ -108,16 +108,6 @@
 		}
 	</div>
 </template>
-
-
-<script>
-
-/**
- * Returns styles
- */
-string getStyles() => this.model.styles.join(" ");
-
-</script>
 
 
 </class>

@@ -31,14 +31,13 @@ class CrudPageModel extends BasePageModel
 {
 	string action = "";
 	string component = classof CrudPage;
-	
 	RenderListModel render_list;
 	
 	
 	/**
 	 * Init widget settings
 	 */
-	void initWidget(Dict params)
+	void init(Dict params)
 	{
 		parent(params);
 		this.render_list = this.addWidget(classof RenderListModel);

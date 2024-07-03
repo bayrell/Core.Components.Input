@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-namespace Runtime.Widget.Form;
+namespace Runtime.Widget.Crud.Form;
 
 use Runtime.Web.ApiResult;
 use Runtime.Widget.Button;

@@ -16,7 +16,7 @@
  *  limitations under the License.
 -->
 
-<class name="Runtime.Widget.Table.SaveDialog"
+<class name="Runtime.Widget.Crud.Table.SaveDialog"
 	extends="Runtime.Widget.Dialog.Dialog"
 >
 

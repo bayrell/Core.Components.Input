@@ -16,7 +16,7 @@
  *  limitations under the License.
 -->
 
-<class name="Runtime.Widget.Form.FormGroupFields">
+<class name="Runtime.Widget.Crud.Form.FormGroupFields">
 
 
 <style>

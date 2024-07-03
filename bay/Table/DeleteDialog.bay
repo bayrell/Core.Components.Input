@@ -16,7 +16,7 @@
  *  limitations under the License.
 -->
 
-<class name="Runtime.Widget.Table.DeleteDialog"
+<class name="Runtime.Widget.Crud.Table.DeleteDialog"
 	extends="Runtime.Widget.Dialog.Dialog"
 >
 

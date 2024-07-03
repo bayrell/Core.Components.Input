@@ -25,6 +25,9 @@
 		"Table/TableDialogModel.bay",
 		"ModuleDescription.bay"
 	],
+	"groups": [
+		"widget"
+	],
 	"src": "./bay",
 	"dest":
 	{
