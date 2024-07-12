@@ -37,7 +37,7 @@ class CrudPageModel extends BasePageModel
 	/**
 	 * Init widget settings
 	 */
-	void init(Dict params)
+	void initWidget(Dict params)
 	{
 		parent(params);
 		this.render_list = this.addWidget(classof RenderListModel);

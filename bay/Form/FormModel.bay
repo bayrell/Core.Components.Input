@@ -47,9 +47,9 @@ class FormModel extends BaseModel
 	
 	
 	/**
-	 * Setup widget params
+	 * Init widget params
 	 */
-	void setup(Dict params)
+	void initParams(Dict params)
 	{
 		parent(params);
 		
@@ -77,7 +77,7 @@ class FormModel extends BaseModel
 	/**
 	 * Init widget settings
 	 */
-	void init(Dict params)
+	void initWidget(Dict params)
 	{
 		parent(params);
 		
